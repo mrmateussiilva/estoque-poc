@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"log"
 	"net/http"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -66,7 +67,33 @@ func main() {
 	http.HandleFunc("/stock", stockHandler)
 
 	log.Println("Server running on :8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+
+	srv := &http.Server{
+		Addr:         ":8080",
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  30 * time.Second, // Timeout para conexões keep-alive ociosas
+	}
+
+	log.Fatal(srv.ListenAndServe())
+}
+
+// respondWithError envia uma resposta de erro JSON
+func respondWithError(w http.ResponseWriter, code int, message string) {
+	respondWithJSON(w, code, map[string]string{"error": message})
+}
+
+// respondWithJSON envia uma resposta JSON genérica
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+	response, err := json.Marshal(payload)
+	if err != nil {
+		log.Println("Error marshalling JSON:", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(response)
 }
 
 func createTables() {
@@ -90,33 +117,33 @@ func createTables() {
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
 	// Parse multipart form
 	// Limite de 10MB
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		http.Error(w, "Error parsing form", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Error parsing form: "+err.Error())
 		return
 	}
 
 	file, _, err := r.FormFile("file")
 	if err != nil {
-		http.Error(w, "File not found (key 'file' required)", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "File not found (key 'file' required): "+err.Error())
 		return
 	}
 	defer file.Close()
 
 	var proc NfeProc
 	if err := xml.NewDecoder(file).Decode(&proc); err != nil {
-		http.Error(w, "Error decoding XML", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Error decoding XML: "+err.Error())
 		return
 	}
 
 	tx, err := db.Begin()
 	if err != nil {
-		http.Error(w, "DB Error", http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, "DB Error (beginning transaction): "+err.Error())
 		return
 	}
 	defer tx.Rollback()
@@ -129,7 +156,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			det.Prod.CProd, det.Prod.XProd,
 		)
 		if err != nil {
-			http.Error(w, "Error inserting product", http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, "Error inserting product: "+err.Error())
 			return
 		}
 
@@ -142,13 +169,13 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 			det.Prod.CProd, det.Prod.QCom,
 		)
 		if err != nil {
-			http.Error(w, "Error updating stock", http.StatusInternalServerError)
+			respondWithError(w, http.StatusInternalServerError, "Error updating stock: "+err.Error())
 			return
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
-		http.Error(w, "Commit error", http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, "Commit error: "+err.Error())
 		return
 	}
 
@@ -158,7 +185,7 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 
 func stockHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
@@ -168,7 +195,7 @@ func stockHandler(w http.ResponseWriter, r *http.Request) {
 		JOIN products p ON s.product_code = p.code
 	`)
 	if err != nil {
-		http.Error(w, "DB Error", http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, "DB Error (querying stock): "+err.Error())
 		return
 	}
 	defer rows.Close()
