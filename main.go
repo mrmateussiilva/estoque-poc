@@ -22,7 +22,8 @@ type NFe struct {
 }
 
 type InfNFe struct {
-	Det []Det `xml:"det"`
+	ID  string `xml:"Id,attr"`
+	Det []Det  `xml:"det"`
 }
 
 type Det struct {
@@ -106,6 +107,10 @@ func createTables() {
 			product_code TEXT PRIMARY KEY,
 			quantity NUMERIC
 		)`,
+		`CREATE TABLE IF NOT EXISTS processed_nfes (
+			access_key TEXT PRIMARY KEY,
+			processed_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
 	}
 
 	for _, q := range queries {
@@ -147,6 +152,25 @@ func uploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer tx.Rollback()
+
+	// 0. Verificar se NF-e já foi processada
+	var exists bool
+	err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM processed_nfes WHERE access_key = $1)", proc.NFe.InfNFe.ID).Scan(&exists)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error checking duplicate NFe: "+err.Error())
+		return
+	}
+	if exists {
+		respondWithError(w, http.StatusConflict, "Esta NF-e já foi processada anteriormente")
+		return
+	}
+
+	// Registrar a NF-e
+	_, err = tx.Exec("INSERT INTO processed_nfes (access_key) VALUES ($1)", proc.NFe.InfNFe.ID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error registering NFe: "+err.Error())
+		return
+	}
 
 	for _, det := range proc.NFe.InfNFe.Det {
 		// 1. Inserir Produto
