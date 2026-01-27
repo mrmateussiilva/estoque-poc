@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ruby-50: #fff1f2;
+  --color-ruby-600: #e11d48;
+  --color-ruby-700: #9b111e;
+  --color-ruby-900: #4c0519;
+
+  --color-charcoal-50: #f8fafc;
+  --color-charcoal-400: #94a3b8;
+  --color-charcoal-700: #334155;
+  --color-charcoal-900: #0f172a;
+
+  --color-background: #fafafa;
+  --color-foreground: #0f172a;
+  --color-card: #ffffff;
+  --color-border: #e2e8f0;
+
+  --radius-ruby: 6px;
+
+  --shadow-ruby-sm: 0 1px 2px 0 rgba(155, 17, 30, 0.05);
+  --shadow-ruby: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+:root {
+  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background-color: #fcfcfc;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
