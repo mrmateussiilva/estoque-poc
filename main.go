@@ -6,10 +6,15 @@ import (
 	"encoding/xml"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	_ "github.com/mattn/go-sqlite3"
+	"golang.org/x/crypto/bcrypt"
 )
+
+var jwtSecret = []byte("sge-secret-key-change-in-production")
 
 // Estruturas XML
 type NfeProc struct {
@@ -43,6 +48,20 @@ type StockItem struct {
 	Quantity float64 `json:"quantity"`
 }
 
+type LoginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type LoginResponse struct {
+	Token string `json:"token"`
+}
+
+type Claims struct {
+	Email string `json:"email"`
+	jwt.RegisteredClaims
+}
+
 var db *sql.DB
 
 func main() {
@@ -64,8 +83,9 @@ func main() {
 	http.Handle("/", http.FileServer(http.Dir("./static")))
 
 	// Endpoints
-	http.HandleFunc("/nfe/upload", uploadHandler)
-	http.HandleFunc("/stock", stockHandler)
+	http.HandleFunc("/login", corsMiddleware(loginHandler))
+	http.HandleFunc("/nfe/upload", corsMiddleware(authMiddleware(uploadHandler)))
+	http.HandleFunc("/stock", corsMiddleware(authMiddleware(stockHandler)))
 
 	log.Println("Server running on :8080")
 
@@ -111,6 +131,11 @@ func createTables() {
 			access_key TEXT PRIMARY KEY,
 			processed_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
+		`CREATE TABLE IF NOT EXISTS users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			email TEXT UNIQUE NOT NULL,
+			password TEXT NOT NULL
+		)`,
 	}
 
 	for _, q := range queries {
@@ -118,6 +143,109 @@ func createTables() {
 			log.Fatal(err)
 		}
 	}
+
+	var count int
+	err := db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if count == 0 {
+		hashed, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
+		if err != nil {
+			log.Fatal(err)
+		}
+		_, err = db.Exec("INSERT INTO users (email, password) VALUES (?, ?)", "admin@sge.com", string(hashed))
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("Default user created: admin@sge.com / admin123")
+	}
+}
+
+func corsMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+		if r.Method == "OPTIONS" {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+
+		next(w, r)
+	}
+}
+
+func authMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			respondWithError(w, http.StatusUnauthorized, "Missing authorization header")
+			return
+		}
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		if tokenString == authHeader {
+			respondWithError(w, http.StatusUnauthorized, "Invalid authorization format")
+			return
+		}
+
+		claims := &Claims{}
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+			return jwtSecret, nil
+		})
+
+		if err != nil || !token.Valid {
+			respondWithError(w, http.StatusUnauthorized, "Invalid token")
+			return
+		}
+
+		next(w, r)
+	}
+}
+
+func loginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		respondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	var req LoginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Invalid request body")
+		return
+	}
+
+	var storedPassword string
+	err := db.QueryRow("SELECT password FROM users WHERE email = ?", req.Email).Scan(&storedPassword)
+	if err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid credentials")
+		return
+	}
+
+	if err := bcrypt.CompareHashAndPassword([]byte(storedPassword), []byte(req.Password)); err != nil {
+		respondWithError(w, http.StatusUnauthorized, "Invalid credentials")
+		return
+	}
+
+	expirationTime := time.Now().Add(24 * time.Hour)
+	claims := &Claims{
+		Email: req.Email,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expirationTime),
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString(jwtSecret)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error generating token")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, LoginResponse{Token: tokenString})
 }
 
 func uploadHandler(w http.ResponseWriter, r *http.Request) {
