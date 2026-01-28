@@ -5,7 +5,10 @@ services:
     ports:
       - "8003:8003"
     volumes:
-      - ./estoque.db:/root/estoque.db
+      - sge-data:/root
     environment:
       - PORT=8003
     restart: unless-stopped
+
+volumes:
+  sge-data:
