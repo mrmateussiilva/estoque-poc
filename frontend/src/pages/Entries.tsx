@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import { Button } from '../components/UI';
 import EntryActionCards from '../components/EntryActionCards';
 import EntryForm from '../components/EntryForm';
