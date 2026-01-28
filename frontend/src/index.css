@@ -2,9 +2,13 @@
 
 @theme {
   --color-ruby-50: #fff1f2;
-  --color-ruby-600: #e11d48;
-  --color-ruby-700: #9b111e;
-  --color-ruby-900: #4c0519;
+  --color-ruby-400: #ff4d4f;
+  --color-ruby-500: #e32636;
+  --color-ruby-600: #d32035;
+  --color-ruby-700: #af1024;
+  --color-ruby-800: #8e0e21;
+  --color-ruby-900: #5c0011;
+  --color-ruby-950: #3a0009;
 
   --color-charcoal-50: #f8fafc;
   --color-charcoal-400: #94a3b8;

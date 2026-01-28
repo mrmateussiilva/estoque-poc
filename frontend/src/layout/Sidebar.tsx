@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, FileText, BarChart3, ChevronLeft, ChevronRight, ArrowDownToLine, User } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, BarChart3, ChevronLeft, ChevronRight, ArrowDownToLine, User, Gem } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -51,8 +51,8 @@ export default function Sidebar({ currentPage, onNavigate, onCollapse, isOpen, o
                 {/* Branding */}
                 <div className="px-6 h-24 flex items-center">
                     <div className={`flex items-center w-full ${collapsed ? 'justify-center' : 'gap-3'}`}>
-                        <div className="w-9 h-9 bg-ruby-700 rounded-xl shadow-lg flex items-center justify-center flex-shrink-0">
-                            <Package className="w-5 h-5 text-white" />
+                        <div className="w-10 h-10 bg-gradient-to-br from-ruby-500 to-ruby-800 rounded-xl shadow-lg shadow-ruby-950/20 flex items-center justify-center flex-shrink-0 border border-white/10">
+                            <Gem className="w-5 h-5 text-white" />
                         </div>
                         {!collapsed && (
                             <div className="overflow-hidden animate-in fade-in slide-in-from-left-2 duration-300">
