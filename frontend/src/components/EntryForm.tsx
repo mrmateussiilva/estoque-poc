@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { X } from 'lucide-react';
-import { Button } from './UI';
+import { X, Check } from 'lucide-react';
+import { Button, Card } from './UI';
 
 interface EntryFormProps {
     onAdd: (item: { sku: string; description: string; quantity: number }) => void;
@@ -23,56 +23,66 @@ export default function EntryForm({ onAdd, onClose }: EntryFormProps) {
     };
 
     return (
-        <div className="bg-white rounded-ruby border border-charcoal-50 shadow-ruby p-6 mb-6">
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-charcoal-900">Nova Entrada Manual</h3>
-                <button onClick={onClose} className="text-charcoal-400 hover:text-charcoal-900">
-                    <X className="w-5 h-5" />
-                </button>
+        <Card className="p-8 border-ruby-700/20 shadow-xl shadow-ruby-900/5 bg-white relative">
+            <button
+                onClick={onClose}
+                className="absolute top-4 right-4 p-2 text-charcoal-300 hover:text-charcoal-900 transition-colors"
+            >
+                <X className="w-4 h-4" />
+            </button>
+
+            <div className="mb-6">
+                <h3 className="text-sm font-black text-charcoal-900 uppercase tracking-widest italic flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 bg-ruby-700 rounded-full" />
+                    Nova Entrada Manual
+                </h3>
             </div>
 
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                    <label className="block text-xs font-bold text-charcoal-700 mb-2">SKU</label>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+                <div className="md:col-span-3 space-y-2">
+                    <label className="text-[10px] font-black text-charcoal-400 uppercase tracking-widest ml-1">SKU</label>
                     <input
                         type="text"
                         value={sku}
                         onChange={(e) => setSku(e.target.value)}
-                        className="w-full px-3 py-2 border border-charcoal-50 rounded-ruby focus:outline-none focus:ring-2 focus:ring-ruby-700 text-sm"
-                        placeholder="SKU123"
+                        className="w-full h-11 px-4 bg-charcoal-50 border border-charcoal-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-ruby-700/20 focus:border-ruby-700 text-sm font-bold transition-all"
+                        placeholder="Ex: SKU-001"
                         required
+                        autoFocus
                     />
                 </div>
 
-                <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-charcoal-700 mb-2">Descrição</label>
+                <div className="md:col-span-6 space-y-2">
+                    <label className="text-[10px] font-black text-charcoal-400 uppercase tracking-widest ml-1">Produto / Descrição</label>
                     <input
                         type="text"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        className="w-full px-3 py-2 border border-charcoal-50 rounded-ruby focus:outline-none focus:ring-2 focus:ring-ruby-700 text-sm"
-                        placeholder="Nome do produto"
+                        className="w-full h-11 px-4 bg-charcoal-50 border border-charcoal-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-ruby-700/20 focus:border-ruby-700 text-sm font-bold transition-all"
+                        placeholder="Descrição detalhada do item"
                         required
                     />
                 </div>
 
-                <div>
-                    <label className="block text-xs font-bold text-charcoal-700 mb-2">Quantidade</label>
+                <div className="md:col-span-2 space-y-2">
+                    <label className="text-[10px] font-black text-charcoal-400 uppercase tracking-widest ml-1">Qtd</label>
                     <input
                         type="number"
                         value={quantity}
                         onChange={(e) => setQuantity(e.target.value)}
-                        className="w-full px-3 py-2 border border-charcoal-50 rounded-ruby focus:outline-none focus:ring-2 focus:ring-ruby-700 text-sm"
-                        placeholder="10"
+                        className="w-full h-11 px-4 bg-charcoal-50 border border-charcoal-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-ruby-700/20 focus:border-ruby-700 text-sm font-black transition-all"
+                        placeholder="0"
                         min="1"
                         required
                     />
                 </div>
 
-                <div className="md:col-span-4">
-                    <Button type="submit" className="w-full">Adicionar à Tabela</Button>
+                <div className="md:col-span-1">
+                    <Button type="submit" className="w-full h-11 flex items-center justify-center p-0 rounded-xl">
+                        <Check className="w-5 h-5" />
+                    </Button>
                 </div>
             </form>
-        </div>
+        </Card>
     );
 }
