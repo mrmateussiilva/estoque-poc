@@ -3,7 +3,7 @@ import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { Upload, ChevronRight, TrendingUp, Package, FileText } from 'lucide-react';
 import { Card, KPICard, Button } from '../components/UI';
 
-const API_BASE_URL = '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 const stockEvolutionData = [
     { month: 'Jan', items: 120 },
@@ -31,7 +31,10 @@ export default function Dashboard() {
 
     const fetchStock = async () => {
         try {
-            const response = await fetch(`${API_BASE_URL}/stock`);
+            const token = localStorage.getItem('auth_token');
+            const response = await fetch(`${API_BASE_URL}/stock`, {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+            });
             if (!response.ok) throw new Error('Falha na comunicação');
             const data = await response.json();
             setStock(data || []);
@@ -50,9 +53,11 @@ export default function Dashboard() {
         formData.append('file', file);
 
         try {
+            const token = localStorage.getItem('auth_token');
             const response = await fetch(`${API_BASE_URL}/nfe/upload`, {
                 method: 'POST',
                 body: formData,
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
             });
 
             if (response.status === 409) throw new Error('NF-e já processada');
@@ -89,7 +94,6 @@ export default function Dashboard() {
 
     return (
         <div className="space-y-8">
-            {/* Notifications */}
             <div className="fixed top-24 right-8 z-50 flex flex-col gap-3 max-w-md">
                 {error && (
                     <div className="bg-white border-l-4 border-ruby-700 shadow-lg px-6 py-4 flex items-center gap-3 rounded-ruby">
@@ -103,7 +107,6 @@ export default function Dashboard() {
                 )}
             </div>
 
-            {/* KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <KPICard title="Itens em Estoque" value={totalItems} subtitle="Total de unidades" />
                 <KPICard title="SKUs Ativos" value={totalSKUs} subtitle="Produtos cadastrados" />
@@ -111,7 +114,6 @@ export default function Dashboard() {
                 <KPICard title="Última Sincronização" value="Agora" subtitle="Atualizado" />
             </div>
 
-            {/* Charts */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card className="p-6">
                     <div className="flex items-center gap-2 mb-6">
@@ -146,7 +148,6 @@ export default function Dashboard() {
                 </Card>
             </div>
 
-            {/* Upload Card */}
             <Card className="p-8">
                 <div className="flex items-center gap-2 mb-6">
                     <FileText className="w-5 h-5 text-ruby-700" />

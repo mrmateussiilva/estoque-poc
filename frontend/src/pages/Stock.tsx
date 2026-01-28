@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card } from '../components/UI';
 
-const API_BASE_URL = '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 export default function Stock() {
     const [stock, setStock] = useState<any[]>([]);
@@ -10,7 +10,10 @@ export default function Stock() {
     const fetchStock = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`${API_BASE_URL}/stock`);
+            const token = localStorage.getItem('auth_token');
+            const response = await fetch(`${API_BASE_URL}/stock`, {
+                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+            });
             if (!response.ok) throw new Error('Falha na comunicação');
             const data = await response.json();
             setStock(data || []);
