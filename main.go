@@ -6,6 +6,7 @@ import (
 	"encoding/xml"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -87,10 +88,15 @@ func main() {
 	http.HandleFunc("/nfe/upload", corsMiddleware(authMiddleware(uploadHandler)))
 	http.HandleFunc("/stock", corsMiddleware(authMiddleware(stockHandler)))
 
-	log.Println("Server running on :8080")
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8003"
+	}
+
+	log.Printf("Server running on :%s", port)
 
 	srv := &http.Server{
-		Addr:         ":8080",
+		Addr:         ":" + port,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  30 * time.Second, // Timeout para conexões keep-alive ociosas

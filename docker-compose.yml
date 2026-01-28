@@ -1,0 +1,11 @@
+services:
+  backend:
+    build: .
+    container_name: sge-backend
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./estoque.db:/root/estoque.db
+    environment:
+      - PORT=8003
+    restart: unless-stopped
