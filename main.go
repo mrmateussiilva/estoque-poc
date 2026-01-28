@@ -4,7 +4,8 @@ import (
 	"database/sql"
 	"encoding/json"
 	"encoding/xml"
-	"log"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -66,15 +67,22 @@ type Claims struct {
 var db *sql.DB
 
 func main() {
+	// Configuração do Logger Estruturado
+	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
+	logger := slog.New(handler)
+	slog.SetDefault(logger)
+
 	var err error
 	// Conexão SQLite
 	db, err = sql.Open("sqlite3", "./estoque.db")
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("Failed to connect to database", "error", err)
+		os.Exit(1)
 	}
 
 	if err = db.Ping(); err != nil {
-		log.Fatal(err)
+		slog.Error("Database ping failed", "error", err)
+		os.Exit(1)
 	}
 
 	// Criação das tabelas
@@ -83,26 +91,29 @@ func main() {
 	// Frontend
 	http.Handle("/", http.FileServer(http.Dir("./static")))
 
-	// Endpoints
-	http.HandleFunc("/login", corsMiddleware(loginHandler))
-	http.HandleFunc("/nfe/upload", corsMiddleware(authMiddleware(uploadHandler)))
-	http.HandleFunc("/stock", corsMiddleware(authMiddleware(stockHandler)))
+	// Endpoints com Middleware de Log e CORS
+	http.HandleFunc("/login", loggingMiddleware(corsMiddleware(loginHandler)))
+	http.HandleFunc("/nfe/upload", loggingMiddleware(corsMiddleware(authMiddleware(uploadHandler))))
+	http.HandleFunc("/stock", loggingMiddleware(corsMiddleware(authMiddleware(stockHandler))))
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8003"
 	}
 
-	log.Printf("Server running on :%s", port)
+	slog.Info("Server starting", "port", port, "env", "production")
 
 	srv := &http.Server{
 		Addr:         ":" + port,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  30 * time.Second, // Timeout para conexões keep-alive ociosas
+		IdleTimeout:  30 * time.Second,
 	}
 
-	log.Fatal(srv.ListenAndServe())
+	if err := srv.ListenAndServe(); err != nil {
+		slog.Error("Server failed", "error", err)
+		os.Exit(1)
+	}
 }
 
 // respondWithError envia uma resposta de erro JSON
@@ -114,7 +125,7 @@ func respondWithError(w http.ResponseWriter, code int, message string) {
 func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	response, err := json.Marshal(payload)
 	if err != nil {
-		log.Println("Error marshalling JSON:", err)
+		slog.Error("Error marshalling JSON", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -146,26 +157,62 @@ func createTables() {
 
 	for _, q := range queries {
 		if _, err := db.Exec(q); err != nil {
-			log.Fatal(err)
+			slog.Error("Failed to create table", "query", q, "error", err)
+			os.Exit(1)
 		}
 	}
 
 	var count int
 	err := db.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
 	if err != nil {
-		log.Fatal(err)
+		slog.Error("Failed to count users", "error", err)
+		os.Exit(1)
 	}
 
 	if count == 0 {
 		hashed, err := bcrypt.GenerateFromPassword([]byte("admin123"), bcrypt.DefaultCost)
 		if err != nil {
-			log.Fatal(err)
+			slog.Error("Failed to hash default password", "error", err)
+			os.Exit(1)
 		}
 		_, err = db.Exec("INSERT INTO users (email, password) VALUES (?, ?)", "admin@sge.com", string(hashed))
 		if err != nil {
-			log.Fatal(err)
+			slog.Error("Failed to insert default user", "error", err)
+			os.Exit(1)
 		}
-		log.Println("Default user created: admin@sge.com / admin123")
+		slog.Info("Default user created", "email", "admin@sge.com")
+	}
+}
+
+// responseWriterInterceptor captura o status code para o log
+type responseWriterInterceptor struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (w *responseWriterInterceptor) WriteHeader(code int) {
+	w.statusCode = code
+	w.ResponseWriter.WriteHeader(code)
+}
+
+func loggingMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+
+		// Interceptar o status code
+		wi := &responseWriterInterceptor{ResponseWriter: w, statusCode: http.StatusOK}
+
+		next(wi, r)
+
+		duration := time.Since(start)
+
+		slog.Info("API Request",
+			"method", r.Method,
+			"path", r.URL.Path,
+			"status", wi.statusCode,
+			"duration", duration.String(),
+			"ip", r.RemoteAddr,
+		)
 	}
 }
 
@@ -367,7 +414,7 @@ func stockHandler(w http.ResponseWriter, r *http.Request) {
 	for rows.Next() {
 		var item StockItem
 		if err := rows.Scan(&item.Code, &item.Name, &item.Quantity); err != nil {
-			log.Println("Scan error:", err)
+			slog.Warn("Scan error", "error", err)
 			continue
 		}
 		list = append(list, item)
