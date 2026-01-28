@@ -43,11 +43,11 @@ export default function Entries() {
     };
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 pb-32 relative antialiased">
+        <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 pb-32 relative antialiased">
             <div className="flex items-center justify-between border-b border-charcoal-100 pb-4">
                 <div className="space-y-1">
                     <p className="text-[10px] font-black uppercase text-ruby-700 tracking-[0.2em] leading-none">Mesa de Operação</p>
-                    <h2 className="text-sm font-bold text-charcoal-400">
+                    <h2 className="text-xs font-bold text-charcoal-400">
                         Etapa {currentStep} de 3 — <span className="text-charcoal-900">{stepLabels[currentStep - 1]}</span>
                     </h2>
                 </div>
@@ -91,15 +91,15 @@ export default function Entries() {
                 />
             )}
 
-            <div className="fixed bottom-8 right-8 z-40">
+            <div className="fixed bottom-6 right-4 left-4 md:left-auto md:bottom-8 md:right-8 z-40">
                 <Button
                     onClick={handleConfirm}
                     disabled={items.length === 0}
                     loading={isConfirming}
-                    className="h-14 px-8 shadow-2xl shadow-ruby-900/40 rounded-2xl flex items-center gap-3"
+                    className="w-full md:w-auto h-14 px-8 shadow-2xl shadow-ruby-900/40 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
                 >
-                    <span className="font-black text-sm uppercase tracking-widest">Confirmar Entrada no Estoque</span>
-                    {!isConfirming && <CheckCircle2 className="w-5 h-5" />}
+                    <span className="font-black text-sm uppercase tracking-widest">Confirmar Entrada</span>
+                    {!isConfirming && <CheckCircle2 className="w-5 h-5 flex-shrink-0" />}
                 </Button>
             </div>
         </div>

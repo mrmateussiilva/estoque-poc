@@ -36,50 +36,52 @@ export default function EntryTable({ items, onUpdateQuantity, onRemove }: EntryT
 
     return (
         <Card className="overflow-hidden border-charcoal-200/50">
-            <table className="w-full text-left border-collapse">
-                <thead>
-                    <tr className="bg-charcoal-50/50 border-b border-charcoal-100">
-                        <th className="px-6 py-4 text-[10px] font-black text-charcoal-500 uppercase tracking-widest">SKU</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-charcoal-500 uppercase tracking-widest">Produto</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-charcoal-500 uppercase tracking-widest text-center">Quantidade</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-charcoal-500 uppercase tracking-widest text-center">Origem</th>
-                        <th className="px-6 py-4 text-[10px] font-black text-charcoal-500 uppercase tracking-widest text-right">Ação</th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-charcoal-50">
-                    {items.map((item) => (
-                        <tr key={item.id} className="hover:bg-charcoal-50/30 transition-colors group">
-                            <td className="px-6 py-4 text-xs font-mono text-ruby-700/70">{item.sku}</td>
-                            <td className="px-6 py-4 text-sm font-bold text-charcoal-900">{item.description}</td>
-                            <td className="px-6 py-4 text-center">
-                                <input
-                                    type="number"
-                                    min="1"
-                                    value={item.quantity}
-                                    onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value) || 0)}
-                                    className="w-16 px-2 py-1 text-center text-sm font-black border border-transparent hover:border-charcoal-200 focus:border-ruby-700 rounded transition-all outline-none"
-                                />
-                            </td>
-                            <td className="px-6 py-4 text-center">
-                                <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${item.origin === 'Manual'
-                                        ? 'bg-amber-50 text-amber-700 border border-amber-200'
-                                        : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
-                                    }`}>
-                                    {item.origin}
-                                </span>
-                            </td>
-                            <td className="px-6 py-4 text-right">
-                                <button
-                                    onClick={() => onRemove(item.id)}
-                                    className="p-2 text-charcoal-300 hover:text-ruby-700 hover:bg-ruby-50 rounded-lg transition-all"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </td>
+            <div className="overflow-x-auto custom-scrollbar">
+                <table className="w-full text-left border-collapse min-w-[700px] md:min-w-0">
+                    <thead>
+                        <tr className="bg-charcoal-50/50 border-b border-charcoal-100">
+                            <th className="px-4 md:px-6 py-4 text-[10px] font-black text-charcoal-500 uppercase tracking-widest">SKU</th>
+                            <th className="px-4 md:px-6 py-4 text-[10px] font-black text-charcoal-500 uppercase tracking-widest">Produto</th>
+                            <th className="px-4 md:px-6 py-4 text-[10px] font-black text-charcoal-500 uppercase tracking-widest text-center">Quantidade</th>
+                            <th className="px-4 md:px-6 py-4 text-[10px] font-black text-charcoal-500 uppercase tracking-widest text-center">Origem</th>
+                            <th className="px-4 md:px-6 py-4 text-[10px] font-black text-charcoal-500 uppercase tracking-widest text-right">Ação</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody className="divide-y divide-charcoal-50">
+                        {items.map((item) => (
+                            <tr key={item.id} className="hover:bg-charcoal-50/30 transition-colors group">
+                                <td className="px-4 md:px-6 py-4 text-xs font-mono text-ruby-700/70">{item.sku}</td>
+                                <td className="px-4 md:px-6 py-4 text-sm font-bold text-charcoal-900">{item.description}</td>
+                                <td className="px-4 md:px-6 py-4 text-center">
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        value={item.quantity}
+                                        onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value) || 0)}
+                                        className="w-16 px-2 py-1 text-center text-sm font-black border border-transparent hover:border-charcoal-200 focus:border-ruby-700 rounded transition-all outline-none"
+                                    />
+                                </td>
+                                <td className="px-4 md:px-6 py-4 text-center">
+                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-tighter ${item.origin === 'Manual'
+                                            ? 'bg-amber-50 text-amber-700 border border-amber-200'
+                                            : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                                        }`}>
+                                        {item.origin}
+                                    </span>
+                                </td>
+                                <td className="px-4 md:px-6 py-4 text-right">
+                                    <button
+                                        onClick={() => onRemove(item.id)}
+                                        className="p-2 text-charcoal-300 hover:text-ruby-700 hover:bg-ruby-50 rounded-lg transition-all"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </Card>
     );
 }

@@ -12,7 +12,13 @@ import Login from './pages/Login';
 function MainApp() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isAuthenticated, logout } = useAuth();
+
+  const handleNavigate = (page: string) => {
+    setCurrentPage(page);
+    setIsMobileMenuOpen(false);
+  };
 
   const pageConfig = {
     dashboard: { title: 'Dashboard', component: Dashboard, showSync: true },
@@ -30,11 +36,26 @@ function MainApp() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar currentPage={currentPage} onNavigate={setCurrentPage} onCollapse={setSidebarCollapsed} />
-      <div className={`flex-1 ${sidebarCollapsed ? 'ml-20' : 'ml-64'} flex flex-col transition-all duration-300`}>
-        <Header title={config.title} onSync={config.showSync ? () => window.location.reload() : undefined} onLogout={logout} />
-        <main className="flex-1 overflow-auto p-8">
+    <div className="flex h-screen bg-background overflow-hidden">
+      <Sidebar
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
+        onCollapse={setSidebarCollapsed}
+        isOpen={isMobileMenuOpen}
+        onMobileClose={() => setIsMobileMenuOpen(false)}
+      />
+
+      <div className={`
+        flex-1 flex flex-col transition-all duration-300 min-w-0
+        ${sidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}
+      `}>
+        <Header
+          title={config.title}
+          onSync={config.showSync ? () => window.location.reload() : undefined}
+          onLogout={logout}
+          onMenuClick={() => setIsMobileMenuOpen(true)}
+        />
+        <main className="flex-1 overflow-auto p-4 md:p-8">
           <PageComponent />
         </main>
       </div>

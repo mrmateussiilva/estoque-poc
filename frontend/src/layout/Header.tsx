@@ -1,16 +1,27 @@
-import { RefreshCw, LogOut } from 'lucide-react';
+import { RefreshCw, LogOut, Menu } from 'lucide-react';
 
 interface HeaderProps {
     title: string;
     onSync?: () => void;
     onLogout?: () => void;
+    onMenuClick?: () => void;
     loading?: boolean;
 }
 
-export default function Header({ title, onSync, onLogout, loading }: HeaderProps) {
+export default function Header({ title, onSync, onLogout, onMenuClick, loading }: HeaderProps) {
     return (
-        <header className="h-16 bg-white border-b border-charcoal-50 flex items-center justify-between px-8">
-            <h1 className="text-2xl font-bold text-charcoal-900">{title}</h1>
+        <header className="h-16 bg-white border-b border-charcoal-50 flex items-center justify-between px-4 md:px-8">
+            <div className="flex items-center gap-4">
+                {onMenuClick && (
+                    <button
+                        onClick={onMenuClick}
+                        className="md:hidden p-2 text-charcoal-400 hover:text-charcoal-700 hover:bg-charcoal-50 rounded-lg transition-all"
+                    >
+                        <Menu className="w-6 h-6" />
+                    </button>
+                )}
+                <h1 className="text-xl md:text-2xl font-bold text-charcoal-900 truncate">{title}</h1>
+            </div>
             <div className="flex items-center gap-3">
                 {onSync && (
                     <button

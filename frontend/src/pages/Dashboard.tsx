@@ -93,54 +93,54 @@ export default function Dashboard() {
     const totalSKUs = stock.length;
 
     return (
-        <div className="space-y-8">
-            <div className="fixed top-24 right-8 z-50 flex flex-col gap-3 max-w-md">
+        <div className="space-y-6 md:space-y-8">
+            <div className="fixed top-20 right-4 left-4 md:left-auto md:top-24 md:right-8 z-50 flex flex-col gap-3 md:max-w-md">
                 {error && (
-                    <div className="bg-white border-l-4 border-ruby-700 shadow-lg px-6 py-4 flex items-center gap-3 rounded-ruby">
-                        <span className="text-sm font-medium text-charcoal-700">{error}</span>
+                    <div className="bg-white border-l-4 border-ruby-700 shadow-xl px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 rounded-ruby animate-in slide-in-from-top-4 duration-300">
+                        <span className="text-xs md:text-sm font-medium text-charcoal-700">{error}</span>
                     </div>
                 )}
                 {success && (
-                    <div className="bg-white border-l-4 border-emerald-500 shadow-lg px-6 py-4 flex items-center gap-3 rounded-ruby">
-                        <span className="text-sm font-medium text-charcoal-700">{success}</span>
+                    <div className="bg-white border-l-4 border-emerald-500 shadow-xl px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 rounded-ruby animate-in slide-in-from-top-4 duration-300">
+                        <span className="text-xs md:text-sm font-medium text-charcoal-700">{success}</span>
                     </div>
                 )}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 <KPICard title="Itens em Estoque" value={totalItems} subtitle="Total de unidades" />
                 <KPICard title="SKUs Ativos" value={totalSKUs} subtitle="Produtos cadastrados" />
                 <KPICard title="Entradas no Mês" value="12" subtitle="NF-es processadas" />
                 <KPICard title="Última Sincronização" value="Agora" subtitle="Atualizado" />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center gap-2 mb-6">
                         <TrendingUp className="w-5 h-5 text-ruby-700" />
-                        <h3 className="text-lg font-bold text-charcoal-900">Evolução de Estoque</h3>
+                        <h3 className="text-base md:text-lg font-bold text-charcoal-900">Evolução de Estoque</h3>
                     </div>
                     <ResponsiveContainer width="100%" height={250}>
                         <LineChart data={stockEvolutionData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis dataKey="month" stroke="#94a3b8" style={{ fontSize: '12px' }} />
-                            <YAxis stroke="#94a3b8" style={{ fontSize: '12px' }} />
+                            <XAxis dataKey="month" stroke="#94a3b8" style={{ fontSize: '10px' }} />
+                            <YAxis stroke="#94a3b8" style={{ fontSize: '10px' }} />
                             <Tooltip />
                             <Line type="monotone" dataKey="items" stroke="#9b111e" strokeWidth={2} />
                         </LineChart>
                     </ResponsiveContainer>
                 </Card>
 
-                <Card className="p-6">
+                <Card className="p-4 md:p-6">
                     <div className="flex items-center gap-2 mb-6">
                         <Package className="w-5 h-5 text-ruby-700" />
-                        <h3 className="text-lg font-bold text-charcoal-900">Top 5 Produtos</h3>
+                        <h3 className="text-base md:text-lg font-bold text-charcoal-900">Top 5 Produtos</h3>
                     </div>
                     <ResponsiveContainer width="100%" height={250}>
                         <BarChart data={topProductsData}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '12px' }} />
-                            <YAxis stroke="#94a3b8" style={{ fontSize: '12px' }} />
+                            <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '10px' }} />
+                            <YAxis stroke="#94a3b8" style={{ fontSize: '10px' }} />
                             <Tooltip />
                             <Bar dataKey="quantity" fill="#9b111e" />
                         </BarChart>
@@ -148,13 +148,13 @@ export default function Dashboard() {
                 </Card>
             </div>
 
-            <Card className="p-8">
+            <Card className="p-6 md:p-8">
                 <div className="flex items-center gap-2 mb-6">
                     <FileText className="w-5 h-5 text-ruby-700" />
-                    <h3 className="text-xl font-bold text-charcoal-900">Importar NF-e</h3>
+                    <h3 className="text-lg md:text-xl font-bold text-charcoal-900">Importar NF-e</h3>
                 </div>
 
-                <div className="relative group overflow-hidden rounded-ruby bg-charcoal-50 border border-transparent transition-all border-dashed hover:border-ruby-700/30 p-10 text-center cursor-pointer mb-6">
+                <div className="relative group overflow-hidden rounded-ruby bg-charcoal-50 border border-transparent transition-all border-dashed hover:border-ruby-700/30 p-6 md:p-10 text-center cursor-pointer mb-6">
                     <input
                         type="file"
                         accept=".xml"
