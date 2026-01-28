@@ -27,23 +27,33 @@ export default function Sidebar({ currentPage, onNavigate, onCollapse }: Sidebar
     ];
 
     return (
-        <aside className={`${collapsed ? 'w-20' : 'w-64'} bg-charcoal-900 h-screen fixed left-0 top-0 flex flex-col border-r border-charcoal-700 transition-all duration-300`}>
-            <div className="p-6 border-b border-charcoal-700">
-                <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
-                    <div className="w-10 h-10 bg-ruby-700 rounded-ruby flex items-center justify-center flex-shrink-0">
-                        <Package className="w-6 h-6 text-white" />
+        <aside
+            className={`
+        ${collapsed ? 'w-20' : 'w-64'} 
+        bg-charcoal-900/95 backdrop-blur-md 
+        h-screen fixed left-0 top-0 flex flex-col 
+        border-r border-charcoal-700/50 
+        transition-all duration-300 ease-in-out z-50
+      `}
+        >
+            {/* Branding */}
+            <div className="p-6 h-28 flex items-center border-b border-charcoal-800/50">
+                <div className={`flex items-center w-full ${collapsed ? 'justify-center' : 'gap-3'}`}>
+                    <div className="w-10 h-10 bg-gradient-to-br from-ruby-600 to-ruby-800 rounded-xl shadow-lg shadow-ruby-900/20 flex items-center justify-center flex-shrink-0">
+                        <Package className="w-5 h-5 text-white" />
                     </div>
                     {!collapsed && (
-                        <div>
-                            <h1 className="text-white font-bold text-lg tracking-tight">S.G.E.</h1>
-                            <p className="text-charcoal-400 text-xs">Sistema de Gestão</p>
+                        <div className="overflow-hidden animate-in fade-in slide-in-from-left-2 duration-300">
+                            <h1 className="text-white font-black text-xl tracking-tighter leading-none">S.G.E.</h1>
+                            <p className="text-charcoal-500 text-[10px] font-bold uppercase tracking-widest mt-1">Smart Stock</p>
                         </div>
                     )}
                 </div>
             </div>
 
-            <nav className="flex-1 p-4">
-                <ul className="space-y-1">
+            {/* Navigation */}
+            <nav className="flex-1 px-3 py-6 overflow-y-auto custom-scrollbar">
+                <ul className="space-y-1.5">
                     {menuItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = currentPage === item.id;
@@ -51,14 +61,27 @@ export default function Sidebar({ currentPage, onNavigate, onCollapse }: Sidebar
                             <li key={item.id}>
                                 <button
                                     onClick={() => onNavigate(item.id)}
-                                    className={`w-full flex items-center ${collapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-ruby transition-all ${isActive
-                                        ? 'bg-ruby-700 text-white'
-                                        : 'text-charcoal-400 hover:bg-charcoal-700 hover:text-white'
-                                        }`}
+                                    className={`
+                    w-full flex items-center ${collapsed ? 'justify-center' : 'gap-3'} 
+                    px-4 py-3 rounded-xl transition-all duration-200 group relative
+                    ${isActive
+                                            ? 'bg-ruby-700/10 text-ruby-500 shadow-sm'
+                                            : 'text-charcoal-400 hover:bg-charcoal-800/50 hover:text-charcoal-100'}
+                  `}
                                     title={collapsed ? item.label : undefined}
                                 >
-                                    <Icon className="w-5 h-5 flex-shrink-0" />
-                                    {!collapsed && <span className="font-medium text-sm">{item.label}</span>}
+                                    {/* Active Indicator Bar */}
+                                    {isActive && (
+                                        <div className="absolute left-0 w-1 h-6 bg-ruby-600 rounded-r-full shadow-[0_0_8px_rgba(155,17,30,0.5)]" />
+                                    )}
+
+                                    <Icon className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-ruby-500' : 'group-hover:text-white'}`} />
+
+                                    {!collapsed && (
+                                        <span className={`font-semibold text-sm whitespace-nowrap transition-colors duration-200 ${isActive ? 'text-white' : ''}`}>
+                                            {item.label}
+                                        </span>
+                                    )}
                                 </button>
                             </li>
                         );
@@ -66,33 +89,42 @@ export default function Sidebar({ currentPage, onNavigate, onCollapse }: Sidebar
                 </ul>
             </nav>
 
-            <div className="p-4 border-t border-charcoal-700 space-y-4">
+            {/* Footer / Profile */}
+            <div className="p-3 bg-charcoal-900/50 border-t border-charcoal-800/50">
                 {!collapsed && user && (
-                    <div className="flex items-center gap-3 px-2 py-1">
-                        <div className="w-8 h-8 bg-charcoal-700 rounded-full flex items-center justify-center">
-                            <User className="w-4 h-4 text-charcoal-400" />
-                        </div>
-                        <div className="overflow-hidden">
-                            <p className="text-white text-xs font-bold truncate">{user.email.split('@')[0]}</p>
-                            <p className="text-charcoal-500 text-[10px] truncate">{user.email}</p>
+                    <div className="mb-4 mx-1 p-3 bg-charcoal-800/30 rounded-2xl border border-charcoal-700/30">
+                        <div className="flex items-center gap-3">
+                            <div className="w-9 h-9 bg-gradient-to-tr from-charcoal-700 to-charcoal-600 rounded-xl flex items-center justify-center border border-charcoal-600/50">
+                                <User className="w-4 h-4 text-charcoal-300" />
+                            </div>
+                            <div className="overflow-hidden">
+                                <p className="text-charcoal-100 text-xs font-bold truncate leading-tight">
+                                    {user.email.split('@')[0].toUpperCase()}
+                                </p>
+                                <div className="flex items-center gap-1.5 mt-0.5">
+                                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                                    <p className="text-charcoal-500 text-[10px] font-medium truncate">Online Now</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
 
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3">
                     <button
                         onClick={toggleCollapse}
-                        className="w-full flex items-center justify-center p-2 text-charcoal-400 hover:text-white hover:bg-charcoal-700 rounded-ruby transition-all"
-                        title={collapsed ? 'Expandir' : 'Recolher'}
+                        className="w-full h-10 flex items-center justify-center text-charcoal-500 hover:text-white hover:bg-ruby-700/10 hover:border-ruby-700/30 transition-all rounded-xl border border-transparent"
+                        title={collapsed ? 'Expandir Menu' : 'Recolher Menu'}
                     >
-                        {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
+                        {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4 ml-1" />}
+                        {!collapsed && <span className="text-xs font-bold ml-2">Recolher</span>}
                     </button>
 
-                    {!collapsed && (
-                        <div className="text-center">
-                            <span className="text-[10px] font-black tracking-widest text-charcoal-600 uppercase bg-charcoal-800 px-2 py-0.5 rounded">v1.2.4</span>
-                        </div>
-                    )}
+                    <div className="flex items-center justify-center p-1">
+                        <span className="text-[10px] font-black text-charcoal-600 bg-charcoal-800/30 px-2 py-0.5 rounded-md border border-charcoal-700/20">
+                            v1.5.0 <span className="opacity-40">• PRO</span>
+                        </span>
+                    </div>
                 </div>
             </div>
         </aside>
