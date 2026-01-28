@@ -74,12 +74,6 @@ export default function Login() {
                             Entrar
                         </Button>
                     </form>
-
-                    <div className="mt-6 pt-6 border-t border-charcoal-50">
-                        <p className="text-xs text-charcoal-400 text-center">
-                            Credenciais padrão: admin@sge.com / admin123
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>
