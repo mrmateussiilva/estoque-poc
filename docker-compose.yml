@@ -8,6 +8,7 @@ services:
       - sge-data:/root
     environment:
       - PORT=8003
+      - ALLOWED_ORIGIN=*
     restart: unless-stopped
 
 volumes:
