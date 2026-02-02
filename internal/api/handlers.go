@@ -186,8 +186,10 @@ func (h *Handler) StockHandler(w http.ResponseWriter, r *http.Request) {
 	query := `
 		SELECT 
 			p.code, p.name, COALESCE(s.quantity, 0) as quantity, 
-			p.unit, p.min_stock, p.sale_price,
-			COALESCE(c.name, 'Sem Categoria') as category_name
+			p.unit, p.min_stock, p.max_stock, p.sale_price,
+			COALESCE(c.name, 'Sem Categoria') as category_name,
+			p.description, p.category_id, p.barcode, p.cost_price,
+			p.location, p.supplier_id
 		FROM products p
 		LEFT JOIN stock s ON p.code = s.product_code
 		LEFT JOIN categories c ON p.category_id = c.id
@@ -222,8 +224,9 @@ func (h *Handler) StockHandler(w http.ResponseWriter, r *http.Request) {
 		var item models.StockItem
 		err := rows.Scan(
 			&item.Code, &item.Name, &item.Quantity, 
-			&item.Unit, &item.MinStock, &item.SalePrice, 
-			&item.CategoryName,
+			&item.Unit, &item.MinStock, &item.MaxStock, &item.SalePrice, 
+			&item.CategoryName, &item.Description, &item.CategoryID,
+			&item.Barcode, &item.CostPrice, &item.Location, &item.SupplierID,
 		)
 		if err != nil {
 			slog.Warn("Scan error", "error", err)

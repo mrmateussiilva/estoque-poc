@@ -377,3 +377,47 @@ func (h *Handler) ListNFesHandler(w http.ResponseWriter, r *http.Request) {
 
 	RespondWithJSON(w, http.StatusOK, nfes)
 }
+func (h *Handler) UpdateProductHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPut {
+		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	code := r.URL.Path[len("/api/products/"):]
+	if code == "" {
+		RespondWithError(w, http.StatusBadRequest, "Product code is required")
+		return
+	}
+
+	var req models.Product
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		slog.Error("Failed to decode product update request", "error", err, "code", code)
+		RespondWithError(w, http.StatusBadRequest, "Invalid request body: "+err.Error())
+		return
+	}
+
+	// Verificar se produto existe
+	var exists bool
+	err := h.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM products WHERE code = ?)", code).Scan(&exists)
+	if err != nil || !exists {
+		RespondWithError(w, http.StatusNotFound, "Product not found")
+		return
+	}
+
+	_, err = h.DB.Exec(`
+		UPDATE products SET 
+			name = ?, description = ?, category_id = ?, unit = ?, 
+			barcode = ?, cost_price = ?, sale_price = ?, min_stock = ?, 
+			max_stock = ?, location = ?, supplier_id = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE code = ?
+	`, req.Name, req.Description, req.CategoryID, req.Unit, 
+	   req.Barcode, req.CostPrice, req.SalePrice, req.MinStock, 
+	   req.MaxStock, req.Location, req.SupplierID, code)
+
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Error updating product: "+err.Error())
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Product updated successfully"})
+}
