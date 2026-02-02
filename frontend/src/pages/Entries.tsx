@@ -5,19 +5,12 @@ import EntryActionCards from '../components/EntryActionCards';
 import EntryForm from '../components/EntryForm';
 import EntryTable from '../components/EntryTable';
 import EntryFooter from '../components/EntryFooter';
+import { useData, type EntryItem } from '../contexts/DataContext';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
-interface EntryItem {
-    id: string;
-    sku: string;
-    description: string;
-    quantity: number;
-    origin: 'Manual' | 'XML';
-}
-
 export default function Entries() {
-    const [items, setItems] = useState<EntryItem[]>([]);
+    const { entryItems: items, setEntryItems: setItems, clearEntryItems } = useData();
     const [showForm, setShowForm] = useState(false);
     const [isConfirming, setIsConfirming] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -73,7 +66,7 @@ export default function Entries() {
 
             setSuccess(`${items.length} movimentações registradas com sucesso!`);
             await new Promise(r => setTimeout(r, 1500));
-            setItems([]);
+            clearEntryItems();
         } catch (err: any) {
             setError(err.message || 'Erro ao confirmar entradas');
         } finally {
