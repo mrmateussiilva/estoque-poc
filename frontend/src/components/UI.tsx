@@ -1,3 +1,5 @@
+import { ChevronDown } from 'lucide-react';
+
 export const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
     <div className={`bg-white rounded-xl border border-charcoal-200/60 shadow-sm transition-all duration-300 overflow-hidden ${className}`}>
         {children}
@@ -46,5 +48,99 @@ export const Button = ({
         <button type={type} onClick={onClick} disabled={disabled || loading} className={`${base} ${variants[variant]} ${className}`}>
             {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : children}
         </button>
+    );
+};
+
+export const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
+    <input
+        {...props}
+        className={`
+      w-full h-12 px-4 bg-charcoal-50 border border-charcoal-200 rounded-lg 
+      focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white 
+      text-sm font-semibold tracking-tight transition-all placeholder:text-charcoal-300 
+      ${props.className || ''}
+    `}
+    />
+);
+
+export const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => (
+    <div className="relative group w-full">
+        <select
+            {...props}
+            className={`
+        w-full h-12 pl-4 pr-10 bg-charcoal-50 border border-charcoal-200 rounded-lg 
+        focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white 
+        text-sm font-semibold tracking-tight transition-all appearance-none cursor-pointer uppercase
+        ${props.className || ''}
+      `}
+        >
+            {props.children}
+        </select>
+        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40 group-focus-within:text-ruby-600 transition-colors">
+            <ChevronDown className="w-4 h-4" />
+        </div>
+    </div>
+);
+
+export const Label = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+    <label className={`text-[10px] font-bold text-charcoal-400 uppercase tracking-widest ml-1 ${className}`}>
+        {children}
+    </label>
+);
+
+export const TableContainer = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+    <div className={`overflow-x-auto rounded-xl border border-charcoal-200 shadow-sm ${className}`}>
+        <table className="w-full text-left border-collapse">
+            {children}
+        </table>
+    </div>
+);
+
+export const THead = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+    <thead className={`bg-charcoal-900 text-white/40 uppercase ${className}`}>
+        {children}
+    </thead>
+);
+
+export const TBody = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+    <tbody className={`divide-y divide-charcoal-100 bg-white ${className}`}>
+        {children}
+    </tbody>
+);
+
+export const Th = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
+    <th className={`px-8 py-5 text-[10px] font-bold tracking-widest ${className}`}>
+        {children}
+    </th>
+);
+
+export const Td = ({ children, className = "", colSpan }: { children: React.ReactNode; className?: string; colSpan?: number }) => (
+    <td colSpan={colSpan} className={`px-8 py-6 text-sm font-medium text-charcoal-700 ${className}`}>
+        {children}
+    </td>
+);
+
+export const Tr = ({ children, className = "", onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) => (
+    <tr
+        onClick={onClick}
+        className={`hover:bg-charcoal-50 transition-all group ${onClick ? 'cursor-pointer' : ''} ${className}`}
+    >
+        {children}
+    </tr>
+);
+
+export const Badge = ({ children, variant = 'default', className = "" }: { children: React.ReactNode; variant?: 'default' | 'success' | 'warning' | 'error'; className?: string }) => {
+    const variants = {
+        default: "bg-charcoal-50 text-charcoal-700 border-charcoal-200",
+        success: "bg-emerald-50 text-emerald-700 border-emerald-100",
+        warning: "bg-amber-50 text-amber-700 border-amber-100",
+        error: "bg-ruby-50 text-ruby-700 border-ruby-100"
+    };
+
+    return (
+        <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border ${variants[variant]} ${className}`}>
+            <div className={`w-1 h-1 rounded-full ${variant === 'success' ? 'bg-emerald-500' : variant === 'warning' ? 'bg-amber-500' : variant === 'error' ? 'bg-ruby-600' : 'bg-charcoal-400'}`} />
+            {children}
+        </span>
     );
 };
