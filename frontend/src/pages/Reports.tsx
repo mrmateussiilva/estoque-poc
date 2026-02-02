@@ -1,4 +1,4 @@
-import { Card, Button } from '../components/UI';
+import { Card, Button, Input, Label } from '../components/UI';
 import { Download, Calendar } from 'lucide-react';
 
 export default function Reports() {
@@ -27,18 +27,12 @@ export default function Reports() {
 
                     <div className="grid grid-cols-1 gap-6">
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest ml-1">Data Inicial</label>
-                            <input
-                                type="date"
-                                className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white text-sm font-semibold tracking-tight transition-all"
-                            />
+                            <Label>Data Inicial</Label>
+                            <Input type="date" />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest ml-1">Data Final</label>
-                            <input
-                                type="date"
-                                className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white text-sm font-semibold tracking-tight transition-all"
-                            />
+                            <Label>Data Final</Label>
+                            <Input type="date" />
                         </div>
                     </div>
 

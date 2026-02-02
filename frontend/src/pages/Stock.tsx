@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, AlertCircle, Package, ChevronRight } from 'lucide-react';
-import { Card } from '../components/UI';
+import { Search, Package, ChevronRight } from 'lucide-react';
+import { Card, Select, TableContainer, THead, TBody, Tr, Th, Td, Badge } from '../components/UI';
 import { useAuth } from '../contexts/AuthContext';
 import EditProductModal from '../components/EditProductModal';
 
@@ -91,34 +91,15 @@ export default function Stock() {
     }, [search, selectedCategory]);
 
     const getStatusBadge = (item: StockItem) => {
-        if (item.quantity <= 0) {
-            return (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-ruby-50 text-ruby-700 rounded-full text-[10px] font-black uppercase tracking-wider">
-                    <AlertCircle className="w-3 h-3" />
-                    Esgotado
-                </span>
-            );
-        }
-        if (item.quantity < item.min_stock) {
-            return (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full text-[10px] font-black uppercase tracking-wider">
-                    <Package className="w-3 h-3" />
-                    Baixo Estoque
-                </span>
-            );
-        }
-        return (
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-full text-[10px] font-black uppercase tracking-wider">
-                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                Em Estoque
-            </span>
-        );
+        if (item.quantity <= 0) return <Badge variant="error">Esgotado</Badge>;
+        if (item.quantity < item.min_stock) return <Badge variant="warning">Baixo Estoque</Badge>;
+        return <Badge variant="success">Em Estoque</Badge>;
     };
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="space-y-8 animate-in fade-in duration-500">
             {/* Header / Filtros */}
-            <Card className="p-4 bg-white/80 backdrop-blur-md border border-charcoal-100/50 shadow-sm flex flex-col md:flex-row gap-6 items-center">
+            <Card className="p-4 bg-white border border-charcoal-200 shadow-sm flex flex-col md:flex-row gap-4 items-center">
                 <div className="relative flex-1 group w-full">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400 group-focus-within:text-ruby-600 transition-colors" />
                     <input
@@ -126,130 +107,116 @@ export default function Stock() {
                         placeholder="Buscar por nome ou SKU..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-charcoal-50/50 border border-charcoal-100 rounded-xl text-sm font-black tracking-tight focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white outline-none transition-all placeholder:text-charcoal-300 placeholder:font-bold"
+                        className="w-full pl-12 pr-4 py-3 bg-charcoal-50 border border-charcoal-100 rounded-lg text-sm font-semibold tracking-tight focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white outline-none transition-all placeholder:text-charcoal-300"
                     />
                 </div>
 
-                <div className="flex gap-4 w-full md:w-auto">
-                    <div className="relative group min-w-[200px] w-full md:w-auto">
-                        <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400 group-focus-within:text-ruby-600 pointer-events-none transition-colors" />
-                        <select
-                            value={selectedCategory}
-                            onChange={(e) => setSelectedCategory(e.target.value)}
-                            className="w-full pl-12 pr-10 py-3 bg-charcoal-50/50 border border-charcoal-100 rounded-xl text-sm font-black tracking-tight appearance-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white outline-none cursor-pointer text-charcoal-700 hover:bg-charcoal-100/50 transition-all uppercase"
-                        >
-                            <option value="">Todas Categorias</option>
-                            {categories.map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                            ))}
-                        </select>
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
-                            <ChevronRight className="w-4 h-4 rotate-90" />
-                        </div>
-                    </div>
+                <div className="w-full md:w-auto min-w-[200px]">
+                    <Select
+                        value={selectedCategory}
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                    >
+                        <option value="">Todas Categorias</option>
+                        {categories.map(cat => (
+                            <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                    </Select>
                 </div>
             </Card>
 
             {/* Tabela */}
-            <Card className="border-none shadow-ruby p-0">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-charcoal-950 text-white/40 uppercase">
-                                <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em]">Produto & Identificação</th>
-                                <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em]">Sessão</th>
-                                <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em] text-center">Saldo Atual</th>
-                                <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em] text-right">Valor Venda</th>
-                                <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em]">Disponibilidade</th>
-                                <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em] w-10"></th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-charcoal-100/50 bg-white">
-                            {loading && stock.length === 0 ? (
-                                [...Array(6)].map((_, i) => (
-                                    <tr key={i} className="animate-pulse">
-                                        <td className="px-8 py-6"><div className="h-5 bg-charcoal-50 rounded-lg w-56" /></td>
-                                        <td className="px-8 py-6"><div className="h-5 bg-charcoal-50 rounded-lg w-28" /></td>
-                                        <td className="px-8 py-6"><div className="h-5 bg-charcoal-50 rounded-lg w-16 mx-auto" /></td>
-                                        <td className="px-8 py-6"><div className="h-5 bg-charcoal-50 rounded-lg w-24 ml-auto" /></td>
-                                        <td className="px-8 py-6"><div className="h-7 bg-charcoal-50 rounded-full w-32" /></td>
-                                        <td className="px-8 py-6"></td>
-                                    </tr>
-                                ))
-                            ) : stock.length > 0 ? (
-                                stock.map((item) => (
-                                    <tr key={item.code}
-                                        onClick={() => setEditingProduct(item)}
-                                        className="hover:bg-ruby-50/20 transition-all group cursor-pointer"
-                                    >
-                                        <td className="px-8 py-6">
-                                            <div className="flex flex-col">
-                                                <span className="text-sm font-black text-charcoal-900 group-hover:text-ruby-700 transition-colors uppercase tracking-tight">{item.name}</span>
-                                                <span className="text-[10px] font-black text-charcoal-400 mt-1 uppercase tracking-widest opacity-50">SKU: {item.code}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6 whitespace-nowrap">
-                                            <span className="text-[10px] font-black text-charcoal-600 bg-charcoal-100 px-2.5 py-1 rounded-md uppercase tracking-widest border border-charcoal-200/50">
-                                                {item.category_name}
-                                            </span>
-                                        </td>
-                                        <td className="px-8 py-6 text-center">
-                                            <div className="flex flex-col items-center">
-                                                <span className={`text-base font-black tracking-tighter ${item.quantity < item.min_stock ? 'text-ruby-600' : 'text-charcoal-900'}`}>
-                                                    {item.quantity}
-                                                </span>
-                                                <span className="text-[10px] font-black text-charcoal-300 uppercase tracking-widest opacity-60 leading-none">{item.unit}</span>
-                                            </div>
-                                        </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <span className="text-sm font-black text-charcoal-900 tracking-tight">
-                                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.sale_price)}
-                                            </span>
-                                        </td>
-                                        <td className="px-8 py-6">
-                                            {getStatusBadge(item)}
-                                        </td>
-                                        <td className="px-8 py-6 text-right">
-                                            <div className="w-8 h-8 rounded-full bg-charcoal-50 flex items-center justify-center text-charcoal-300 group-hover:bg-ruby-100 group-hover:text-ruby-700 transition-all">
-                                                <ChevronRight className="w-4 h-4" />
-                                            </div>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan={6} className="px-8 py-32 text-center">
-                                        <div className="flex flex-col items-center gap-5">
-                                            <div className="w-20 h-20 bg-charcoal-50 rounded-3xl flex items-center justify-center">
-                                                <Package className="w-10 h-10 text-charcoal-200" />
-                                            </div>
-                                            <div className="space-y-1">
-                                                <p className="text-charcoal-950 text-lg font-black tracking-tighter">Nenhum registro encontrado</p>
-                                                <p className="text-charcoal-400 text-xs font-bold uppercase tracking-widest">Tente realizar uma nova busca ou filtro</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </Card>
+            <TableContainer className="border-none">
+                <THead>
+                    <Tr>
+                        <Th>Produto & Identificação</Th>
+                        <Th>Sessão</Th>
+                        <Th className="text-center">Saldo Atual</Th>
+                        <Th className="text-right">Valor Venda</Th>
+                        <Th>Disponibilidade</Th>
+                        <Th className="w-10"></Th>
+                    </Tr>
+                </THead>
+                <TBody>
+                    {loading && stock.length === 0 ? (
+                        [...Array(6)].map((_, i) => (
+                            <Tr key={i} className="animate-pulse">
+                                <Td><div className="h-5 bg-charcoal-50 rounded w-56" /></Td>
+                                <Td><div className="h-5 bg-charcoal-50 rounded w-28" /></Td>
+                                <Td><div className="h-5 bg-charcoal-50 rounded w-16 mx-auto" /></Td>
+                                <Td><div className="h-5 bg-charcoal-50 rounded w-24 ml-auto" /></Td>
+                                <Td><div className="h-7 bg-charcoal-50 rounded-full w-32" /></Td>
+                                <Td>{null}</Td>
+                            </Tr>
+                        ))
+                    ) : stock.length > 0 ? (
+                        stock.map((item) => (
+                            <Tr key={item.code} onClick={() => setEditingProduct(item)}>
+                                <Td>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-semibold text-charcoal-950 group-hover:text-ruby-600 transition-colors uppercase tracking-tight">{item.name}</span>
+                                        <span className="text-[10px] font-bold text-charcoal-400 mt-1 uppercase tracking-widest">SKU: {item.code}</span>
+                                    </div>
+                                </Td>
+                                <Td className="whitespace-nowrap">
+                                    <span className="text-[10px] font-bold text-charcoal-600 bg-charcoal-100 px-2.5 py-1 rounded uppercase tracking-widest border border-charcoal-200">
+                                        {item.category_name}
+                                    </span>
+                                </Td>
+                                <Td className="text-center">
+                                    <div className="flex flex-col items-center">
+                                        <span className={`text-base font-bold tracking-tight ${item.quantity < item.min_stock ? 'text-ruby-600' : 'text-charcoal-900'}`}>
+                                            {item.quantity}
+                                        </span>
+                                        <span className="text-[10px] font-bold text-charcoal-300 uppercase tracking-widest leading-none">{item.unit}</span>
+                                    </div>
+                                </Td>
+                                <Td className="text-right">
+                                    <span className="text-sm font-semibold text-charcoal-950 tracking-tight">
+                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.sale_price)}
+                                    </span>
+                                </Td>
+                                <Td>
+                                    {getStatusBadge(item)}
+                                </Td>
+                                <Td className="text-right">
+                                    <div className="w-8 h-8 rounded-full bg-charcoal-50 flex items-center justify-center text-charcoal-300 group-hover:bg-charcoal-100 group-hover:text-charcoal-600 transition-all">
+                                        <ChevronRight className="w-4 h-4" />
+                                    </div>
+                                </Td>
+                            </Tr>
+                        ))
+                    ) : (
+                        <Tr>
+                            <Td colSpan={6} className="px-8 py-24 text-center">
+                                <div className="flex flex-col items-center gap-4">
+                                    <div className="w-16 h-16 bg-charcoal-50 rounded-xl flex items-center justify-center">
+                                        <Package className="w-8 h-8 text-charcoal-200" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="text-charcoal-950 font-bold">Nenhum registro</p>
+                                        <p className="text-charcoal-400 text-xs font-medium uppercase tracking-widest">Tente buscar por outro termo</p>
+                                    </div>
+                                </div>
+                            </Td>
+                        </Tr>
+                    )}
+                </TBody>
+            </TableContainer>
 
             {/* Resumo Rodapé */}
-            <div className="bg-charcoal-950 p-6 flex flex-col md:flex-row justify-between items-center text-[10px] font-black text-white/40 uppercase tracking-[0.25em] rounded-3xl shadow-xl">
-                <span>Total de Itens Monitorados: {stock.length}</span>
+            <div className="bg-charcoal-900 p-6 flex flex-col md:flex-row justify-between items-center text-[10px] font-bold text-white/40 uppercase tracking-widest rounded-xl shadow-lg border border-charcoal-800">
+                <span>Total de Itens: {stock.length}</span>
                 <div className="flex gap-10 mt-4 md:mt-0">
-                    <span className="flex items-center gap-2.5">
-                        <div className="w-2 h-2 bg-ruby-600 rounded-full shadow-[0_0_10px_rgba(220,38,38,0.5)]" />
+                    <span className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-ruby-600 rounded-full" />
                         {stock.filter(i => i.quantity <= 0).length} Esgotados
                     </span>
-                    <span className="flex items-center gap-2.5">
-                        <div className="w-2 h-2 bg-amber-500 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
+                    <span className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
                         {stock.filter(i => i.quantity > 0 && i.quantity < i.min_stock).length} Baixo Estoque
                     </span>
-                    <span className="flex items-center gap-2.5">
-                        <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                    <span className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
                         {stock.filter(i => i.quantity >= i.min_stock).length} Saudáveis
                     </span>
                 </div>
