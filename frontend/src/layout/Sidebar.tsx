@@ -40,34 +40,38 @@ export default function Sidebar({ currentPage, onNavigate, onCollapse, isOpen, o
 
             <aside
                 className={`
-          ${collapsed ? 'w-20' : 'w-64'} 
+          ${collapsed ? 'w-20' : 'w-60'} 
           ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-          bg-[#0D0F14] 
+          bg-charcoal-950
           h-screen fixed left-0 top-0 flex flex-col 
-          border-r border-white/5 
-          transition-all duration-400 ease-[cubic-bezier(0.4,0,0.2,1)] z-50
+          border-r border-charcoal-800
+          transition-all duration-300 z-50
         `}
             >
                 {/* Branding */}
-                <div className="px-6 h-24 flex items-center">
-                    <div className={`flex items-center w-full ${collapsed ? 'justify-center' : 'gap-3'}`}>
-                        <div className="w-10 h-10 bg-gradient-to-br from-ruby-500 to-ruby-800 rounded-xl shadow-lg shadow-ruby-950/20 flex items-center justify-center flex-shrink-0 border border-white/10">
-                            <Gem className="w-5 h-5 text-white" />
+                <div className="px-6 h-24 flex items-center border-b border-charcoal-900/50">
+                    <div className={`flex items-center w-full ${collapsed ? 'justify-center' : 'gap-4'}`}>
+                        <div className="flex-shrink-0">
+                            <div className="w-10 h-10 bg-ruby-600 rounded-xl flex items-center justify-center shadow-sm">
+                                <Gem className="w-5 h-5 text-white" />
+                            </div>
                         </div>
                         {!collapsed && (
-                            <div className="overflow-hidden animate-in fade-in slide-in-from-left-2 duration-300">
-                                <h1 className="text-white font-black text-lg tracking-tighter leading-none italic uppercase">S.G.E.</h1>
-                                <p className="text-white/20 text-[9px] font-bold uppercase tracking-widest mt-0.5">Smart Stock</p>
+                            <div className="overflow-hidden">
+                                <h1 className="text-white font-bold text-lg tracking-tight leading-none uppercase">
+                                    S.G.E.
+                                </h1>
+                                <p className="text-charcoal-500 text-[10px] font-bold uppercase tracking-wider mt-1">Smart Stock</p>
                             </div>
                         )}
                     </div>
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 px-3 py-4 overflow-y-auto custom-scrollbar">
+                <nav className="flex-1 px-3 py-6 overflow-y-auto hidden-scrollbar">
                     {!collapsed && (
-                        <div className="mb-4 px-4 text-[9px] font-black text-white/20 uppercase tracking-[0.2em] leading-none">
-                            Main
+                        <div className="mb-4 px-4 text-[10px] font-bold text-charcoal-600 uppercase tracking-widest leading-none opacity-60">
+                            Menu Principal
                         </div>
                     )}
                     <ul className="space-y-1">
@@ -79,24 +83,24 @@ export default function Sidebar({ currentPage, onNavigate, onCollapse, isOpen, o
                                     <button
                                         onClick={() => onNavigate(item.id)}
                                         className={`
-                    w-full flex items-center ${collapsed ? 'justify-center' : 'gap-3'} 
-                    px-4 py-3 rounded-xl transition-all duration-200 group relative
-                    ${isActive
-                                                ? 'bg-ruby-700/10 text-white'
-                                                : 'text-white/40 hover:text-white hover:bg-white/[0.03]'}
-                  `}
+                                            w-full flex items-center ${collapsed ? 'justify-center' : 'gap-3'} 
+                                            px-4 py-3 rounded-lg transition-all duration-200 group relative
+                                            ${isActive
+                                                ? 'bg-charcoal-900 text-white border border-charcoal-800'
+                                                : 'text-charcoal-400 hover:text-white hover:bg-charcoal-900/50'}
+                                        `}
                                         title={collapsed ? item.label : undefined}
                                     >
-                                        {isActive && (
-                                            <div className="absolute left-0 w-1 h-5 bg-ruby-600 rounded-r-full shadow-[0_0_10px_#9b111e]" />
-                                        )}
-
-                                        <Icon className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${isActive ? 'text-ruby-500' : 'group-hover:scale-105 group-hover:text-white'}`} />
+                                        <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${isActive ? 'text-ruby-500' : 'group-hover:text-white'}`} />
 
                                         {!collapsed && (
-                                            <span className={`font-bold text-sm tracking-tight transition-colors duration-200 ${isActive ? 'text-white' : ''}`}>
+                                            <span className={`font-semibold text-sm tracking-tight ${isActive ? 'text-white' : ''}`}>
                                                 {item.label}
                                             </span>
+                                        )}
+
+                                        {isActive && !collapsed && (
+                                            <div className="absolute right-2 w-1.5 h-1.5 bg-ruby-500 rounded-full" />
                                         )}
                                     </button>
                                 </li>
@@ -106,49 +110,52 @@ export default function Sidebar({ currentPage, onNavigate, onCollapse, isOpen, o
                 </nav>
 
                 {/* Footer / Profile Card */}
-                <div className="p-3 border-t border-white/5">
+                <div className="p-4 border-t border-white/[0.03]">
                     {!collapsed && user && (
-                        <div className="mb-4 p-3 bg-white/[0.02] rounded-2xl border border-white/5 group hover:bg-white/[0.04] transition-colors">
-                            <div className="flex items-center gap-3">
+                        <div className="mb-6 p-4 bg-white/[0.02] rounded-3xl border border-white/[0.03] group hover:bg-white/[0.04] transition-all duration-500 cursor-pointer">
+                            <div className="flex items-center gap-4">
                                 <div className="relative">
-                                    <div className="w-8 h-8 bg-white/5 rounded-lg flex items-center justify-center border border-white/10 group-hover:border-white/20 transition-all">
-                                        <User className="w-4 h-4 text-white/40" />
+                                    <div className="w-10 h-10 bg-gradient-to-tr from-charcoal-800 to-charcoal-700 rounded-xl flex items-center justify-center border border-white/10 group-hover:border-white/20 transition-all">
+                                        <User className="w-5 h-5 text-charcoal-300" />
                                     </div>
-                                    <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-[#0D0F14] animate-pulse" />
+                                    <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-[3px] border-charcoal-950 shadow-lg" />
                                 </div>
                                 <div className="overflow-hidden">
-                                    <p className="text-white text-[12px] font-bold tracking-tight truncate uppercase leading-none">
+                                    <p className="text-white text-[13px] font-black tracking-tight truncate uppercase leading-none">
                                         {user.email.split('@')[0]}
                                     </p>
-                                    <p className="text-white/20 text-[9px] font-black truncate mt-1 tracking-wider uppercase">
-                                        Admin
-                                    </p>
+                                    <div className="flex items-center gap-1.5 mt-1.5">
+                                        <div className="w-1.5 h-1.5 bg-ruby-500 rounded-full animate-pulse" />
+                                        <p className="text-charcoal-500 text-[9px] font-black truncate tracking-widest uppercase">
+                                            Admin Pro
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     )}
 
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-3">
                         <button
                             onClick={toggleCollapse}
                             className={`
-              w-full h-10 flex items-center justify-center 
-              text-white/20 hover:text-white 
-              hover:bg-white/5 transition-all duration-200 
-              rounded-xl
-            `}
+                                w-full h-11 flex items-center justify-center 
+                                text-charcoal-500 hover:text-white 
+                                hover:bg-white/5 transition-all duration-300 
+                                rounded-xl border border-transparent hover:border-white/[0.03]
+                            `}
                         >
                             {collapsed ? <ChevronRight className="w-4 h-4" /> : (
                                 <div className="flex items-center gap-2">
-                                    <ChevronLeft className="w-3.5 h-3.5" />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">Recolher</span>
+                                    <ChevronLeft className="w-4 h-4" />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.2em]">Recolher Painel</span>
                                 </div>
                             )}
                         </button>
 
-                        <div className="text-center opacity-20">
-                            <span className="text-[8px] font-black text-white tracking-[0.2em] whitespace-nowrap">
-                                V1.5.0 • PRO
+                        <div className="text-center opacity-30 mt-1">
+                            <span className="text-[9px] font-black text-white/50 tracking-[0.3em] whitespace-nowrap">
+                                VERSION 2.0 • PREMIUM
                             </span>
                         </div>
                     </div>

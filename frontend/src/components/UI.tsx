@@ -1,17 +1,21 @@
 export const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-    <div className={`bg-white rounded-ruby border border-charcoal-50 shadow-ruby overflow-hidden ${className}`}>
+    <div className={`bg-white rounded-xl border border-charcoal-200/60 shadow-sm transition-all duration-300 overflow-hidden ${className}`}>
         {children}
     </div>
 );
 
 export const KPICard = ({ title, value, subtitle, icon }: { title: string; value: string | number; subtitle?: string; icon?: React.ReactNode }) => (
     <Card className="p-6">
-        <div className="flex items-center justify-between mb-2">
-            <p className="text-charcoal-400 text-xs font-bold uppercase tracking-widest">{title}</p>
-            {icon}
+        <div className="flex items-center justify-between mb-3">
+            <p className="text-charcoal-400 text-[11px] font-bold uppercase tracking-wider">{title}</p>
+            <div className="p-2 bg-charcoal-50 rounded-lg border border-charcoal-100 text-charcoal-500">
+                {icon || <div className="w-5 h-5 bg-charcoal-100 rounded-md animate-pulse" />}
+            </div>
         </div>
-        <p className="text-3xl font-black text-charcoal-900 mb-1">{value}</p>
-        {subtitle && <p className="text-charcoal-400 text-sm">{subtitle}</p>}
+        <div className="space-y-0.5">
+            <p className="text-2xl font-bold text-charcoal-900 tracking-tight">{value}</p>
+            {subtitle && <p className="text-charcoal-400 text-xs font-medium">{subtitle}</p>}
+        </div>
     </Card>
 );
 
@@ -32,10 +36,10 @@ export const Button = ({
     type?: 'button' | 'submit' | 'reset';
     className?: string;
 }) => {
-    const base = "px-6 py-2.5 rounded-ruby font-medium transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-40 disabled:grayscale text-sm tracking-tight active:scale-[0.98]";
+    const base = "px-5 py-2.5 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm tracking-tight active:scale-[0.98]";
     const variants = {
-        primary: "bg-ruby-700 text-white hover:bg-ruby-900 shadow-sm",
-        outline: "bg-transparent border border-charcoal-50 text-charcoal-700 hover:bg-charcoal-50"
+        primary: "bg-charcoal-900 text-white hover:bg-black border border-charcoal-950",
+        outline: "bg-white border border-charcoal-200 text-charcoal-700 hover:bg-charcoal-50 hover:border-charcoal-300"
     };
 
     return (

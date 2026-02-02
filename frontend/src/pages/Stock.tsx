@@ -116,111 +116,116 @@ export default function Stock() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
             {/* Header / Filtros */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-center">
-                <div className="relative w-full md:w-96">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400" />
+            <Card className="p-4 bg-white/80 backdrop-blur-md border border-charcoal-100/50 shadow-sm flex flex-col md:flex-row gap-6 items-center">
+                <div className="relative flex-1 group w-full">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400 group-focus-within:text-ruby-600 transition-colors" />
                     <input
                         type="text"
                         placeholder="Buscar por nome ou SKU..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-white border border-charcoal-100 rounded-ruby text-sm focus:ring-2 focus:ring-ruby-700/20 focus:border-ruby-700 outline-none transition-all placeholder:text-charcoal-300"
+                        className="w-full pl-12 pr-4 py-3 bg-charcoal-50/50 border border-charcoal-100 rounded-xl text-sm font-black tracking-tight focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white outline-none transition-all placeholder:text-charcoal-300 placeholder:font-bold"
                     />
                 </div>
 
-                <div className="flex gap-3 w-full md:w-auto">
-                    <div className="relative flex-1 md:flex-none">
-                        <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400 pointer-events-none" />
+                <div className="flex gap-4 w-full md:w-auto">
+                    <div className="relative group min-w-[200px] w-full md:w-auto">
+                        <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400 group-focus-within:text-ruby-600 pointer-events-none transition-colors" />
                         <select
                             value={selectedCategory}
                             onChange={(e) => setSelectedCategory(e.target.value)}
-                            className="w-full md:w-48 pl-10 pr-8 py-2 bg-white border border-charcoal-100 rounded-ruby text-sm appearance-none focus:ring-2 focus:ring-ruby-700/20 focus:border-ruby-700 outline-none cursor-pointer text-charcoal-700"
+                            className="w-full pl-12 pr-10 py-3 bg-charcoal-50/50 border border-charcoal-100 rounded-xl text-sm font-black tracking-tight appearance-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white outline-none cursor-pointer text-charcoal-700 hover:bg-charcoal-100/50 transition-all uppercase"
                         >
                             <option value="">Todas Categorias</option>
                             {categories.map(cat => (
                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
                             ))}
                         </select>
+                        <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
+                            <ChevronRight className="w-4 h-4 rotate-90" />
+                        </div>
                     </div>
                 </div>
-            </div>
+            </Card>
 
             {/* Tabela */}
-            <Card className="overflow-hidden border-none shadow-ruby">
+            <Card className="border-none shadow-ruby p-0">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-charcoal-900 text-white">
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Produto</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Categoria</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap text-center">Quantidade</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap text-right">Preço Venda</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Status</th>
-                                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest whitespace-nowrap w-10"></th>
+                            <tr className="bg-charcoal-950 text-white/40 uppercase">
+                                <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em]">Produto & Identificação</th>
+                                <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em]">Sessão</th>
+                                <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em] text-center">Saldo Atual</th>
+                                <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em] text-right">Valor Venda</th>
+                                <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em]">Disponibilidade</th>
+                                <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em] w-10"></th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-charcoal-50 bg-white">
+                        <tbody className="divide-y divide-charcoal-100/50 bg-white">
                             {loading && stock.length === 0 ? (
-                                [...Array(5)].map((_, i) => (
+                                [...Array(6)].map((_, i) => (
                                     <tr key={i} className="animate-pulse">
-                                        <td className="px-6 py-5"><div className="h-4 bg-charcoal-50 rounded w-48" /></td>
-                                        <td className="px-6 py-5"><div className="h-4 bg-charcoal-50 rounded w-24" /></td>
-                                        <td className="px-6 py-5"><div className="h-4 bg-charcoal-50 rounded w-16 mx-auto" /></td>
-                                        <td className="px-6 py-5"><div className="h-4 bg-charcoal-50 rounded w-20 ml-auto" /></td>
-                                        <td className="px-6 py-5"><div className="h-6 bg-charcoal-50 rounded-full w-24" /></td>
-                                        <td className="px-6 py-5"></td>
+                                        <td className="px-8 py-6"><div className="h-5 bg-charcoal-50 rounded-lg w-56" /></td>
+                                        <td className="px-8 py-6"><div className="h-5 bg-charcoal-50 rounded-lg w-28" /></td>
+                                        <td className="px-8 py-6"><div className="h-5 bg-charcoal-50 rounded-lg w-16 mx-auto" /></td>
+                                        <td className="px-8 py-6"><div className="h-5 bg-charcoal-50 rounded-lg w-24 ml-auto" /></td>
+                                        <td className="px-8 py-6"><div className="h-7 bg-charcoal-50 rounded-full w-32" /></td>
+                                        <td className="px-8 py-6"></td>
                                     </tr>
                                 ))
                             ) : stock.length > 0 ? (
                                 stock.map((item) => (
                                     <tr key={item.code}
                                         onClick={() => setEditingProduct(item)}
-                                        className="hover:bg-charcoal-50/50 transition-colors group cursor-pointer"
+                                        className="hover:bg-ruby-50/20 transition-all group cursor-pointer"
                                     >
-                                        <td className="px-6 py-5">
+                                        <td className="px-8 py-6">
                                             <div className="flex flex-col">
-                                                <span className="text-sm font-bold text-charcoal-900 group-hover:text-ruby-700 transition-colors">{item.name}</span>
-                                                <span className="text-[10px] font-mono text-charcoal-400 mt-0.5 tracking-tighter">SKU: {item.code}</span>
+                                                <span className="text-sm font-black text-charcoal-900 group-hover:text-ruby-700 transition-colors uppercase tracking-tight">{item.name}</span>
+                                                <span className="text-[10px] font-black text-charcoal-400 mt-1 uppercase tracking-widest opacity-50">SKU: {item.code}</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5 whitespace-nowrap">
-                                            <span className="text-xs font-semibold text-charcoal-600 bg-charcoal-50 px-2 py-1 rounded">
+                                        <td className="px-8 py-6 whitespace-nowrap">
+                                            <span className="text-[10px] font-black text-charcoal-600 bg-charcoal-100 px-2.5 py-1 rounded-md uppercase tracking-widest border border-charcoal-200/50">
                                                 {item.category_name}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-5 text-center">
+                                        <td className="px-8 py-6 text-center">
                                             <div className="flex flex-col items-center">
-                                                <span className={`text-sm font-black ${item.quantity < item.min_stock ? 'text-amber-600' : 'text-charcoal-900'}`}>
+                                                <span className={`text-base font-black tracking-tighter ${item.quantity < item.min_stock ? 'text-ruby-600' : 'text-charcoal-900'}`}>
                                                     {item.quantity}
                                                 </span>
-                                                <span className="text-[9px] font-bold text-charcoal-300 uppercase">{item.unit}</span>
+                                                <span className="text-[10px] font-black text-charcoal-300 uppercase tracking-widest opacity-60 leading-none">{item.unit}</span>
                                             </div>
                                         </td>
-                                        <td className="px-6 py-5 text-right">
-                                            <span className="text-sm font-bold text-charcoal-900">
+                                        <td className="px-8 py-6 text-right">
+                                            <span className="text-sm font-black text-charcoal-900 tracking-tight">
                                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.sale_price)}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-5">
+                                        <td className="px-8 py-6">
                                             {getStatusBadge(item)}
                                         </td>
-                                        <td className="px-6 py-5 text-right">
-                                            <button className="p-1.5 text-charcoal-200 hover:text-ruby-700 hover:bg-ruby-50 rounded-lg transition-all">
+                                        <td className="px-8 py-6 text-right">
+                                            <div className="w-8 h-8 rounded-full bg-charcoal-50 flex items-center justify-center text-charcoal-300 group-hover:bg-ruby-100 group-hover:text-ruby-700 transition-all">
                                                 <ChevronRight className="w-4 h-4" />
-                                            </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={6} className="px-6 py-24 text-center">
-                                        <div className="flex flex-col items-center gap-3">
-                                            <Package className="w-12 h-12 text-charcoal-100" />
+                                    <td colSpan={6} className="px-8 py-32 text-center">
+                                        <div className="flex flex-col items-center gap-5">
+                                            <div className="w-20 h-20 bg-charcoal-50 rounded-3xl flex items-center justify-center">
+                                                <Package className="w-10 h-10 text-charcoal-200" />
+                                            </div>
                                             <div className="space-y-1">
-                                                <p className="text-charcoal-400 text-sm font-medium">Nenhum produto encontrado</p>
-                                                <p className="text-charcoal-300 text-xs">Tente ajustar sua busca ou filtros</p>
+                                                <p className="text-charcoal-950 text-lg font-black tracking-tighter">Nenhum registro encontrado</p>
+                                                <p className="text-charcoal-400 text-xs font-bold uppercase tracking-widest">Tente realizar uma nova busca ou filtro</p>
                                             </div>
                                         </div>
                                     </td>
@@ -232,16 +237,20 @@ export default function Stock() {
             </Card>
 
             {/* Resumo Rodapé */}
-            <div className="bg-white border-t border-charcoal-100 p-4 flex justify-between items-center text-[10px] font-bold text-charcoal-400 uppercase tracking-widest rounded-ruby shadow-sm">
-                <span>Total de Registros: {stock.length}</span>
-                <div className="flex gap-6">
-                    <span className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-ruby-500 rounded-full" />
+            <div className="bg-charcoal-950 p-6 flex flex-col md:flex-row justify-between items-center text-[10px] font-black text-white/40 uppercase tracking-[0.25em] rounded-3xl shadow-xl">
+                <span>Total de Itens Monitorados: {stock.length}</span>
+                <div className="flex gap-10 mt-4 md:mt-0">
+                    <span className="flex items-center gap-2.5">
+                        <div className="w-2 h-2 bg-ruby-600 rounded-full shadow-[0_0_10px_rgba(220,38,38,0.5)]" />
                         {stock.filter(i => i.quantity <= 0).length} Esgotados
                     </span>
-                    <span className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-                        {stock.filter(i => i.quantity > 0 && i.quantity < i.min_stock).length} Baixos
+                    <span className="flex items-center gap-2.5">
+                        <div className="w-2 h-2 bg-amber-500 rounded-full shadow-[0_0_10px_rgba(245,158,11,0.5)]" />
+                        {stock.filter(i => i.quantity > 0 && i.quantity < i.min_stock).length} Baixo Estoque
+                    </span>
+                    <span className="flex items-center gap-2.5">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]" />
+                        {stock.filter(i => i.quantity >= i.min_stock).length} Saudáveis
                     </span>
                 </div>
             </div>

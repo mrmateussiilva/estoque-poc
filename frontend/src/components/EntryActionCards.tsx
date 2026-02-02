@@ -8,33 +8,33 @@ interface EntryActionCardsProps {
 
 export default function EntryActionCards({ onManualClick, onImportClick }: EntryActionCardsProps) {
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="p-6 flex items-start gap-4 hover:border-ruby-700/30 transition-colors group">
-                <div className="w-12 h-12 rounded-xl bg-ruby-700/10 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                    <PlusCircle className="w-6 h-6 text-ruby-700" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Card className="p-8 flex flex-col md:flex-row items-start gap-6 group">
+                <div className="w-16 h-16 rounded-2xl bg-ruby-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-ruby-100 transition-all duration-500 border border-ruby-100">
+                    <PlusCircle className="w-8 h-8 text-ruby-600" />
                 </div>
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 space-y-6">
                     <div>
-                        <h3 className="text-sm font-bold text-charcoal-900 leading-none">Entrada Manual</h3>
-                        <p className="text-xs text-charcoal-500 mt-2">Registre novos itens individualmente informando SKU, descrição e quantidade.</p>
+                        <h3 className="text-lg font-black text-charcoal-950 tracking-tighter leading-none uppercase italic">Entrada Manual</h3>
+                        <p className="text-sm font-medium text-charcoal-500 mt-3 leading-relaxed">Registre novos itens individualmente informando SKU, descrição e quantidades precisas.</p>
                     </div>
-                    <Button onClick={onManualClick} className="w-full sm:w-auto h-9 text-xs">
-                        Nova Entrada Manual
+                    <Button onClick={onManualClick} className="w-full md:w-auto px-8 h-12 bg-charcoal-950">
+                        Abrir Formulário Manual
                     </Button>
                 </div>
             </Card>
 
-            <Card className="p-6 flex items-start gap-4 hover:border-charcoal-300 transition-colors group">
-                <div className="w-12 h-12 rounded-xl bg-charcoal-100 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
-                    <FileUp className="w-6 h-6 text-charcoal-700" />
+            <Card className="p-8 flex flex-col md:flex-row items-start gap-6 group">
+                <div className="w-16 h-16 rounded-2xl bg-charcoal-50 flex items-center justify-center flex-shrink-0 group-hover:scale-110 group-hover:bg-charcoal-100 transition-all duration-500 border border-charcoal-100">
+                    <FileUp className="w-8 h-8 text-charcoal-700" />
                 </div>
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 space-y-6">
                     <div>
-                        <h3 className="text-sm font-bold text-charcoal-900 leading-none">Importar XML</h3>
-                        <p className="text-xs text-charcoal-500 mt-2">Carregue arquivos NF-e para adicionar múltiplos itens automaticamente.</p>
+                        <h3 className="text-lg font-black text-charcoal-950 tracking-tighter leading-none uppercase italic">Importação XML</h3>
+                        <p className="text-sm font-medium text-charcoal-500 mt-3 leading-relaxed">Carregue arquivos NF-e (SEFAZ) para automatizar múltiplos lançamentos em segundos.</p>
                     </div>
-                    <Button onClick={onImportClick} variant="outline" className="w-full sm:w-auto h-9 text-xs">
-                        Importar XML
+                    <Button onClick={onImportClick} variant="outline" className="w-full md:w-auto px-8 h-12">
+                        Selecionar Arquivo
                     </Button>
                 </div>
             </Card>

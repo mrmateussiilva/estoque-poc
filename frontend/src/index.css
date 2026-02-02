@@ -1,29 +1,38 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ruby-50: #fff1f2;
-  --color-ruby-400: #ff4d4f;
-  --color-ruby-500: #e32636;
-  --color-ruby-600: #d32035;
-  --color-ruby-700: #af1024;
-  --color-ruby-800: #8e0e21;
-  --color-ruby-900: #5c0011;
-  --color-ruby-950: #3a0009;
+  --color-ruby-50: #fef2f2;
+  --color-ruby-400: #f87171;
+  --color-ruby-500: #ef4444;
+  --color-ruby-600: #dc2626;
+  --color-ruby-700: #b91c1c;
+  --color-ruby-800: #991b1b;
+  --color-ruby-900: #7f1d1d;
+  --color-ruby-950: #450a0a;
 
   --color-charcoal-50: #f8fafc;
+  --color-charcoal-100: #f1f5f9;
+  --color-charcoal-200: #e2e8f0;
+  --color-charcoal-300: #cbd5e1;
   --color-charcoal-400: #94a3b8;
+  --color-charcoal-500: #64748b;
+  --color-charcoal-600: #475569;
   --color-charcoal-700: #334155;
+  --color-charcoal-800: #1e293b;
   --color-charcoal-900: #0f172a;
+  --color-charcoal-950: #020617;
 
-  --color-background: #fafafa;
+  --color-background: #ffffff;
   --color-foreground: #0f172a;
   --color-card: #ffffff;
   --color-border: #e2e8f0;
 
-  --radius-ruby: 6px;
+  --radius-ruby: 8px;
+  --radius-2xl: 12px;
 
-  --shadow-ruby-sm: 0 1px 2px 0 rgba(155, 17, 30, 0.05);
-  --shadow-ruby: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+  --shadow-ruby-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-ruby: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-premium: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
 }
 
 :root {

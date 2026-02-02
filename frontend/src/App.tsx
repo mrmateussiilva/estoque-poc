@@ -47,7 +47,7 @@ function MainApp() {
 
       <div className={`
         flex-1 flex flex-col transition-all duration-300 min-w-0
-        ${sidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}
+        ${sidebarCollapsed ? 'md:ml-20' : 'md:ml-60'}
       `}>
         <Header
           title={config.title}

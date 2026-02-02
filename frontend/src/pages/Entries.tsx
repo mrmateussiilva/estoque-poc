@@ -82,28 +82,46 @@ export default function Entries() {
     };
 
     return (
-        <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 pb-32 relative antialiased">
-            {(error || success) && (
-                <div className="fixed top-20 right-4 left-4 md:left-auto md:top-24 md:right-8 z-50 md:max-w-md">
-                    {error && (
-                        <div className="bg-white border-l-4 border-ruby-700 shadow-xl px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 rounded-ruby animate-in slide-in-from-top-4 duration-300">
-                            <span className="text-xs md:text-sm font-medium text-charcoal-700">{error}</span>
+        <div className="max-w-6xl mx-auto space-y-10 pb-40 relative antialiased animate-in fade-in slide-in-from-bottom-4 duration-700">
+            {/* Notificações Topo */}
+            <div className="fixed top-24 right-8 z-50 flex flex-col gap-3 max-w-md">
+                {error && (
+                    <div className="bg-white/90 backdrop-blur-md border-l-4 border-ruby-600 shadow-premium p-4 flex items-center gap-4 rounded-2xl animate-in slide-in-from-right-8 duration-500">
+                        <div className="w-8 h-8 bg-ruby-50 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-ruby-600 font-black">!</span>
                         </div>
-                    )}
-                    {success && (
-                        <div className="bg-white border-l-4 border-emerald-500 shadow-xl px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 rounded-ruby animate-in slide-in-from-top-4 duration-300">
-                            <span className="text-xs md:text-sm font-medium text-charcoal-700">{success}</span>
+                        <span className="text-sm font-bold text-charcoal-800">{error}</span>
+                    </div>
+                )}
+                {success && (
+                    <div className="bg-white/90 backdrop-blur-md border-l-4 border-emerald-500 shadow-premium p-4 flex items-center gap-4 rounded-2xl animate-in slide-in-from-right-8 duration-500">
+                        <div className="w-8 h-8 bg-emerald-50 rounded-full flex items-center justify-center flex-shrink-0">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                         </div>
-                    )}
-                </div>
-            )}
+                        <span className="text-sm font-bold text-charcoal-800">{success}</span>
+                    </div>
+                )}
+            </div>
 
-            <div className="flex items-center justify-between border-b border-charcoal-100 pb-4">
-                <div className="space-y-1">
-                    <p className="text-[10px] font-black uppercase text-ruby-700 tracking-[0.2em] leading-none">Mesa de Operação</p>
-                    <h2 className="text-xs font-bold text-charcoal-400">
-                        Etapa {currentStep} de 3 — <span className="text-charcoal-900">{stepLabels[currentStep - 1]}</span>
-                    </h2>
+            {/* Header de Etapas */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-charcoal-100/50 pb-8">
+                <div className="flex items-center gap-5">
+                    <div className="w-14 h-14 bg-charcoal-950 rounded-2xl flex items-center justify-center shadow-xl">
+                        <span className="text-white font-black text-xl italic">{currentStep}</span>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase text-ruby-600 tracking-[0.3em] leading-none opacity-80">Workspace Operacional</p>
+                        <h2 className="text-2xl font-black text-charcoal-950 tracking-tighter italic uppercase">{stepLabels[currentStep - 1]}</h2>
+                    </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                    {[1, 2, 3].map((step) => (
+                        <div
+                            key={step}
+                            className={`h-1.5 rounded-full transition-all duration-500 ${step <= currentStep ? 'w-12 bg-ruby-600 shadow-[0_0_10px_rgba(220,38,38,0.3)]' : 'w-4 bg-charcoal-100'}`}
+                        />
+                    ))}
                 </div>
             </div>
 
@@ -113,20 +131,23 @@ export default function Entries() {
             />
 
             {showForm && (
-                <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="animate-in fade-in slide-in-from-top-4 duration-500">
                     <EntryForm onAdd={handleAddManual} onClose={() => setShowForm(false)} />
                 </div>
             )}
 
-            <div className="space-y-4">
+            <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-black text-charcoal-900 uppercase tracking-widest italic">Itens da Operação</h3>
+                    <div className="flex items-center gap-3">
+                        <div className="w-2 h-6 bg-ruby-600 rounded-full" />
+                        <h3 className="text-sm font-black text-charcoal-900 uppercase tracking-[0.2em] italic">Lista de Movimentação</h3>
+                    </div>
                     {items.length > 0 && (
                         <button
                             onClick={() => window.confirm('Limpar todos os itens?') && setItems([])}
-                            className="text-[10px] font-bold text-charcoal-400 hover:text-ruby-700 transition-colors uppercase tracking-widest"
+                            className="px-4 py-2 text-[10px] font-black text-charcoal-400 hover:text-ruby-700 hover:bg-ruby-50 rounded-lg transition-all uppercase tracking-widest border border-transparent hover:border-ruby-100"
                         >
-                            Limpar Tudo
+                            Limpar Mesa
                         </button>
                     )}
                 </div>
@@ -145,15 +166,15 @@ export default function Entries() {
                 />
             )}
 
-            <div className="fixed bottom-6 right-4 left-4 md:left-auto md:bottom-8 md:right-8 z-40">
+            <div className="fixed bottom-10 right-10 left-10 md:left-auto md:right-12 z-40">
                 <Button
                     onClick={handleConfirm}
                     disabled={items.length === 0}
                     loading={isConfirming}
-                    className="w-full md:w-auto h-14 px-8 shadow-2xl shadow-ruby-900/40 rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-transform"
+                    className="w-full md:w-[320px] h-16 shadow-premium rounded-3xl flex items-center justify-center gap-4 bg-charcoal-950 hover:bg-black text-white hover:scale-[1.02] transition-all"
                 >
-                    <span className="font-black text-sm uppercase tracking-widest">Confirmar Entrada</span>
-                    {!isConfirming && <CheckCircle2 className="w-5 h-5 flex-shrink-0" />}
+                    <span className="font-black text-sm uppercase tracking-[0.15em]">Efetivar Lançamentos</span>
+                    {!isConfirming && <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-ruby-500" />}
                 </Button>
             </div>
         </div>

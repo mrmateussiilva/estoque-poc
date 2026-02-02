@@ -61,174 +61,198 @@ export default function EditProductModal({ product, categories, onClose, onSave 
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-charcoal-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-2xl rounded-ruby shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-charcoal-950/40 animate-in fade-in duration-300">
+            <div className="bg-white w-full max-w-2xl rounded-2xl shadow-lg border border-charcoal-200 overflow-hidden animate-in zoom-in-95 duration-300">
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-charcoal-50 bg-charcoal-50/20">
-                    <div>
-                        <h3 className="text-lg font-black text-charcoal-900">Editar Produto</h3>
-                        <p className="text-xs text-charcoal-400 font-mono">SKU: {product.code}</p>
+                <div className="flex items-center justify-between px-8 py-6 border-b border-charcoal-100 bg-charcoal-50/50">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-charcoal-900 rounded-lg flex items-center justify-center">
+                            <Save className="w-5 h-5 text-ruby-500" />
+                        </div>
+                        <div>
+                            <h3 className="text-lg font-bold text-charcoal-950 tracking-tight uppercase">Editar Produto</h3>
+                            <p className="text-[10px] font-bold text-charcoal-400 mt-0.5 uppercase tracking-widest">Código: {product.code}</p>
+                        </div>
                     </div>
-                    <button onClick={onClose} className="p-2 text-charcoal-300 hover:text-ruby-700 hover:bg-ruby-50 rounded-lg transition-all">
+                    <button onClick={onClose} className="p-2 text-charcoal-400 hover:text-ruby-700 hover:bg-ruby-50 rounded-lg transition-all active:scale-95">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 overflow-y-auto max-h-[80vh]">
+                <form onSubmit={handleSubmit} className="p-8 overflow-y-auto max-h-[75vh] custom-scrollbar space-y-8">
                     {error && (
-                        <div className="mb-6 p-4 bg-ruby-50 border border-ruby-100 rounded-ruby flex items-center gap-3 text-ruby-700 text-sm">
+                        <div className="p-4 bg-ruby-50 border border-ruby-100 rounded-lg flex items-center gap-3 text-ruby-700 text-sm font-semibold animate-in fade-in duration-300">
                             <AlertCircle className="w-5 h-5 flex-shrink-0" />
                             {error}
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Informações Básicas */}
-                        <div className="md:col-span-2 space-y-4">
-                            <div>
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-charcoal-400 mb-1.5 ml-1">Nome do Produto</label>
+                    <div className="space-y-8">
+                        {/* Seção Identidade */}
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-1 h-3 bg-ruby-600 rounded-full" />
+                                <h4 className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest">Informações Básicas</h4>
+                            </div>
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest ml-1">Nome do Produto</label>
+                                    <input
+                                        type="text"
+                                        name="name"
+                                        value={formData.name || ''}
+                                        onChange={handleChange}
+                                        required
+                                        className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white text-sm font-semibold tracking-tight transition-all placeholder:text-charcoal-300"
+                                        placeholder="Ex: Teclado Mecânico RGB"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest ml-1">Descrição</label>
+                                    <textarea
+                                        name="description"
+                                        value={formData.description || ''}
+                                        onChange={handleChange}
+                                        rows={2}
+                                        className="w-full px-4 py-3 bg-charcoal-50 border border-charcoal-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white text-sm font-semibold tracking-tight transition-all resize-none placeholder:text-charcoal-300"
+                                        placeholder="Detalhes do produto..."
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Seção Classificação */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest ml-1">Categoria</label>
+                                <select
+                                    name="category_id"
+                                    value={formData.category_id ?? ''}
+                                    onChange={handleChange}
+                                    className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white text-sm font-semibold tracking-tight transition-all cursor-pointer uppercase"
+                                >
+                                    <option value="">Não Definida</option>
+                                    {categories.map(cat => (
+                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest ml-1">Unidade</label>
                                 <input
                                     type="text"
-                                    name="name"
-                                    value={formData.name || ''}
+                                    name="unit"
+                                    value={formData.unit || ''}
                                     onChange={handleChange}
-                                    required
-                                    className="w-full px-4 py-2.5 bg-charcoal-50/50 border border-charcoal-100 rounded-ruby text-sm focus:ring-2 focus:ring-ruby-700/20 focus:border-ruby-700 outline-none transition-all"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-charcoal-400 mb-1.5 ml-1">Descrição</label>
-                                <textarea
-                                    name="description"
-                                    value={formData.description || ''}
-                                    onChange={handleChange}
-                                    rows={2}
-                                    className="w-full px-4 py-2.5 bg-charcoal-50/50 border border-charcoal-100 rounded-ruby text-sm focus:ring-2 focus:ring-ruby-700/20 focus:border-ruby-700 outline-none transition-all resize-none"
+                                    className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white text-sm font-semibold tracking-tight transition-all uppercase"
+                                    placeholder="Ex: UN, KG"
                                 />
                             </div>
                         </div>
 
-                        {/* Classificação */}
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-charcoal-400 mb-1.5 ml-1">Categoria</label>
-                            <select
-                                name="category_id"
-                                value={formData.category_id ?? ''}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2.5 bg-charcoal-50/50 border border-charcoal-100 rounded-ruby text-sm focus:ring-2 focus:ring-ruby-700/20 focus:border-ruby-700 outline-none transition-all appearance-none cursor-pointer"
-                            >
-                                <option value="">Sem Categoria</option>
-                                {categories.map(cat => (
-                                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-black uppercase tracking-widest text-charcoal-400 mb-1.5 ml-1">Unidade</label>
-                            <input
-                                type="text"
-                                name="unit"
-                                value={formData.unit || ''}
-                                onChange={handleChange}
-                                className="w-full px-4 py-2.5 bg-charcoal-50/50 border border-charcoal-100 rounded-ruby text-sm focus:ring-2 focus:ring-ruby-700/20 focus:border-ruby-700 outline-none transition-all"
-                            />
-                        </div>
-
-                        {/* Preços */}
-                        <div className="p-4 bg-emerald-50/30 border border-emerald-100/50 rounded-ruby space-y-4">
-                            <h4 className="text-[10px] font-black text-emerald-700 uppercase tracking-widest flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                                Financeiro
-                            </h4>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-[10px] font-black text-charcoal-400 mb-1.5">Preço Custo</label>
-                                    <input
-                                        type="number"
-                                        name="cost_price"
-                                        value={formData.cost_price ?? 0}
-                                        onChange={handleChange}
-                                        step="0.01"
-                                        className="w-full px-3 py-2 bg-white border border-charcoal-100 rounded-ruby text-sm font-bold text-charcoal-700 focus:border-emerald-500 outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-charcoal-400 mb-1.5">Preço Venda</label>
-                                    <input
-                                        type="number"
-                                        name="sale_price"
-                                        value={formData.sale_price ?? 0}
-                                        onChange={handleChange}
-                                        step="0.01"
-                                        className="w-full px-3 py-2 bg-white border border-charcoal-100 rounded-ruby text-sm font-bold text-ruby-700 focus:border-ruby-700 outline-none"
-                                    />
+                        {/* Seção Precificação e Estoque */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="p-6 bg-charcoal-50 border border-charcoal-200 rounded-xl space-y-4">
+                                <h4 className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 bg-ruby-600 rounded-full" />
+                                    Precificação
+                                </h4>
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest ml-1">Preço de Custo</label>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-charcoal-400 text-xs font-bold">R$</span>
+                                            <input
+                                                type="number"
+                                                name="cost_price"
+                                                value={formData.cost_price ?? 0}
+                                                onChange={handleChange}
+                                                step="0.01"
+                                                className="w-full h-10 pl-10 pr-4 bg-white border border-charcoal-200 rounded-lg text-sm font-bold text-charcoal-700 focus:outline-none focus:ring-2 focus:ring-charcoal-200 transition-all"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest ml-1">Preço de Venda</label>
+                                        <div className="relative">
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-ruby-500 text-xs font-bold">R$</span>
+                                            <input
+                                                type="number"
+                                                name="sale_price"
+                                                value={formData.sale_price ?? 0}
+                                                onChange={handleChange}
+                                                step="0.01"
+                                                className="w-full h-10 pl-10 pr-4 bg-white border border-charcoal-200 rounded-lg text-sm font-bold text-charcoal-700 focus:outline-none focus:ring-2 focus:ring-ruby-100 focus:border-ruby-200 transition-all"
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Estoque */}
-                        <div className="p-4 bg-amber-50/30 border border-amber-100/50 rounded-ruby space-y-4">
-                            <h4 className="text-[10px] font-black text-amber-700 uppercase tracking-widest flex items-center gap-2">
-                                <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-                                Gestão de Estoque
-                            </h4>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-[10px] font-black text-charcoal-400 mb-1.5">Mínimo</label>
-                                    <input
-                                        type="number"
-                                        name="min_stock"
-                                        value={formData.min_stock ?? 0}
-                                        onChange={handleChange}
-                                        className="w-full px-3 py-2 bg-white border border-charcoal-100 rounded-ruby text-sm font-bold text-charcoal-700 focus:border-amber-500 outline-none"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[10px] font-black text-charcoal-400 mb-1.5">Máximo</label>
-                                    <input
-                                        type="number"
-                                        name="max_stock"
-                                        value={formData.max_stock || ''}
-                                        onChange={handleChange}
-                                        className="w-full px-3 py-2 bg-white border border-charcoal-100 rounded-ruby text-sm font-bold text-charcoal-700 focus:border-amber-500 outline-none"
-                                    />
+                            <div className="p-6 bg-charcoal-900 border border-charcoal-800 rounded-xl space-y-4">
+                                <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 bg-white/40 rounded-full" />
+                                    Níveis de Estoque
+                                </h4>
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest ml-1">Estoque Mínimo</label>
+                                        <input
+                                            type="number"
+                                            name="min_stock"
+                                            value={formData.min_stock ?? 0}
+                                            onChange={handleChange}
+                                            className="w-full h-10 px-4 bg-white/5 border border-white/10 rounded-lg text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-white/10 transition-all"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-[10px] font-bold text-white/30 uppercase tracking-widest ml-1">Estoque Máximo</label>
+                                        <input
+                                            type="number"
+                                            name="max_stock"
+                                            value={formData.max_stock || ''}
+                                            onChange={handleChange}
+                                            className="w-full h-10 px-4 bg-white/5 border border-white/10 rounded-lg text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-white/10 transition-all"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         {/* Extras */}
-                        <div className="md:col-span-2 grid grid-cols-2 gap-6">
-                            <div>
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-charcoal-400 mb-1.5 ml-1">Código de Barras</label>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest ml-1">Código de Barras</label>
                                 <input
                                     type="text"
                                     name="barcode"
                                     value={formData.barcode || ''}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-2.5 bg-charcoal-50/50 border border-charcoal-100 rounded-ruby text-sm font-mono focus:ring-2 focus:ring-ruby-700/20 focus:border-ruby-700 outline-none transition-all"
+                                    className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white text-sm font-semibold tracking-wider font-mono placeholder:text-charcoal-300"
+                                    placeholder="0000000000000"
                                 />
                             </div>
-                            <div>
-                                <label className="block text-[10px] font-black uppercase tracking-widest text-charcoal-400 mb-1.5 ml-1">Localização</label>
+                            <div className="space-y-1.5">
+                                <label className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest ml-1">Localização</label>
                                 <input
                                     type="text"
                                     name="location"
                                     value={formData.location || ''}
                                     onChange={handleChange}
-                                    placeholder="Ex: Corredor A, Prateleira 3"
-                                    className="w-full px-4 py-2.5 bg-charcoal-50/50 border border-charcoal-100 rounded-ruby text-sm focus:ring-2 focus:ring-ruby-700/20 focus:border-ruby-700 outline-none transition-all"
+                                    className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white text-sm font-semibold tracking-tight transition-all placeholder:text-charcoal-300 uppercase"
+                                    placeholder="Ex: SETOR A - PRAT. 3"
                                 />
                             </div>
                         </div>
                     </div>
 
                     {/* Ações */}
-                    <div className="mt-10 flex gap-3 justify-end">
-                        <Button variant="outline" onClick={onClose} disabled={loading}>
+                    <div className="pt-4 flex gap-3 justify-end">
+                        <Button variant="outline" onClick={onClose} disabled={loading} className="px-6 h-11 text-xs">
                             Cancelar
                         </Button>
-                        <Button type="submit" loading={loading} className="px-10">
-                            <Save className="w-4 h-4" />
+                        <Button type="submit" loading={loading} className="px-8 h-11 bg-charcoal-900 hover:bg-black text-xs">
+                            <Save className="w-4 h-4 mr-2" />
                             Salvar Alterações
                         </Button>
                     </div>
