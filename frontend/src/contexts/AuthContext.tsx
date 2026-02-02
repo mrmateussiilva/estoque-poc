@@ -10,6 +10,7 @@ interface AuthContextType {
     login: (email: string, password: string) => Promise<void>;
     logout: () => void;
     isAuthenticated: boolean;
+    apiFetch: (endpoint: string, options?: RequestInit) => Promise<Response>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,8 +54,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('auth_user');
     };
 
+    const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
+        const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+        const headers: HeadersInit = {
+            ...options.headers,
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        };
+
+        const response = await fetch(`${apiUrl}${endpoint}`, { ...options, headers });
+
+        if (response.status === 401) {
+            logout();
+            throw new Error('Sessão expirada. Por favor, faça login novamente.');
+        }
+
+        return response;
+    };
+
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
+        <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token, apiFetch }}>
             {children}
         </AuthContext.Provider>
     );

@@ -4,9 +4,12 @@ export const Card = ({ children, className = "" }: { children: React.ReactNode; 
     </div>
 );
 
-export const KPICard = ({ title, value, subtitle }: { title: string; value: string | number; subtitle?: string }) => (
+export const KPICard = ({ title, value, subtitle, icon }: { title: string; value: string | number; subtitle?: string; icon?: React.ReactNode }) => (
     <Card className="p-6">
-        <p className="text-charcoal-400 text-xs font-bold uppercase tracking-widest mb-2">{title}</p>
+        <div className="flex items-center justify-between mb-2">
+            <p className="text-charcoal-400 text-xs font-bold uppercase tracking-widest">{title}</p>
+            {icon}
+        </div>
         <p className="text-3xl font-black text-charcoal-900 mb-1">{value}</p>
         {subtitle && <p className="text-charcoal-400 text-sm">{subtitle}</p>}
     </Card>
