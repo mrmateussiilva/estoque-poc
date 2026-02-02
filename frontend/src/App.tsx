@@ -63,10 +63,14 @@ function MainApp() {
   );
 }
 
+import { DataProvider } from './contexts/DataContext';
+
 function App() {
   return (
     <AuthProvider>
-      <MainApp />
+      <DataProvider>
+        <MainApp />
+      </DataProvider>
     </AuthProvider>
   );
 }
