@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { AlertCircle, Gem, ExternalLink } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { Button } from '../components/UI';
+import { Button, Input, Label } from '../components/UI';
 
 export default function Login() {
     const [email, setEmail] = useState('');
@@ -27,85 +27,78 @@ export default function Login() {
     return (
         <div className="min-h-screen bg-white flex flex-col md:flex-row antialiased overflow-hidden">
             {/* Visual side for desktop */}
-            <div className="hidden md:flex md:w-3/5 bg-charcoal-950 items-center justify-center p-20 relative">
-                <div className="relative z-10 text-center space-y-10 max-w-md">
-                    <div className="relative mx-auto inline-block">
-                        <div className="w-24 h-24 bg-ruby-600 rounded-2xl flex items-center justify-center shadow-lg border border-white/10">
-                            <Gem className="w-12 h-12 text-white" />
-                        </div>
+            <div className="hidden md:flex md:w-3/5 bg-charcoal-900 items-center justify-center p-20 relative">
+                <div className="relative z-10 text-center space-y-8 max-w-md">
+                    <div className="w-20 h-20 bg-ruby-600 rounded-xl flex items-center justify-center mx-auto shadow-xl">
+                        <Gem className="w-10 h-10 text-white" />
                     </div>
 
-                    <div className="space-y-6">
+                    <div className="space-y-4">
                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full">
                             <span className="w-1.5 h-1.5 bg-ruby-500 rounded-full" />
-                            <p className="text-white/70 font-bold uppercase tracking-[0.2em] text-[10px]">Portal Corporativo</p>
+                            <p className="text-white/60 font-bold uppercase tracking-widest text-[9px]">Portal Corporativo</p>
                         </div>
-                        <h1 className="text-6xl font-bold text-white tracking-tight leading-none uppercase">
-                            Smart<br />Stock
+                        <h1 className="text-5xl font-bold text-white tracking-tight uppercase">
+                            Smart<span className="text-ruby-500">Stock</span>
                         </h1>
-                        <p className="text-white/40 text-lg leading-relaxed font-medium tracking-tight">
-                            Sistema de Gestão Estratégica para controle total de fluxos logísticos e ativos.
+                        <p className="text-white/30 text-lg font-medium tracking-tight">
+                            Sistema de Gestão para controle de ativos e fluxos logísticos.
                         </p>
                     </div>
                 </div>
             </div>
 
             {/* Login form side */}
-            <div className="flex-1 flex flex-col items-center justify-center p-8 md:p-20 relative bg-white">
-                <div className="w-full max-w-sm space-y-12 animate-in fade-in duration-700">
+            <div className="flex-1 flex flex-col items-center justify-center p-8 md:p-20 bg-white">
+                <div className="w-full max-w-sm space-y-10 animate-in fade-in duration-500">
                     {/* Mobile Branding */}
                     <div className="md:hidden flex items-center gap-3 mb-12">
-                        <div className="w-10 h-10 bg-charcoal-950 rounded-xl flex items-center justify-center">
+                        <div className="w-10 h-10 bg-charcoal-900 rounded-lg flex items-center justify-center">
                             <Gem className="w-5 h-5 text-ruby-500" />
                         </div>
                         <h1 className="text-xl font-bold text-charcoal-950 tracking-tight uppercase">S.G.E.</h1>
                     </div>
 
-                    <div className="space-y-3">
-                        <h2 className="text-3xl font-bold text-charcoal-950 tracking-tight">Painel de Acesso</h2>
-                        <p className="text-charcoal-500 text-sm font-medium">Entre com suas credenciais para gerenciar a operação.</p>
+                    <div className="space-y-2">
+                        <h2 className="text-2xl font-bold text-charcoal-950 tracking-tight">Painel de Acesso</h2>
+                        <p className="text-charcoal-500 text-sm font-medium">Entre com suas credenciais para continuar.</p>
                     </div>
 
                     {error && (
-                        <div className="p-4 bg-ruby-50 border border-ruby-100 rounded-xl flex items-start gap-4 animate-in slide-in-from-top-2 duration-300">
-                            <div className="w-9 h-9 bg-white rounded-lg flex items-center justify-center border border-ruby-100 flex-shrink-0 mt-0.5">
-                                <AlertCircle className="w-5 h-5 text-ruby-600" />
-                            </div>
+                        <div className="p-4 bg-ruby-50 border border-ruby-100 rounded-lg flex items-start gap-4 animate-in fade-in duration-300">
+                            <AlertCircle className="w-5 h-5 text-ruby-600 flex-shrink-0 mt-0.5" />
                             <div className="space-y-0.5">
-                                <p className="text-[10px] font-bold text-ruby-900 uppercase tracking-widest leading-none mt-1">Acesso Negado</p>
-                                <p className="text-sm text-ruby-800/80 font-semibold leading-tight">{error}</p>
+                                <p className="text-[10px] font-bold text-ruby-900 uppercase tracking-widest">Erro de Acesso</p>
+                                <p className="text-sm text-ruby-800 font-semibold">{error}</p>
                             </div>
                         </div>
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest ml-1">Usuário / Email</label>
-                            <input
+                        <div className="space-y-1.5">
+                            <Label>Usuário / Email</Label>
+                            <Input
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full h-14 px-5 bg-charcoal-50 border border-charcoal-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white text-sm font-semibold tracking-tight transition-all placeholder:text-charcoal-300"
                                 placeholder="ex: admin@empresa.com"
                                 required
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between px-1">
-                                <label className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest">Senha de Acesso</label>
-                            </div>
-                            <input
+                        <div className="space-y-1.5">
+                            <Label>Senha de Acesso</Label>
+                            <Input
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full h-14 px-5 bg-charcoal-50 border border-charcoal-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white text-sm font-semibold tracking-widest transition-all placeholder:text-charcoal-300"
                                 placeholder="••••••••"
                                 required
+                                className="tracking-widest"
                             />
                         </div>
 
-                        <Button type="submit" loading={loading} className="w-full h-14 rounded-xl bg-charcoal-900 hover:bg-black text-sm font-bold uppercase tracking-widest active:scale-95 transition-all">
+                        <Button type="submit" loading={loading} className="w-full h-12 bg-charcoal-900 hover:bg-black uppercase tracking-widest text-xs">
                             Iniciar Sessão
                         </Button>
                     </form>

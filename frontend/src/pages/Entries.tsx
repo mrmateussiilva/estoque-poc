@@ -82,36 +82,36 @@ export default function Entries() {
     };
 
     return (
-        <div className="max-w-6xl mx-auto space-y-10 pb-40 relative antialiased animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="max-w-6xl mx-auto space-y-8 pb-40 relative antialiased animate-in fade-in duration-500">
             {/* Notificações Topo */}
             <div className="fixed top-24 right-8 z-50 flex flex-col gap-3 max-w-md">
                 {error && (
-                    <div className="bg-white/90 backdrop-blur-md border-l-4 border-ruby-600 shadow-premium p-4 flex items-center gap-4 rounded-2xl animate-in slide-in-from-right-8 duration-500">
-                        <div className="w-8 h-8 bg-ruby-50 rounded-full flex items-center justify-center flex-shrink-0">
-                            <span className="text-ruby-600 font-black">!</span>
+                    <div className="bg-white border border-charcoal-200 shadow-sm p-4 flex items-center gap-4 rounded-xl animate-in fade-in duration-300">
+                        <div className="w-8 h-8 bg-ruby-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <span className="text-ruby-600 font-bold">!</span>
                         </div>
-                        <span className="text-sm font-bold text-charcoal-800">{error}</span>
+                        <span className="text-sm font-semibold text-charcoal-800">{error}</span>
                     </div>
                 )}
                 {success && (
-                    <div className="bg-white/90 backdrop-blur-md border-l-4 border-emerald-500 shadow-premium p-4 flex items-center gap-4 rounded-2xl animate-in slide-in-from-right-8 duration-500">
-                        <div className="w-8 h-8 bg-emerald-50 rounded-full flex items-center justify-center flex-shrink-0">
+                    <div className="bg-white border border-emerald-100 shadow-sm p-4 flex items-center gap-4 rounded-xl animate-in fade-in duration-300">
+                        <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center flex-shrink-0">
                             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                         </div>
-                        <span className="text-sm font-bold text-charcoal-800">{success}</span>
+                        <span className="text-sm font-semibold text-charcoal-800">{success}</span>
                     </div>
                 )}
             </div>
 
             {/* Header de Etapas */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-charcoal-100/50 pb-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-charcoal-100 pb-8">
                 <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-charcoal-950 rounded-2xl flex items-center justify-center shadow-xl">
-                        <span className="text-white font-black text-xl italic">{currentStep}</span>
+                    <div className="w-12 h-12 bg-charcoal-900 rounded-xl flex items-center justify-center shadow-lg">
+                        <span className="text-white font-bold text-xl">{currentStep}</span>
                     </div>
                     <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase text-ruby-600 tracking-[0.3em] leading-none opacity-80">Workspace Operacional</p>
-                        <h2 className="text-2xl font-black text-charcoal-950 tracking-tighter italic uppercase">{stepLabels[currentStep - 1]}</h2>
+                        <p className="text-[10px] font-bold uppercase text-ruby-600 tracking-widest leading-none">Pipeline Operacional</p>
+                        <h2 className="text-2xl font-bold text-charcoal-950 tracking-tight uppercase">{stepLabels[currentStep - 1]}</h2>
                     </div>
                 </div>
 
@@ -119,7 +119,7 @@ export default function Entries() {
                     {[1, 2, 3].map((step) => (
                         <div
                             key={step}
-                            className={`h-1.5 rounded-full transition-all duration-500 ${step <= currentStep ? 'w-12 bg-ruby-600 shadow-[0_0_10px_rgba(220,38,38,0.3)]' : 'w-4 bg-charcoal-100'}`}
+                            className={`h-1.5 rounded-full transition-all duration-300 ${step <= currentStep ? 'w-10 bg-ruby-600' : 'w-4 bg-charcoal-100'}`}
                         />
                     ))}
                 </div>
@@ -131,7 +131,7 @@ export default function Entries() {
             />
 
             {showForm && (
-                <div className="animate-in fade-in slide-in-from-top-4 duration-500">
+                <div className="animate-in fade-in duration-300">
                     <EntryForm onAdd={handleAddManual} onClose={() => setShowForm(false)} />
                 </div>
             )}
@@ -139,13 +139,13 @@ export default function Entries() {
             <div className="space-y-6">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="w-2 h-6 bg-ruby-600 rounded-full" />
-                        <h3 className="text-sm font-black text-charcoal-900 uppercase tracking-[0.2em] italic">Lista de Movimentação</h3>
+                        <div className="w-1.5 h-6 bg-ruby-600 rounded-full" />
+                        <h3 className="text-sm font-bold text-charcoal-900 uppercase tracking-widest">Lista de Operações</h3>
                     </div>
                     {items.length > 0 && (
                         <button
                             onClick={() => window.confirm('Limpar todos os itens?') && setItems([])}
-                            className="px-4 py-2 text-[10px] font-black text-charcoal-400 hover:text-ruby-700 hover:bg-ruby-50 rounded-lg transition-all uppercase tracking-widest border border-transparent hover:border-ruby-100"
+                            className="px-4 py-2 text-[10px] font-bold text-charcoal-400 hover:text-ruby-700 hover:bg-ruby-50 rounded-lg transition-all uppercase tracking-widest border border-charcoal-100 hover:border-ruby-100"
                         >
                             Limpar Mesa
                         </button>
@@ -171,10 +171,10 @@ export default function Entries() {
                     onClick={handleConfirm}
                     disabled={items.length === 0}
                     loading={isConfirming}
-                    className="w-full md:w-[320px] h-16 shadow-premium rounded-3xl flex items-center justify-center gap-4 bg-charcoal-950 hover:bg-black text-white hover:scale-[1.02] transition-all"
+                    className="w-full md:w-[280px] h-14 bg-charcoal-900 hover:bg-black rounded-xl"
                 >
-                    <span className="font-black text-sm uppercase tracking-[0.15em]">Efetivar Lançamentos</span>
-                    {!isConfirming && <CheckCircle2 className="w-5 h-5 flex-shrink-0 text-ruby-500" />}
+                    <span className="font-bold text-sm uppercase tracking-widest">Efetivar Entrada</span>
+                    {!isConfirming && <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-ruby-500" />}
                 </Button>
             </div>
         </div>
