@@ -1,5 +1,5 @@
 import { Trash2, PackageSearch } from 'lucide-react';
-import { Card } from './UI';
+import { Card, TableContainer, THead, TBody, Tr, Th, Td, Badge } from './UI';
 
 interface EntryItem {
     id: string;
@@ -35,53 +35,46 @@ export default function EntryTable({ items, onUpdateQuantity, onRemove }: EntryT
     }
 
     return (
-        <Card className="overflow-hidden border-none shadow-ruby p-0">
-            <div className="overflow-x-auto custom-scrollbar">
-                <table className="w-full text-left border-collapse min-w-[700px] md:min-w-0">
-                    <thead>
-                        <tr className="bg-charcoal-950 text-white/40 uppercase">
-                            <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em]">Cód. Identificador</th>
-                            <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em]">Descrição do Item</th>
-                            <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em] text-center">Unidades</th>
-                            <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em] text-center">Procedência</th>
-                            <th className="px-8 py-6 text-[10px] font-black tracking-[0.2em] text-right">Controles</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-charcoal-100/50 bg-white">
-                        {items.map((item) => (
-                            <tr key={item.id} className="hover:bg-ruby-50/20 transition-all group">
-                                <td className="px-8 py-6 text-[10px] font-black text-ruby-600/70 tracking-widest">{item.sku}</td>
-                                <td className="px-8 py-6 text-sm font-black text-charcoal-950 uppercase tracking-tight">{item.description}</td>
-                                <td className="px-8 py-6 text-center">
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        value={item.quantity}
-                                        onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value) || 0)}
-                                        className="w-20 px-3 py-2 text-center text-sm font-black border-2 border-transparent hover:border-charcoal-100 focus:border-ruby-600/50 bg-charcoal-50/50 rounded-xl transition-all outline-none"
-                                    />
-                                </td>
-                                <td className="px-8 py-6 text-center">
-                                    <span className={`inline-flex px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest border ${item.origin === 'Manual'
-                                        ? 'bg-amber-50 text-amber-600 border-amber-200/50'
-                                        : 'bg-indigo-50 text-indigo-600 border-indigo-200/50'
-                                        }`}>
-                                        {item.origin === 'Manual' ? 'Lançamento Local' : 'Importação XML'}
-                                    </span>
-                                </td>
-                                <td className="px-8 py-6 text-right">
-                                    <button
-                                        onClick={() => onRemove(item.id)}
-                                        className="w-10 h-10 flex items-center justify-center text-charcoal-300 hover:text-ruby-700 hover:bg-ruby-50 rounded-xl transition-all ml-auto"
-                                    >
-                                        <Trash2 className="w-5 h-5" />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </Card>
+        <TableContainer className="border-none">
+            <THead>
+                <Tr>
+                    <Th>Cód. Identificador</Th>
+                    <Th>Descrição do Item</Th>
+                    <Th className="text-center">Unidades</Th>
+                    <Th className="text-center">Procedência</Th>
+                    <Th className="text-right">Controles</Th>
+                </Tr>
+            </THead>
+            <TBody>
+                {items.map((item) => (
+                    <Tr key={item.id}>
+                        <Td className="text-[10px] font-black text-ruby-600/70 tracking-widest">{item.sku}</Td>
+                        <Td className="text-sm font-black text-charcoal-950 uppercase tracking-tight">{item.description}</Td>
+                        <Td className="text-center">
+                            <input
+                                type="number"
+                                min="1"
+                                value={item.quantity}
+                                onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value) || 0)}
+                                className="w-20 px-3 py-2 text-center text-sm font-black border-2 border-transparent hover:border-charcoal-100 focus:border-ruby-600/50 bg-charcoal-50/50 rounded-xl transition-all outline-none"
+                            />
+                        </Td>
+                        <Td className="text-center">
+                            <Badge variant={item.origin === 'Manual' ? 'warning' : 'default'}>
+                                {item.origin === 'Manual' ? 'Lançamento Local' : 'Importação XML'}
+                            </Badge>
+                        </Td>
+                        <Td className="text-right">
+                            <button
+                                onClick={() => onRemove(item.id)}
+                                className="w-10 h-10 flex items-center justify-center text-charcoal-300 hover:text-ruby-700 hover:bg-ruby-50 rounded-xl transition-all ml-auto"
+                            >
+                                <Trash2 className="w-5 h-5" />
+                            </button>
+                        </Td>
+                    </Tr>
+                ))}
+            </TBody>
+        </TableContainer>
     );
 }
