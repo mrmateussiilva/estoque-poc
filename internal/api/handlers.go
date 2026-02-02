@@ -183,11 +183,34 @@ func (h *Handler) StockHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := h.DB.Query(`
-		SELECT p.code, p.name, s.quantity 
-		FROM stock s 
-		JOIN products p ON s.product_code = p.code
-	`)
+	query := `
+		SELECT 
+			p.code, p.name, COALESCE(s.quantity, 0) as quantity, 
+			p.unit, p.min_stock, p.sale_price,
+			COALESCE(c.name, 'Sem Categoria') as category_name
+		FROM products p
+		LEFT JOIN stock s ON p.code = s.product_code
+		LEFT JOIN categories c ON p.category_id = c.id
+		WHERE p.active = 1
+	`
+	args := []interface{}{}
+
+	// Busca por nome ou código
+	if search := r.URL.Query().Get("search"); search != "" {
+		query += " AND (p.code LIKE ? OR p.name LIKE ?)"
+		pattern := "%" + search + "%"
+		args = append(args, pattern, pattern)
+	}
+
+	// Filtro por categoria
+	if categoryID := r.URL.Query().Get("category_id"); categoryID != "" {
+		query += " AND p.category_id = ?"
+		args = append(args, categoryID)
+	}
+
+	query += " ORDER BY p.name ASC"
+
+	rows, err := h.DB.Query(query, args...)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "DB Error (querying stock): "+err.Error())
 		return
@@ -197,11 +220,20 @@ func (h *Handler) StockHandler(w http.ResponseWriter, r *http.Request) {
 	var list []models.StockItem
 	for rows.Next() {
 		var item models.StockItem
-		if err := rows.Scan(&item.Code, &item.Name, &item.Quantity); err != nil {
+		err := rows.Scan(
+			&item.Code, &item.Name, &item.Quantity, 
+			&item.Unit, &item.MinStock, &item.SalePrice, 
+			&item.CategoryName,
+		)
+		if err != nil {
 			slog.Warn("Scan error", "error", err)
 			continue
 		}
 		list = append(list, item)
+	}
+
+	if list == nil {
+		list = []models.StockItem{}
 	}
 
 	RespondWithJSON(w, http.StatusOK, list)

@@ -52,12 +52,14 @@ type Product struct {
 }
 
 type StockItem struct {
-	Code     string  `json:"code"`
-	Name     string  `json:"name"`
-	Quantity float64 `json:"quantity"`
-	Unit     string  `json:"unit,omitempty"`
-	MinStock float64 `json:"min_stock,omitempty"`
-	MaxStock *float64 `json:"max_stock,omitempty"`
+	Code         string  `json:"code"`
+	Name         string  `json:"name"`
+	Quantity     float64 `json:"quantity"`
+	Unit         string  `json:"unit,omitempty"`
+	MinStock     float64 `json:"min_stock,omitempty"`
+	MaxStock     *float64 `json:"max_stock,omitempty"`
+	CategoryName string  `json:"category_name,omitempty"`
+	SalePrice    float64 `json:"sale_price,omitempty"`
 }
 
 // ===== Movement Models =====
