@@ -1,19 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Card } from '../components/UI';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Stock() {
+    const { apiFetch } = useAuth();
     const [stock, setStock] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
 
     const fetchStock = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('auth_token');
-            const response = await fetch(`${API_BASE_URL}/stock`, {
-                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-            });
+            const response = await apiFetch('/stock');
             if (!response.ok) throw new Error('Falha na comunicação');
             const data = await response.json();
             setStock(data || []);

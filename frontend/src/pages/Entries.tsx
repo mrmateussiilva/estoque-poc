@@ -6,6 +6,8 @@ import EntryForm from '../components/EntryForm';
 import EntryTable from '../components/EntryTable';
 import EntryFooter from '../components/EntryFooter';
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+
 interface EntryItem {
     id: string;
     sku: string;
@@ -18,6 +20,8 @@ export default function Entries() {
     const [items, setItems] = useState<EntryItem[]>([]);
     const [showForm, setShowForm] = useState(false);
     const [isConfirming, setIsConfirming] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState<string | null>(null);
 
     const currentStep = items.length === 0 ? 1 : isConfirming ? 3 : 2;
     const stepLabels = ['Adicionando itens', 'Revisando itens', 'Confirmando entrada'];
@@ -37,13 +41,63 @@ export default function Entries() {
 
     const handleConfirm = async () => {
         setIsConfirming(true);
-        await new Promise(r => setTimeout(r, 1200));
-        setItems([]);
-        setIsConfirming(false);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const token = localStorage.getItem('auth_token');
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json',
+                ...(token && { 'Authorization': `Bearer ${token}` })
+            };
+
+            // Enviar cada item como uma movimentação
+            for (const item of items) {
+                const response = await fetch(`${API_BASE_URL}/api/movements`, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify({
+                        product_code: item.sku,
+                        type: 'ENTRADA',
+                        quantity: item.quantity,
+                        origin: 'MANUAL',
+                        notes: `Entrada manual: ${item.description}`
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
+                    throw new Error(errorData.error || `Erro ao processar ${item.sku}`);
+                }
+            }
+
+            setSuccess(`${items.length} movimentações registradas com sucesso!`);
+            await new Promise(r => setTimeout(r, 1500));
+            setItems([]);
+        } catch (err: any) {
+            setError(err.message || 'Erro ao confirmar entradas');
+        } finally {
+            setIsConfirming(false);
+        }
     };
 
     return (
         <div className="max-w-6xl mx-auto space-y-6 md:space-y-8 pb-32 relative antialiased">
+            {(error || success) && (
+                <div className="fixed top-20 right-4 left-4 md:left-auto md:top-24 md:right-8 z-50 md:max-w-md">
+                    {error && (
+                        <div className="bg-white border-l-4 border-ruby-700 shadow-xl px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 rounded-ruby animate-in slide-in-from-top-4 duration-300">
+                            <span className="text-xs md:text-sm font-medium text-charcoal-700">{error}</span>
+                        </div>
+                    )}
+                    {success && (
+                        <div className="bg-white border-l-4 border-emerald-500 shadow-xl px-4 md:px-6 py-3 md:py-4 flex items-center gap-3 rounded-ruby animate-in slide-in-from-top-4 duration-300">
+                            <span className="text-xs md:text-sm font-medium text-charcoal-700">{success}</span>
+                        </div>
+                    )}
+                </div>
+            )}
+
             <div className="flex items-center justify-between border-b border-charcoal-100 pb-4">
                 <div className="space-y-1">
                     <p className="text-[10px] font-black uppercase text-ruby-700 tracking-[0.2em] leading-none">Mesa de Operação</p>

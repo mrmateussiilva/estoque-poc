@@ -1,45 +1,69 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Upload, ChevronRight, TrendingUp, Package, FileText } from 'lucide-react';
+import { Upload, ChevronRight, TrendingUp, Package, FileText, AlertTriangle } from 'lucide-react';
 import { Card, KPICard, Button } from '../components/UI';
+import { useAuth } from '../contexts/AuthContext';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+interface DashboardStats {
+    total_items: number;
+    total_skus: number;
+    entries_this_month: number;
+    low_stock_count: number;
+}
 
-const stockEvolutionData = [
-    { month: 'Jan', items: 120 },
-    { month: 'Fev', items: 145 },
-    { month: 'Mar', items: 132 },
-    { month: 'Abr', items: 178 },
-    { month: 'Mai', items: 195 },
-    { month: 'Jun', items: 210 },
-];
+interface StockEvolution {
+    month: string;
+    items: number;
+}
 
-const topProductsData = [
-    { name: 'Produto A', quantity: 45 },
-    { name: 'Produto B', quantity: 38 },
-    { name: 'Produto C', quantity: 32 },
-    { name: 'Produto D', quantity: 28 },
-    { name: 'Produto E', quantity: 22 },
-];
+interface StockItem {
+    code: string;
+    name: string;
+    quantity: number;
+}
 
 export default function Dashboard() {
-    const [stock, setStock] = useState<any[]>([]);
+    const { apiFetch } = useAuth();
+    const [stats, setStats] = useState<DashboardStats | null>(null);
+    const [evolution, setEvolution] = useState<StockEvolution[]>([]);
+    const [topProducts, setTopProducts] = useState<StockItem[]>([]);
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [file, setFile] = useState<File | null>(null);
+    const [loading, setLoading] = useState(true);
 
-    const fetchStock = async () => {
+    const fetchDashboardData = async () => {
+        setLoading(true);
         try {
-            const token = localStorage.getItem('auth_token');
-            const response = await fetch(`${API_BASE_URL}/stock`, {
-                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-            });
-            if (!response.ok) throw new Error('Falha na comunicação');
-            const data = await response.json();
-            setStock(data || []);
+            // Buscar estatísticas
+            const statsRes = await apiFetch('/api/dashboard/stats');
+            if (statsRes.ok) {
+                const statsData = await statsRes.json();
+                setStats(statsData);
+            }
+
+            // Buscar evolução
+            const evolutionRes = await apiFetch('/api/dashboard/evolution');
+            if (evolutionRes.ok) {
+                const evolutionData = await evolutionRes.json();
+                setEvolution(evolutionData || []);
+            }
+
+            // Buscar top produtos
+            const stockRes = await apiFetch('/stock');
+            if (stockRes.ok) {
+                const stockData = await stockRes.json();
+                const sorted = (stockData || [])
+                    .sort((a: StockItem, b: StockItem) => b.quantity - a.quantity)
+                    .slice(0, 5);
+                setTopProducts(sorted);
+            }
         } catch (err: any) {
+            console.error('Error fetching dashboard data:', err);
             setError(err.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -53,11 +77,9 @@ export default function Dashboard() {
         formData.append('file', file);
 
         try {
-            const token = localStorage.getItem('auth_token');
-            const response = await fetch(`${API_BASE_URL}/nfe/upload`, {
+            const response = await apiFetch('/nfe/upload', {
                 method: 'POST',
                 body: formData,
-                headers: token ? { 'Authorization': `Bearer ${token}` } : {},
             });
 
             if (response.status === 409) throw new Error('NF-e já processada');
@@ -65,7 +87,7 @@ export default function Dashboard() {
 
             setSuccess('NF-e processada com sucesso');
             setFile(null);
-            await fetchStock();
+            await fetchDashboardData();
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -73,7 +95,7 @@ export default function Dashboard() {
         }
     };
 
-    useEffect(() => { fetchStock(); }, []);
+    useEffect(() => { fetchDashboardData(); }, []);
 
     useEffect(() => {
         if (error) {
@@ -88,9 +110,6 @@ export default function Dashboard() {
             return () => clearTimeout(timer);
         }
     }, [success]);
-
-    const totalItems = stock.reduce((sum, item) => sum + (item.quantity || 0), 0);
-    const totalSKUs = stock.length;
 
     return (
         <div className="space-y-6 md:space-y-8">
@@ -108,43 +127,68 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                <KPICard title="Itens em Estoque" value={totalItems} subtitle="Total de unidades" />
-                <KPICard title="SKUs Ativos" value={totalSKUs} subtitle="Produtos cadastrados" />
-                <KPICard title="Entradas no Mês" value="12" subtitle="NF-es processadas" />
-                <KPICard title="Última Sincronização" value="Agora" subtitle="Atualizado" />
+                <KPICard
+                    title="Itens em Estoque"
+                    value={loading ? "..." : stats?.total_items.toFixed(0) || "0"}
+                    subtitle="Total de unidades"
+                />
+                <KPICard
+                    title="SKUs Ativos"
+                    value={loading ? "..." : stats?.total_skus || 0}
+                    subtitle="Produtos cadastrados"
+                />
+                <KPICard
+                    title="Entradas no Mês"
+                    value={loading ? "..." : stats?.entries_this_month || 0}
+                    subtitle="NF-es processadas"
+                />
+                <KPICard
+                    title="Alertas"
+                    value={loading ? "..." : stats?.low_stock_count || 0}
+                    subtitle="Estoque baixo"
+                    icon={stats && stats.low_stock_count > 0 ? <AlertTriangle className="w-5 h-5 text-amber-600" /> : undefined}
+                />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
-                <Card className="p-4 md:p-6">
-                    <div className="flex items-center gap-2 mb-6">
-                        <TrendingUp className="w-5 h-5 text-ruby-700" />
-                        <h3 className="text-base md:text-lg font-bold text-charcoal-900">Evolução de Estoque</h3>
-                    </div>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <LineChart data={stockEvolutionData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis dataKey="month" stroke="#94a3b8" style={{ fontSize: '10px' }} />
-                            <YAxis stroke="#94a3b8" style={{ fontSize: '10px' }} />
-                            <Tooltip />
-                            <Line type="monotone" dataKey="items" stroke="#9b111e" strokeWidth={2} />
-                        </LineChart>
-                    </ResponsiveContainer>
-                </Card>
+                {evolution.length > 0 && (
+                    <Card className="p-4 md:p-6">
+                        <div className="flex items-center gap-2 mb-6">
+                            <TrendingUp className="w-5 h-5 text-ruby-700" />
+                            <h3 className="text-base md:text-lg font-bold text-charcoal-900">Evolução de Estoque</h3>
+                        </div>
+                        <ResponsiveContainer width="100%" height={250}>
+                            <LineChart data={evolution}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                <XAxis dataKey="month" stroke="#94a3b8" style={{ fontSize: '10px' }} />
+                                <YAxis stroke="#94a3b8" style={{ fontSize: '10px' }} />
+                                <Tooltip />
+                                <Line type="monotone" dataKey="items" stroke="#9b111e" strokeWidth={2} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    </Card>
+                )}
 
                 <Card className="p-4 md:p-6">
                     <div className="flex items-center gap-2 mb-6">
                         <Package className="w-5 h-5 text-ruby-700" />
                         <h3 className="text-base md:text-lg font-bold text-charcoal-900">Top 5 Produtos</h3>
                     </div>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <BarChart data={topProductsData}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                            <XAxis dataKey="name" stroke="#94a3b8" style={{ fontSize: '10px' }} />
-                            <YAxis stroke="#94a3b8" style={{ fontSize: '10px' }} />
-                            <Tooltip />
-                            <Bar dataKey="quantity" fill="#9b111e" />
-                        </BarChart>
-                    </ResponsiveContainer>
+                    {topProducts.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                            <BarChart data={topProducts}>
+                                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                <XAxis dataKey="code" stroke="#94a3b8" style={{ fontSize: '10px' }} />
+                                <YAxis stroke="#94a3b8" style={{ fontSize: '10px' }} />
+                                <Tooltip />
+                                <Bar dataKey="quantity" fill="#9b111e" />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="h-[250px] flex items-center justify-center text-sm text-charcoal-400">
+                            Nenhum produto em estoque
+                        </div>
+                    )}
                 </Card>
             </div>
 
