@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, Filter, AlertCircle, Package, ChevronRight } from 'lucide-react';
 import { Card } from '../components/UI';
 import { useAuth } from '../contexts/AuthContext';
+import EditProductModal from '../components/EditProductModal';
 
 interface StockItem {
     code: string;
@@ -11,6 +12,12 @@ interface StockItem {
     min_stock: number;
     sale_price: number;
     category_name: string;
+    description?: string;
+    category_id?: number;
+    barcode?: string;
+    cost_price?: number;
+    max_stock?: number;
+    location?: string;
 }
 
 interface Category {
@@ -25,6 +32,7 @@ export default function Stock() {
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
+    const [editingProduct, setEditingProduct] = useState<StockItem | null>(null);
 
     const fetchCategories = async () => {
         try {
@@ -55,6 +63,20 @@ export default function Stock() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleSaveProduct = async (updatedProduct: any) => {
+        const response = await apiFetch(`/api/products/${updatedProduct.code}`, {
+            method: 'PUT',
+            body: JSON.stringify(updatedProduct)
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Erro ao salvar produto');
+        }
+
+        fetchStock();
     };
 
     useEffect(() => {
@@ -153,7 +175,10 @@ export default function Stock() {
                                 ))
                             ) : stock.length > 0 ? (
                                 stock.map((item) => (
-                                    <tr key={item.code} className="hover:bg-charcoal-50/50 transition-colors group">
+                                    <tr key={item.code}
+                                        onClick={() => setEditingProduct(item)}
+                                        className="hover:bg-charcoal-50/50 transition-colors group cursor-pointer"
+                                    >
                                         <td className="px-6 py-5">
                                             <div className="flex flex-col">
                                                 <span className="text-sm font-bold text-charcoal-900 group-hover:text-ruby-700 transition-colors">{item.name}</span>
@@ -220,6 +245,16 @@ export default function Stock() {
                     </span>
                 </div>
             </div>
+
+            {/* Modal de Edição */}
+            {editingProduct && (
+                <EditProductModal
+                    product={editingProduct as any}
+                    categories={categories}
+                    onClose={() => setEditingProduct(null)}
+                    onSave={handleSaveProduct}
+                />
+            )}
         </div>
     );
 }

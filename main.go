@@ -41,6 +41,7 @@ func main() {
 	// ===== Rotas Protegidas - Estoque =====
 	mux.HandleFunc("/stock", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.StockHandler))))
 	mux.HandleFunc("/api/products", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.ListProductsHandler))))
+	mux.HandleFunc("/api/products/", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.UpdateProductHandler))))
 
 	// ===== Rotas Protegidas - Movimentações =====
 	mux.HandleFunc("/api/movements", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.CreateMovementHandler))))
