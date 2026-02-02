@@ -8,6 +8,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY main.go ./
+COPY internal ./internal
 
 RUN CGO_ENABLED=1 GOOS=linux go build -o estoque-poc main.go
 
