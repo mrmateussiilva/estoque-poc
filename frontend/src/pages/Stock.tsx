@@ -3,38 +3,21 @@ import { Search, Package, ChevronRight } from 'lucide-react';
 import { Card, Select, TableContainer, THead, TBody, Tr, Th, Td, Badge } from '../components/UI';
 import { useAuth } from '../contexts/AuthContext';
 import EditProductModal from '../components/EditProductModal';
-
-interface StockItem {
-    code: string;
-    name: string;
-    quantity: number;
-    unit: string;
-    min_stock: number;
-    sale_price: number;
-    category_name: string;
-    description?: string;
-    category_id?: number;
-    barcode?: string;
-    cost_price?: number;
-    max_stock?: number;
-    location?: string;
-}
-
-interface Category {
-    id: number;
-    name: string;
-}
+import { useData, type StockItem } from '../contexts/DataContext';
 
 export default function Stock() {
     const { apiFetch } = useAuth();
-    const [stock, setStock] = useState<StockItem[]>([]);
-    const [categories, setCategories] = useState<Category[]>([]);
+    const {
+        stock, setStock,
+        categories, setCategories
+    } = useData();
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [editingProduct, setEditingProduct] = useState<StockItem | null>(null);
 
     const fetchCategories = async () => {
+        if (categories.length > 0) return;
         try {
             const response = await apiFetch('/api/categories');
             if (response.ok) {
@@ -133,7 +116,7 @@ export default function Stock() {
                         <Th className="text-center">Saldo Atual</Th>
                         <Th className="text-right">Valor Venda</Th>
                         <Th>Disponibilidade</Th>
-                        <Th className="w-10"></Th>
+                        <Th className="w-10">{null}</Th>
                     </Tr>
                 </THead>
                 <TBody>
