@@ -33,10 +33,19 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var user models.User
 	var storedPassword string
-	err := h.DB.QueryRow("SELECT password FROM users WHERE email = ?", req.Email).Scan(&storedPassword)
+	err := h.DB.QueryRow(`
+		SELECT id, name, email, password, role, active 
+		FROM users WHERE email = ?
+	`, req.Email).Scan(&user.ID, &user.Name, &user.Email, &storedPassword, &user.Role, &user.Active)
 	if err != nil {
 		RespondWithError(w, http.StatusUnauthorized, "Invalid credentials")
+		return
+	}
+
+	if !user.Active {
+		RespondWithError(w, http.StatusUnauthorized, "User is inactive")
 		return
 	}
 
@@ -60,7 +69,10 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, models.LoginResponse{Token: tokenString})
+	RespondWithJSON(w, http.StatusOK, models.LoginResponse{
+		Token: tokenString,
+		User:  user,
+	})
 }
 
 func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
@@ -94,6 +106,7 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer tx.Rollback()
 
+	// Verificar duplicação
 	var exists bool
 	err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM processed_nfes WHERE access_key = $1)", proc.NFe.InfNFe.ID).Scan(&exists)
 	if err != nil {
@@ -105,16 +118,23 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = tx.Exec("INSERT INTO processed_nfes (access_key) VALUES ($1)", proc.NFe.InfNFe.ID)
+	// Registrar NF-e processada
+	totalItems := len(proc.NFe.InfNFe.Det)
+	_, err = tx.Exec(`
+		INSERT INTO processed_nfes (access_key, total_items) 
+		VALUES ($1, $2)
+	`, proc.NFe.InfNFe.ID, totalItems)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Error registering NFe: "+err.Error())
 		return
 	}
 
+	// Processar cada produto
 	for _, det := range proc.NFe.InfNFe.Det {
+		// Inserir/atualizar produto
 		_, err = tx.Exec(`
-			INSERT OR IGNORE INTO products (code, name) 
-			VALUES ($1, $2)`,
+			INSERT OR IGNORE INTO products (code, name, unit) 
+			VALUES ($1, $2, 'UN')`,
 			det.Prod.CProd, det.Prod.XProd,
 		)
 		if err != nil {
@@ -122,6 +142,17 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Criar movimentação de entrada
+		_, err = tx.Exec(`
+			INSERT INTO movements (product_code, type, quantity, origin, reference)
+			VALUES ($1, 'ENTRADA', $2, 'NFE', $3)
+		`, det.Prod.CProd, det.Prod.QCom, proc.NFe.InfNFe.ID)
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, "Error creating movement: "+err.Error())
+			return
+		}
+
+		// Atualizar estoque
 		_, err = tx.Exec(`
 			INSERT INTO stock (product_code, quantity) 
 			VALUES ($1, $2)
@@ -140,8 +171,10 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Upload successful"))
+	RespondWithJSON(w, http.StatusOK, map[string]interface{}{
+		"message":     "NF-e processada com sucesso",
+		"total_items": totalItems,
+	})
 }
 
 func (h *Handler) StockHandler(w http.ResponseWriter, r *http.Request) {

@@ -31,10 +31,27 @@ func main() {
 	// Servir frontend estático
 	mux.Handle("/", http.FileServer(http.Dir("./static")))
 
-	// Endpoints da API com encadeamento de middlewares
+	// ===== Rotas Públicas =====
 	mux.HandleFunc("/login", api.LoggingMiddleware(api.CorsMiddleware(h.LoginHandler)))
+
+	// ===== Rotas Protegidas - NF-e =====
 	mux.HandleFunc("/nfe/upload", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.UploadHandler))))
+	mux.HandleFunc("/api/nfes", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.ListNFesHandler))))
+
+	// ===== Rotas Protegidas - Estoque =====
 	mux.HandleFunc("/stock", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.StockHandler))))
+	mux.HandleFunc("/api/products", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.ListProductsHandler))))
+
+	// ===== Rotas Protegidas - Movimentações =====
+	mux.HandleFunc("/api/movements", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.CreateMovementHandler))))
+	mux.HandleFunc("/api/movements/list", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.ListMovementsHandler))))
+
+	// ===== Rotas Protegidas - Dashboard =====
+	mux.HandleFunc("/api/dashboard/stats", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.DashboardStatsHandler))))
+	mux.HandleFunc("/api/dashboard/evolution", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.StockEvolutionHandler))))
+
+	// ===== Rotas Protegidas - Categorias =====
+	mux.HandleFunc("/api/categories", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.ListCategoriesHandler))))
 
 	// 5. Configuração e Inicialização do Servidor
 	port := os.Getenv("PORT")
