@@ -8,6 +8,7 @@ import Stock from './pages/Stock';
 import NFe from './pages/NFe';
 import Reports from './pages/Reports';
 import Login from './pages/Login';
+import Admin from './pages/Admin';
 
 function MainApp() {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -26,6 +27,7 @@ function MainApp() {
     stock: { title: 'Estoque', component: Stock, showSync: true },
     nfe: { title: 'NF-e', component: NFe, showSync: false },
     reports: { title: 'Relatórios', component: Reports, showSync: false },
+    admin: { title: 'Administração', component: Admin, showSync: false },
   };
 
   const config = pageConfig[currentPage as keyof typeof pageConfig];

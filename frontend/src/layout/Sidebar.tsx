@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, FileText, BarChart3, ChevronLeft, ChevronRight, ArrowDownToLine, User, Gem } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, BarChart3, ChevronLeft, ChevronRight, ArrowDownToLine, User, Gem, ShieldCheck } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -26,6 +26,10 @@ export default function Sidebar({ currentPage, onNavigate, onCollapse, isOpen, o
         { id: 'stock', label: 'Estoque', icon: Package },
         { id: 'nfe', label: 'NF-e', icon: FileText },
         { id: 'reports', label: 'Relatórios', icon: BarChart3 },
+    ];
+
+    const adminItems = [
+        { id: 'admin', label: 'Painel Admin', icon: ShieldCheck },
     ];
 
     return (
@@ -107,6 +111,50 @@ export default function Sidebar({ currentPage, onNavigate, onCollapse, isOpen, o
                             );
                         })}
                     </ul>
+
+                    {/* Admin Section */}
+                    {adminItems.length > 0 && (
+                        <div className="mt-8">
+                            {!collapsed && (
+                                <div className="mb-4 px-4 text-[10px] font-bold text-rub-600 uppercase tracking-widest leading-none opacity-60">
+                                    Administração
+                                </div>
+                            )}
+                            <ul className="space-y-1">
+                                {adminItems.map((item) => {
+                                    const Icon = item.icon;
+                                    const isActive = currentPage === item.id;
+                                    return (
+                                        <li key={item.id}>
+                                            <button
+                                                onClick={() => onNavigate(item.id)}
+                                                className={`
+                                                    w-full flex items-center ${collapsed ? 'justify-center' : 'gap-3'} 
+                                                    px-4 py-3 rounded-lg transition-all duration-200 group relative
+                                                    ${isActive
+                                                        ? 'bg-charcoal-900 text-white border border-charcoal-800'
+                                                        : 'text-charcoal-400 hover:text-white hover:bg-charcoal-900/50'}
+                                                `}
+                                                title={collapsed ? item.label : undefined}
+                                            >
+                                                <Icon className={`w-5 h-5 flex-shrink-0 transition-colors ${isActive ? 'text-ruby-500' : 'group-hover:text-white'}`} />
+
+                                                {!collapsed && (
+                                                    <span className={`font-semibold text-sm tracking-tight ${isActive ? 'text-white' : ''}`}>
+                                                        {item.label}
+                                                    </span>
+                                                )}
+
+                                                {isActive && !collapsed && (
+                                                    <div className="absolute right-2 w-1.5 h-1.5 bg-ruby-500 rounded-full" />
+                                                )}
+                                            </button>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    )}
                 </nav>
 
                 {/* Footer / Profile Card */}
