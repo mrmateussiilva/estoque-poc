@@ -103,7 +103,7 @@ export const THead = ({ children, className = "" }: { children: React.ReactNode;
 );
 
 export const TBody = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-    <tbody className={`divide-y divide-charcoal-100 bg-white ${className}`}>
+    <tbody className={`divide-y divide-charcoal-100 bg-white [&_tr:hover]:bg-charcoal-100/50 ${className}`}>
         {children}
     </tbody>
 );
@@ -123,7 +123,7 @@ export const Td = ({ children, className = "", colSpan }: { children: React.Reac
 export const Tr = ({ children, className = "", onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) => (
     <tr
         onClick={onClick}
-        className={`hover:bg-charcoal-100 transition-all group ${onClick ? 'cursor-pointer' : ''} ${className}`}
+        className={`transition-all group ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
         {children}
     </tr>
