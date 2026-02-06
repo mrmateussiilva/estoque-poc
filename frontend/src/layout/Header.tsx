@@ -30,7 +30,7 @@ export default function Header({ title, onSync, onLogout, onMenuClick, loading }
                     <button
                         onClick={onSync}
                         disabled={loading}
-                        className="h-10 px-4 bg-white border border-charcoal-200 text-charcoal-700 rounded-lg hover:bg-charcoal-50 hover:border-charcoal-300 transition-all flex items-center gap-2 disabled:opacity-50 active:scale-[0.98]"
+                        className="h-10 px-4 bg-white border border-charcoal-200 text-charcoal-700 rounded-lg hover:bg-charcoal-100 hover:border-charcoal-300 transition-all flex items-center gap-2 disabled:opacity-50 active:scale-[0.98]"
                     >
                         <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 ${loading ? 'animate-spin' : ''}`} />
                         <span className="text-[10px] font-bold uppercase tracking-widest">Sincronizar</span>

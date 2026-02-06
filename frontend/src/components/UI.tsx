@@ -41,7 +41,7 @@ export const Button = ({
     const base = "px-5 py-2.5 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm tracking-tight active:scale-[0.98]";
     const variants = {
         primary: "bg-charcoal-900 text-white hover:bg-black border border-charcoal-950",
-        outline: "bg-white border border-charcoal-200 text-charcoal-700 hover:bg-charcoal-50 hover:border-charcoal-300"
+        outline: "bg-white border border-charcoal-200 text-charcoal-700 hover:bg-charcoal-100 hover:border-charcoal-300"
     };
 
     return (
@@ -123,7 +123,7 @@ export const Td = ({ children, className = "", colSpan }: { children: React.Reac
 export const Tr = ({ children, className = "", onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) => (
     <tr
         onClick={onClick}
-        className={`hover:bg-charcoal-50 transition-all group ${onClick ? 'cursor-pointer' : ''} ${className}`}
+        className={`hover:bg-charcoal-100 transition-all group ${onClick ? 'cursor-pointer' : ''} ${className}`}
     >
         {children}
     </tr>

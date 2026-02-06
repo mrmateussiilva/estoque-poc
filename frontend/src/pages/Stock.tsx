@@ -131,7 +131,7 @@ export default function Stock() {
                             whitespace-nowrap px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all
                             ${activeTab === tab
                                 ? 'bg-charcoal-900 text-white shadow-lg shadow-charcoal-900/20 scale-105'
-                                : 'bg-white text-charcoal-400 border border-charcoal-200 hover:border-charcoal-300 hover:bg-charcoal-50'}
+                                : 'bg-white text-charcoal-400 border border-charcoal-200 hover:border-charcoal-300 hover:bg-charcoal-100'}
                         `}
                     >
                         {tab} ({groupedStock[tab].length})
