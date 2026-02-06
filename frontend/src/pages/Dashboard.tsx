@@ -159,24 +159,25 @@ export default function Dashboard() {
 
             {/* Gráficos e Insights */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <Card className="lg:col-span-2 p-8">
-                    <div className="flex items-center justify-between mb-8">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-charcoal-50 rounded-lg flex items-center justify-center border border-charcoal-100">
-                                <TrendingUp className="w-5 h-5 text-charcoal-900" />
+                <Card className="lg:col-span-2 p-8 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-ruby-500/5 blur-[100px] -mr-32 -mt-32" />
+                    <div className="flex items-center justify-between mb-10 relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-ruby-600 rounded-xl flex items-center justify-center shadow-ruby border border-ruby-500/20">
+                                <TrendingUp className="w-6 h-6 text-white" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-bold text-charcoal-950 tracking-tight leading-none">Fluxo de Estoque</h3>
-                                <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest mt-1">Evolução mensal</p>
+                                <h3 className="text-xl font-black text-navy-900 tracking-tighter leading-none uppercase">Fluxo de Estoque</h3>
+                                <p className="text-[10px] font-black text-charcoal-400 uppercase tracking-[0.2em] mt-2 opacity-60">Evolução mensal • Insights</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 bg-ruby-600 rounded-full" />
-                            <span className="text-[10px] font-bold text-charcoal-600 uppercase tracking-widest">Total Itens</span>
+                        <div className="flex items-center gap-3 bg-charcoal-50 px-4 py-2 rounded-full border border-charcoal-200">
+                            <div className="w-2.5 h-2.5 bg-ruby-600 rounded-full shadow-[0_0_8px_rgba(225,29,72,0.4)]" />
+                            <span className="text-[10px] font-black text-charcoal-600 uppercase tracking-widest leading-none">Total Itens</span>
                         </div>
                     </div>
 
-                    <div className="h-[320px] w-full">
+                    <div className="h-[320px] w-full relative z-10">
                         <ResponsiveContainer width="100%" height="100%">
                             <LineChart data={evolution}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
@@ -184,24 +185,31 @@ export default function Dashboard() {
                                     dataKey="month"
                                     axisLine={false}
                                     tickLine={false}
-                                    tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                                    tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }}
                                     dy={10}
                                 />
                                 <YAxis
                                     axisLine={false}
                                     tickLine={false}
-                                    tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 700 }}
+                                    tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }}
                                 />
                                 <Tooltip
-                                    contentStyle={{ borderRadius: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', fontWeight: 700 }}
+                                    contentStyle={{
+                                        borderRadius: '16px',
+                                        border: '1px solid #fee2e2',
+                                        boxShadow: '0 10px 15px -3px rgba(225,29,72,0.1)',
+                                        fontWeight: 900,
+                                        fontSize: '12px',
+                                        padding: '12px'
+                                    }}
                                 />
                                 <Line
                                     type="monotone"
                                     dataKey="items"
                                     stroke="#e11d48"
-                                    strokeWidth={3}
-                                    dot={{ stroke: '#e11d48', strokeWidth: 2, fill: '#fff', r: 4 }}
-                                    activeDot={{ r: 6, strokeWidth: 0 }}
+                                    strokeWidth={4}
+                                    dot={{ stroke: '#e11d48', strokeWidth: 3, fill: '#fff', r: 5 }}
+                                    activeDot={{ r: 8, strokeWidth: 0, fill: '#fb7185' }}
                                 />
                             </LineChart>
                         </ResponsiveContainer>
@@ -210,63 +218,65 @@ export default function Dashboard() {
 
                 <Card className="p-8">
                     <div className="flex items-center gap-3 mb-8">
-                        <div className="w-10 h-10 bg-charcoal-50 rounded-lg flex items-center justify-center border border-charcoal-100">
-                            <Package className="w-5 h-5 text-charcoal-900" />
+                        <div className="w-12 h-12 bg-ruby-50 rounded-xl flex items-center justify-center border border-ruby-100 shadow-ruby-sm">
+                            <Package className="w-6 h-6 text-ruby-600" />
                         </div>
                         <div>
-                            <h3 className="text-lg font-bold text-charcoal-950 tracking-tight leading-none">Principais SKUs</h3>
-                            <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest mt-1">Maiores volumes</p>
+                            <h3 className="text-xl font-black text-navy-900 tracking-tighter leading-none uppercase">Principais SKUs</h3>
+                            <p className="text-[10px] font-black text-charcoal-400 uppercase tracking-[0.2em] mt-2 opacity-60">Maiores volumes</p>
                         </div>
                     </div>
 
-                    <div className="space-y-5">
+                    <div className="space-y-6">
                         {topProducts.map((item, index) => (
-                            <div key={item.code} className="flex items-center justify-between group">
+                            <div key={item.code} className="flex items-center justify-between group cursor-pointer">
                                 <div className="flex items-center gap-4">
-                                    <div className="w-7 h-7 rounded bg-charcoal-50 flex items-center justify-center text-[10px] font-bold text-charcoal-400 border border-charcoal-100 uppercase">
+                                    <div className="w-8 h-8 rounded-lg bg-charcoal-50 flex items-center justify-center text-[11px] font-black text-charcoal-400 border border-charcoal-200 uppercase transition-all group-hover:bg-ruby-600 group-hover:text-white group-hover:border-ruby-700">
                                         {index + 1}
                                     </div>
                                     <div>
-                                        <p className="text-sm font-semibold text-charcoal-900 leading-none group-hover:text-ruby-600 transition-colors uppercase tracking-tight">{item.name}</p>
-                                        <p className="text-[10px] font-mono text-charcoal-400 mt-1 uppercase tracking-widest">SKU: {item.code}</p>
+                                        <p className="text-sm font-bold text-navy-900 leading-none group-hover:text-ruby-600 transition-colors uppercase tracking-tight">{item.name}</p>
+                                        <p className="text-[10px] font-mono font-bold text-charcoal-400 mt-2 uppercase tracking-widest opacity-60">SKU: {item.code}</p>
                                     </div>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-sm font-bold text-charcoal-900 leading-none">{item.quantity.toFixed(0)}</p>
-                                    <p className="text-[9px] font-bold text-charcoal-400 uppercase tracking-widest mt-1">UNID</p>
+                                    <p className="text-base font-black text-navy-900 leading-none group-hover:text-ruby-600 transition-colors">{item.quantity.toFixed(0)}</p>
+                                    <p className="text-[9px] font-black text-charcoal-400 uppercase tracking-widest mt-1.5 opacity-60">UNID</p>
                                 </div>
                             </div>
                         ))}
                         {topProducts.length === 0 && (
-                            <div className="h-40 flex items-center justify-center text-xs font-bold text-charcoal-400 uppercase tracking-widest opacity-40">
-                                Sem dados
+                            <div className="h-40 flex items-center justify-center text-[10px] font-black text-charcoal-400 uppercase tracking-[0.3em] opacity-30">
+                                Nenhum registro
                             </div>
                         )}
                     </div>
 
-                    <Button variant="outline" className="w-full mt-8 border-dashed flex md:hidden lg:flex">
-                        Ver Estoque Completo
+                    <Button variant="outline" className="w-full mt-10 border-dashed border-charcoal-300">
+                        Painel de Estoque Completo
                         <ChevronRight className="w-4 h-4 ml-1" />
                     </Button>
                 </Card>
             </div>
 
             {/* Importação NF-e */}
-            <Card className="p-8">
-                <div className="flex flex-col md:flex-row items-center gap-8">
-                    <div className="flex-1 space-y-3 text-center md:text-left">
-                        <div className="w-12 h-12 bg-charcoal-950 rounded-xl flex items-center justify-center shadow-lg mb-4 mx-auto md:mx-0">
-                            <Upload className="w-5 h-5 text-white" />
+            <Card className="p-10 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-navy-950 opacity-0 group-hover:opacity-[0.02] transition-opacity duration-700" />
+                <div className="flex flex-col md:flex-row items-center gap-12 relative z-10">
+                    <div className="flex-1 space-y-4 text-center md:text-left">
+                        <div className="w-16 h-16 bg-navy-950 rounded-2xl flex items-center justify-center shadow-premium mb-6 mx-auto md:mx-0 relative overflow-hidden group/icon">
+                            <div className="absolute inset-0 bg-ruby-600 translate-y-full group-hover/icon:translate-y-0 transition-transform duration-500" />
+                            <Upload className="w-6 h-6 text-white relative z-10" />
                         </div>
-                        <h3 className="text-xl font-bold text-charcoal-950 tracking-tight">Digitalização de NF-e</h3>
-                        <p className="text-charcoal-500 text-sm font-medium max-w-md">Importe notas fiscais XML para atualização automática do inventário.</p>
+                        <h3 className="text-2xl font-black text-navy-900 tracking-tighter uppercase">Digitalização de NF-e</h3>
+                        <p className="text-charcoal-500 text-sm font-medium max-w-md leading-relaxed">Importe seus documentos fiscais XML para processamento inteligente e atualização automatizada do inventário.</p>
                     </div>
 
-                    <div className="w-full md:w-[360px] space-y-4">
+                    <div className="w-full md:w-[400px] space-y-5">
                         <div
                             className={`
-                                relative h-32 border-2 border-dashed rounded-2xl transition-all duration-300 flex flex-col items-center justify-center gap-2 cursor-pointer
-                                ${file ? 'border-ruby-500 bg-ruby-50/10' : 'border-charcoal-200 bg-charcoal-50/50 hover:border-ruby-600/20 hover:bg-ruby-50/5'}
+                                relative h-40 border-2 border-dashed rounded-3xl transition-all duration-500 flex flex-col items-center justify-center gap-3 cursor-pointer overflow-hidden
+                                ${file ? 'border-ruby-500 bg-ruby-50/20' : 'border-charcoal-200 bg-charcoal-50/50 hover:border-ruby-500/30 hover:bg-ruby-50/5'}
                             `}
                         >
                             <input
@@ -275,17 +285,20 @@ export default function Dashboard() {
                                 onChange={(e) => setFile(e.target.files?.[0] || null)}
                                 className="absolute inset-0 opacity-0 cursor-pointer z-10"
                             />
-                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-all ${file ? 'bg-ruby-500 text-white shadow-sm' : 'bg-white text-charcoal-400 border border-charcoal-100'}`}>
-                                <FileText className="w-4 h-4" />
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 ${file ? 'bg-ruby-600 text-white shadow-ruby' : 'bg-white text-charcoal-400 border border-charcoal-100'}`}>
+                                <FileText className="w-5 h-5" />
                             </div>
-                            <p className="text-[10px] font-bold uppercase tracking-widest text-charcoal-900">
-                                {file ? file.name : "Selecionar XML"}
-                            </p>
+                            <div className="text-center px-4">
+                                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-navy-900">
+                                    {file ? file.name : "Arraste ou selecione o XML"}
+                                </p>
+                                {!file && <p className="text-[9px] font-bold text-charcoal-400 uppercase tracking-widest mt-1.5 opacity-60">Suporta apenas arquivos .xml</p>}
+                            </div>
                         </div>
 
-                        <Button onClick={handleUpload} loading={uploading} disabled={!file} className="w-full h-12 bg-ruby-600 hover:bg-ruby-700 text-white border-none shadow-sm">
-                            Confirmar Importação
-                            <ChevronRight className="w-4 h-4 ml-1" />
+                        <Button onClick={handleUpload} loading={uploading} disabled={!file} className="w-full h-14 bg-ruby-600 hover:bg-ruby-700 text-white border-none shadow-ruby text-sm font-black uppercase tracking-[0.15em]">
+                            Processar Documento
+                            <ChevronRight className="w-5 h-5 ml-1" />
                         </Button>
                     </div>
                 </div>
