@@ -77,7 +77,7 @@ func main() {
 	mux.HandleFunc("/api/dashboard/evolution", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.StockEvolutionHandler))))
 
 	// ===== Rotas Protegidas - Categorias =====
-	mux.HandleFunc("/api/categories", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.ListCategoriesHandler))))
+	mux.HandleFunc("/api/categories", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.CategoriesHandler))))
 
 	// 5. Configuração e Inicialização do Servidor
 	port := os.Getenv("PORT")

@@ -304,34 +304,76 @@ func (h *Handler) ListProductsHandler(w http.ResponseWriter, r *http.Request) {
 
 // ===== Category Handlers =====
 
-func (h *Handler) ListCategoriesHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
-	rows, err := h.DB.Query("SELECT id, name, parent_id FROM categories ORDER BY name")
-	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Database error")
-		return
-	}
-	defer rows.Close()
-
-	var categories []models.Category
-	for rows.Next() {
-		var c models.Category
-		if err := rows.Scan(&c.ID, &c.Name, &c.ParentID); err != nil {
-			slog.Warn("Scan error", "error", err)
-			continue
+func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == http.MethodGet {
+		rows, err := h.DB.Query("SELECT id, name, parent_id FROM categories ORDER BY name")
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, "Database error")
+			return
 		}
-		categories = append(categories, c)
+		defer rows.Close()
+
+		var categories []models.Category
+		for rows.Next() {
+			var c models.Category
+			if err := rows.Scan(&c.ID, &c.Name, &c.ParentID); err != nil {
+				slog.Warn("Scan error", "error", err)
+				continue
+			}
+			categories = append(categories, c)
+		}
+
+		if categories == nil {
+			categories = []models.Category{}
+		}
+
+		RespondWithJSON(w, http.StatusOK, categories)
+		return
 	}
 
-	if categories == nil {
-		categories = []models.Category{}
+	if r.Method == http.MethodPost {
+		var req struct {
+			Name     string `json:"name"`
+			ParentID *int   `json:"parent_id"`
+		}
+
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Invalid request body")
+			return
+		}
+
+		if req.Name == "" {
+			RespondWithError(w, http.StatusBadRequest, "Category name is required")
+			return
+		}
+
+		// Verificar duplicação
+		var exists bool
+		err := h.DB.QueryRow("SELECT EXISTS(SELECT 1 FROM categories WHERE name = ?)", req.Name).Scan(&exists)
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, "Error checking duplicate category")
+			return
+		}
+		if exists {
+			RespondWithError(w, http.StatusConflict, "Uma categoria com este nome já existe")
+			return
+		}
+
+		result, err := h.DB.Exec("INSERT INTO categories (name, parent_id) VALUES (?, ?)", req.Name, req.ParentID)
+		if err != nil {
+			RespondWithError(w, http.StatusInternalServerError, "Error creating category: "+err.Error())
+			return
+		}
+
+		id, _ := result.LastInsertId()
+		RespondWithJSON(w, http.StatusCreated, map[string]interface{}{
+			"id":      id,
+			"message": "Category created successfully",
+		})
+		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, categories)
+	RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
 }
 
 // ===== NFe Handlers =====
