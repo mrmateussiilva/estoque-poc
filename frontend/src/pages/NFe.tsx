@@ -41,23 +41,24 @@ export default function NFe() {
 
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="flex items-center gap-4 border-b border-charcoal-100 pb-6">
-                <div className="w-12 h-12 bg-charcoal-900 rounded-xl flex items-center justify-center shadow-lg">
-                    <CheckCircle className="w-5 h-5 text-ruby-500" />
+            <div className="flex items-center gap-6 pb-8 border-b border-charcoal-100/50">
+                <div className="w-16 h-16 bg-navy-950 rounded-2xl flex items-center justify-center shadow-premium relative overflow-hidden group">
+                    <div className="absolute inset-0 bg-ruby-600 translate-y-full group-hover:origin-bottom group-hover:translate-y-0 transition-transform duration-500" />
+                    <CheckCircle className="w-8 h-8 text-ruby-500 group-hover:text-white transition-colors relative z-10" />
                 </div>
                 <div className="space-y-1">
-                    <p className="text-[10px] font-bold uppercase text-ruby-600 tracking-widest leading-none">Arquivo Fiscal</p>
-                    <h2 className="text-2xl font-bold text-charcoal-950 tracking-tight uppercase">Histórico de Notas</h2>
+                    <p className="text-[10px] font-black uppercase text-ruby-600 tracking-[0.3em] leading-none">Arquivo Fiscal Inteligente</p>
+                    <h2 className="text-3xl font-black text-navy-900 tracking-tighter uppercase mt-2">Histórico de Notas</h2>
                 </div>
             </div>
 
-            <TableContainer className="border-none">
+            <TableContainer className="border-none shadow-premium rounded-3xl overflow-hidden">
                 <THead>
-                    <Tr>
-                        <Th>Identificação Fiscal</Th>
-                        <Th>Data Processamento</Th>
-                        <Th>Qtd Itens</Th>
-                        <Th>Status</Th>
+                    <Tr className="bg-navy-950 border-none">
+                        <Th className="text-white py-6">Identificação Fiscal</Th>
+                        <Th className="text-white">Data Processamento</Th>
+                        <Th className="text-white">Qtd Itens</Th>
+                        <Th className="text-white">Status</Th>
                     </Tr>
                 </THead>
                 <TBody>

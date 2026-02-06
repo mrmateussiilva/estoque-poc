@@ -93,21 +93,22 @@ export default function Admin() {
     ];
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
+        <div className="max-w-6xl mx-auto space-y-10 animate-in fade-in duration-500 pb-20">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-2 border-b border-charcoal-100">
-                <div className="flex items-center gap-5">
-                    <div className="w-14 h-14 bg-charcoal-950 rounded-2xl flex items-center justify-center shadow-xl border border-white/10">
-                        <ShieldCheck className="text-ruby-500 w-7 h-7" />
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-charcoal-100/50">
+                <div className="flex items-center gap-6">
+                    <div className="w-16 h-16 bg-navy-950 rounded-2xl flex items-center justify-center shadow-premium border border-navy-800 relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-ruby-600 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                        <ShieldCheck className="text-ruby-500 group-hover:text-white w-8 h-8 transition-colors relative z-10" />
                     </div>
                     <div>
-                        <h2 className="text-3xl font-black text-charcoal-950 tracking-tighter uppercase leading-none">Painel Administrativo</h2>
-                        <p className="text-xs font-bold text-charcoal-400 uppercase tracking-[0.2em] mt-2">Configurações globais do sistema</p>
+                        <h2 className="text-4xl font-black text-navy-900 tracking-tighter uppercase leading-none">Administração</h2>
+                        <p className="text-[10px] font-black text-charcoal-400 uppercase tracking-[0.3em] mt-3 opacity-60">Configurações globais e governança</p>
                     </div>
                 </div>
 
                 {msg && (
-                    <div className={`px-6 py-3 rounded-xl text-sm font-bold animate-in slide-in-from-right-4 duration-300 ${msg.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-ruby-50 text-ruby-700 border border-ruby-100'
+                    <div className={`px-6 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest animate-in fade-in slide-in-from-top-4 duration-500 shadow-premium ${msg.type === 'success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-ruby-50 text-ruby-600 border border-ruby-100'
                         }`}>
                         {msg.text}
                     </div>
@@ -115,7 +116,7 @@ export default function Admin() {
             </div>
 
             {/* Hub Navigation */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {tabs.map((tab) => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
@@ -124,16 +125,19 @@ export default function Admin() {
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id as AdminTab)}
                             className={`
-                                group flex items-center gap-4 p-5 rounded-2xl border transition-all duration-300
+                                group flex items-center gap-5 p-6 rounded-3xl border transition-all duration-500 relative overflow-hidden
                                 ${isActive
-                                    ? 'bg-charcoal-900 border-charcoal-900 shadow-xl shadow-charcoal-900/10'
-                                    : 'bg-white border-charcoal-100 hover:border-ruby-200 hover:bg-ruby-50/30'}
+                                    ? 'bg-navy-950 border-navy-900 shadow-premium scale-[1.02]'
+                                    : 'bg-white border-charcoal-100 hover:border-ruby-200 hover:bg-ruby-50/20'}
                             `}
                         >
-                            <div className={`p-3 rounded-xl transition-colors ${isActive ? 'bg-ruby-600' : 'bg-charcoal-50 group-hover:bg-ruby-100'}`}>
-                                <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-charcoal-900 group-hover:text-ruby-600'}`} />
+                            {isActive && (
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-ruby-600/10 blur-3xl -mr-16 -mt-16" />
+                            )}
+                            <div className={`p-4 rounded-2xl transition-all duration-500 ${isActive ? 'bg-ruby-600 shadow-ruby' : 'bg-charcoal-50 group-hover:bg-ruby-100'}`}>
+                                <Icon className={`w-6 h-6 ${isActive ? 'text-white scale-110' : 'text-navy-900 group-hover:text-ruby-600'}`} />
                             </div>
-                            <span className={`text-sm font-black uppercase tracking-widest ${isActive ? 'text-white' : 'text-charcoal-600'}`}>
+                            <span className={`text-[11px] font-black uppercase tracking-[0.2em] transition-colors ${isActive ? 'text-white' : 'text-charcoal-600 group-hover:text-navy-900'}`}>
                                 {tab.label}
                             </span>
                         </button>
@@ -180,13 +184,13 @@ export default function Admin() {
                             </Card>
                         )}
 
-                        <div className="bg-white rounded-3xl border border-charcoal-100 overflow-hidden shadow-sm">
+                        <div className="bg-white rounded-3xl border border-charcoal-100 overflow-hidden shadow-premium">
                             <TableContainer className="border-none">
                                 <THead>
-                                    <Tr>
-                                        <Th>ID</Th>
-                                        <Th>Categoria</Th>
-                                        <Th className="text-right">Ações</Th>
+                                    <Tr className="bg-navy-950 border-none">
+                                        <Th className="text-white py-6">ID</Th>
+                                        <Th className="text-white">Categoria</Th>
+                                        <Th className="text-right text-white">Ações</Th>
                                     </Tr>
                                 </THead>
                                 <TBody>

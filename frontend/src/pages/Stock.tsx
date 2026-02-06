@@ -82,7 +82,7 @@ export default function Stock() {
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Header / Filtros */}
             <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between">
-                <Card className="p-4 bg-white border border-charcoal-200 shadow-sm flex flex-col md:flex-row gap-4 items-center flex-1 w-full">
+                <Card className="p-4 bg-white border border-charcoal-100 shadow-premium flex flex-col md:flex-row gap-4 items-center flex-1 w-full rounded-2xl">
                     <div className="relative flex-1 group w-full">
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400 group-focus-within:text-ruby-600 transition-colors" />
                         <input
@@ -90,47 +90,50 @@ export default function Stock() {
                             placeholder="Buscar por nome ou SKU..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-charcoal-50 border border-charcoal-100 rounded-lg text-sm font-semibold tracking-tight focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white outline-none transition-all placeholder:text-charcoal-300"
+                            className="w-full pl-12 pr-4 py-4 bg-charcoal-50 border border-charcoal-100 rounded-xl text-sm font-black tracking-tight focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white outline-none transition-all placeholder:text-charcoal-300 uppercase"
                         />
                     </div>
 
-                    <div className="flex items-center gap-3 px-4 py-2 bg-ruby-50/50 rounded-lg border border-ruby-100/50 whitespace-nowrap">
-                        <Package className="w-4 h-4 text-ruby-600" />
-                        <span className="text-xs font-bold text-ruby-950 uppercase tracking-widest">
-                            {stock.length} Produtos
+                    <div className="flex items-center gap-4 px-6 py-3 bg-navy-950 rounded-xl shadow-premium whitespace-nowrap border border-navy-800">
+                        <Package className="w-4 h-4 text-ruby-500" />
+                        <span className="text-xs font-black text-white uppercase tracking-[0.2em]">
+                            {stock.length} <span className="text-charcoal-500">Produtos</span>
                         </span>
                     </div>
                 </Card>
             </div>
 
             {/* Abas de Categorias */}
-            <div className="flex overflow-x-auto pb-4 gap-2 scrollbar-none no-scrollbar">
+            <div className="flex overflow-x-auto pb-4 gap-3 scrollbar-none no-scrollbar">
                 {availableTabs.map(tab => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
                         className={`
-                            whitespace-nowrap px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all
+                            whitespace-nowrap px-8 py-4 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-300 relative overflow-hidden group/tab
                             ${activeTab === tab
-                                ? 'bg-charcoal-900 text-white shadow-lg shadow-charcoal-900/20 scale-105'
-                                : 'bg-white text-charcoal-400 border border-charcoal-200 hover:border-charcoal-300 hover:bg-charcoal-100'}
+                                ? 'bg-navy-950 text-white shadow-premium scale-105 border border-navy-800'
+                                : 'bg-white text-charcoal-400 border border-charcoal-100 hover:border-ruby-200 hover:text-ruby-600 hover:bg-ruby-50/30'}
                         `}
                     >
-                        {tab} ({groupedStock[tab].length})
+                        {activeTab === tab && (
+                            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-1 bg-ruby-600 rounded-t-full shadow-[0_0_10px_rgba(225,29,72,0.8)]" />
+                        )}
+                        {tab} <span className={`ml-2 px-2 py-0.5 rounded-md text-[9px] ${activeTab === tab ? 'bg-ruby-600 text-white' : 'bg-charcoal-50 text-charcoal-400'}`}>{groupedStock[tab].length}</span>
                     </button>
                 ))}
             </div>
 
             {/* Tabela */}
             <div className="space-y-4">
-                <TableContainer className="border-none">
+                <TableContainer className="border-none shadow-premium rounded-3xl overflow-hidden">
                     <THead>
-                        <Tr>
-                            <Th>Produto & Identificação</Th>
-                            <Th className="text-center">Saldo Atual</Th>
-                            <Th className="text-right">Valor Venda</Th>
-                            <Th>Disponibilidade</Th>
-                            <Th className="w-10">{null}</Th>
+                        <Tr className="bg-navy-950 border-none">
+                            <Th className="text-white py-6">Produto & Identificação</Th>
+                            <Th className="text-center text-white">Saldo Atual</Th>
+                            <Th className="text-right text-white">Valor Venda</Th>
+                            <Th className="text-white">Disponibilidade</Th>
+                            <Th className="w-10 text-white">{null}</Th>
                         </Tr>
                     </THead>
                     <TBody>
@@ -196,20 +199,24 @@ export default function Stock() {
             </div>
 
             {/* Resumo Rodapé (Baseado nos itens da ABA ATIVA para maior clareza) */}
-            <div className="bg-charcoal-900 p-6 flex flex-col md:flex-row justify-between items-center text-[10px] font-bold text-white/40 uppercase tracking-widest rounded-xl shadow-lg border border-charcoal-800">
-                <span>Itens em {activeTab}: {itemsInActiveTab.length}</span>
-                <div className="flex gap-10 mt-4 md:mt-0">
-                    <span className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-ruby-600 rounded-full" />
-                        {itemsInActiveTab.filter(i => i.quantity <= 0).length} Esgotados
+            <div className="bg-navy-950 p-8 flex flex-col md:flex-row justify-between items-center text-[10px] font-black text-white/40 uppercase tracking-[0.2em] rounded-3xl shadow-premium border border-navy-800 relative overflow-hidden group">
+                <div className="absolute inset-0 bg-ruby-600/5 translate-y-full group-hover:translate-y-0 transition-transform duration-700" />
+                <span className="relative z-10 flex items-center gap-3">
+                    <div className="w-2 h-2 bg-ruby-600 rounded-full shadow-[0_0_8px_rgba(225,29,72,0.6)]" />
+                    Itens em {activeTab}: <span className="text-white ml-1">{itemsInActiveTab.length}</span>
+                </span>
+                <div className="flex gap-12 mt-6 md:mt-0 relative z-10">
+                    <span className="flex items-center gap-2.5">
+                        <div className="w-1.5 h-1.5 bg-ruby-600 rounded-full shadow-[0_0_6px_rgba(225,29,72,0.4)]" />
+                        <span className="text-white/80">{itemsInActiveTab.filter(i => i.quantity <= 0).length}</span> Esgotados
                     </span>
-                    <span className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-                        {itemsInActiveTab.filter(i => i.quantity > 0 && i.quantity < i.min_stock).length} Baixo Estoque
+                    <span className="flex items-center gap-2.5">
+                        <div className="w-1.5 h-1.5 bg-amber-500 rounded-full shadow-[0_0_6px_rgba(245,158,11,0.4)]" />
+                        <span className="text-white/80">{itemsInActiveTab.filter(i => i.quantity > 0 && i.quantity < i.min_stock).length}</span> Baixo Estoque
                     </span>
-                    <span className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                        {itemsInActiveTab.filter(i => i.quantity >= i.min_stock).length} Saudáveis
+                    <span className="flex items-center gap-2.5">
+                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
+                        <span className="text-white/80">{itemsInActiveTab.filter(i => i.quantity >= i.min_stock).length}</span> Saudáveis
                     </span>
                 </div>
             </div>
