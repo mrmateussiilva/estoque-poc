@@ -133,7 +133,7 @@ type ProcessedNFe struct {
 	AccessKey    string    `gorm:"primaryKey;size:191;type:varchar(191)" json:"access_key"`
 	Number       *string   `gorm:"size:50" json:"number,omitempty"`
 	SupplierName *string   `gorm:"size:191" json:"supplier_name,omitempty"`
-	TotalItems   int       `json:"total_items"`
+	TotalItems   int32     `gorm:"type:int" json:"total_items"`
 	ProcessedAt  time.Time `json:"processed_at"`
 }
 

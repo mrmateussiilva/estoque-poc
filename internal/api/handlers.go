@@ -106,7 +106,7 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		totalItems := len(proc.NFe.InfNFe.Det)
 		nfe := models.ProcessedNFe{
 			AccessKey:  proc.NFe.InfNFe.ID,
-			TotalItems: totalItems,
+			TotalItems: int32(totalItems),
 		}
 		if err := tx.Create(&nfe).Error; err != nil {
 			return err
