@@ -4,12 +4,9 @@ services:
     container_name: sge-backend
     ports:
       - "8003:8003"
-    volumes:
-      - sge-data:/root
+    env_file:
+      - .env
     environment:
       - PORT=8003
       - ALLOWED_ORIGIN=*
     restart: unless-stopped
-
-volumes:
-  sge-data:

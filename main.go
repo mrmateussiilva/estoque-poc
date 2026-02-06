@@ -13,8 +13,8 @@ import (
 )
 
 func main() {
-	// Carregar variáveis de ambiente do arquivo .env
-	godotenv.Load()
+	// Carregar variáveis de ambiente do arquivo .env (opcional em produção/docker)
+	_ = godotenv.Load()
 
 	// 1. Configuração do Logger Estruturado (JSON para produção)
 	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
