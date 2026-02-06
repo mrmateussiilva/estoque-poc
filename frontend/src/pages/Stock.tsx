@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, Package, ChevronRight } from 'lucide-react';
-import { Card, Select, TableContainer, THead, TBody, Tr, Th, Td, Badge } from '../components/UI';
+import { Card, TableContainer, THead, TBody, Tr, Th, Td, Badge } from '../components/UI';
 import { useAuth } from '../contexts/AuthContext';
 import EditProductModal from '../components/EditProductModal';
 import { useData, type StockItem } from '../contexts/DataContext';
@@ -13,8 +13,8 @@ export default function Stock() {
     } = useData();
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
-    const [selectedCategory, setSelectedCategory] = useState('');
     const [editingProduct, setEditingProduct] = useState<StockItem | null>(null);
+    const [activeTab, setActiveTab] = useState<string>('');
 
     const fetchCategories = async () => {
         if (categories.length > 0) return;
@@ -34,7 +34,7 @@ export default function Stock() {
         try {
             const query = new URLSearchParams();
             if (search) query.append('search', search);
-            if (selectedCategory) query.append('category_id', selectedCategory);
+            // Removido filtro de categoria da API pois faremos agrupamento local
 
             const response = await apiFetch(`/stock?${query.toString()}`);
             if (response.ok) {
@@ -71,7 +71,26 @@ export default function Stock() {
             fetchStock();
         }, 300);
         return () => clearTimeout(timer);
-    }, [search, selectedCategory]);
+    }, [search]); // Removido selectedCategory como dependência
+
+    // Agrupamento de itens por categoria
+    const groupedStock = stock.reduce((acc, item) => {
+        const cat = item.category_name || 'Sem Categoria';
+        if (!acc[cat]) acc[cat] = [];
+        acc[cat].push(item);
+        return acc;
+    }, {} as Record<string, StockItem[]>);
+
+    const availableTabs = Object.keys(groupedStock).sort();
+
+    // Sincronizar activeTab se ela for perdida ou vazia
+    useEffect(() => {
+        if (availableTabs.length > 0 && (!activeTab || !availableTabs.includes(activeTab))) {
+            setActiveTab(availableTabs[0]);
+        }
+    }, [availableTabs, activeTab]);
+
+    const itemsInActiveTab = activeTab ? groupedStock[activeTab] || [] : [];
 
     const getStatusBadge = (item: StockItem) => {
         if (item.quantity <= 0) return <Badge variant="error">Esgotado</Badge>;
@@ -94,113 +113,121 @@ export default function Stock() {
                     />
                 </div>
 
-                <div className="w-full md:w-auto min-w-[200px]">
-                    <Select
-                        value={selectedCategory}
-                        onChange={(e) => setSelectedCategory(e.target.value)}
-                    >
-                        <option value="">Todas Categorias</option>
-                        {categories.map(cat => (
-                            <option key={cat.id} value={cat.id}>{cat.name}</option>
-                        ))}
-                    </Select>
+                <div className="flex items-center gap-3 px-4 py-2 bg-ruby-50/50 rounded-lg border border-ruby-100/50">
+                    <Package className="w-4 h-4 text-ruby-600" />
+                    <span className="text-xs font-bold text-ruby-950 uppercase tracking-widest">
+                        {stock.length} Produtos
+                    </span>
                 </div>
             </Card>
 
-            {/* Tabela */}
-            <TableContainer className="border-none">
-                <THead>
-                    <Tr>
-                        <Th>Produto & Identificação</Th>
-                        <Th>Sessão</Th>
-                        <Th className="text-center">Saldo Atual</Th>
-                        <Th className="text-right">Valor Venda</Th>
-                        <Th>Disponibilidade</Th>
-                        <Th className="w-10">{null}</Th>
-                    </Tr>
-                </THead>
-                <TBody>
-                    {loading && stock.length === 0 ? (
-                        [...Array(6)].map((_, i) => (
-                            <Tr key={i} className="animate-pulse">
-                                <Td><div className="h-5 bg-charcoal-50 rounded w-56" /></Td>
-                                <Td><div className="h-5 bg-charcoal-50 rounded w-28" /></Td>
-                                <Td><div className="h-5 bg-charcoal-50 rounded w-16 mx-auto" /></Td>
-                                <Td><div className="h-5 bg-charcoal-50 rounded w-24 ml-auto" /></Td>
-                                <Td><div className="h-7 bg-charcoal-50 rounded-full w-32" /></Td>
-                                <Td>{null}</Td>
-                            </Tr>
-                        ))
-                    ) : stock.length > 0 ? (
-                        stock.map((item) => (
-                            <Tr key={item.code} onClick={() => setEditingProduct(item)}>
-                                <Td>
-                                    <div className="flex flex-col">
-                                        <span className="text-sm font-semibold text-charcoal-950 group-hover:text-ruby-600 transition-colors uppercase tracking-tight">{item.name}</span>
-                                        <span className="text-[10px] font-bold text-charcoal-400 mt-1 uppercase tracking-widest">SKU: {item.code}</span>
-                                    </div>
-                                </Td>
-                                <Td className="whitespace-nowrap">
-                                    <span className="text-[10px] font-bold text-charcoal-600 bg-charcoal-100 px-2.5 py-1 rounded uppercase tracking-widest border border-charcoal-200">
-                                        {item.category_name}
-                                    </span>
-                                </Td>
-                                <Td className="text-center">
-                                    <div className="flex flex-col items-center">
-                                        <span className={`text-base font-bold tracking-tight ${item.quantity < item.min_stock ? 'text-ruby-600' : 'text-charcoal-900'}`}>
-                                            {item.quantity}
-                                        </span>
-                                        <span className="text-[10px] font-bold text-charcoal-300 uppercase tracking-widest leading-none">{item.unit}</span>
-                                    </div>
-                                </Td>
-                                <Td className="text-right">
-                                    <span className="text-sm font-semibold text-charcoal-950 tracking-tight">
-                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.sale_price)}
-                                    </span>
-                                </Td>
-                                <Td>
-                                    {getStatusBadge(item)}
-                                </Td>
-                                <Td className="text-right">
-                                    <div className="w-8 h-8 rounded-full bg-charcoal-50 flex items-center justify-center text-charcoal-300 group-hover:bg-charcoal-100 group-hover:text-charcoal-600 transition-all">
-                                        <ChevronRight className="w-4 h-4" />
-                                    </div>
-                                </Td>
-                            </Tr>
-                        ))
-                    ) : (
-                        <Tr>
-                            <Td colSpan={6} className="px-8 py-24 text-center">
-                                <div className="flex flex-col items-center gap-4">
-                                    <div className="w-16 h-16 bg-charcoal-50 rounded-xl flex items-center justify-center">
-                                        <Package className="w-8 h-8 text-charcoal-200" />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <p className="text-charcoal-950 font-bold">Nenhum registro</p>
-                                        <p className="text-charcoal-400 text-xs font-medium uppercase tracking-widest">Tente buscar por outro termo</p>
-                                    </div>
-                                </div>
-                            </Td>
-                        </Tr>
-                    )}
-                </TBody>
-            </TableContainer>
+            {/* Abas de Categorias */}
+            <div className="flex overflow-x-auto pb-4 gap-2 scrollbar-none no-scrollbar">
+                {availableTabs.map(tab => (
+                    <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={`
+                            whitespace-nowrap px-6 py-3 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all
+                            ${activeTab === tab
+                                ? 'bg-charcoal-900 text-white shadow-lg shadow-charcoal-900/20 scale-105'
+                                : 'bg-white text-charcoal-400 border border-charcoal-200 hover:border-charcoal-300 hover:bg-charcoal-50'}
+                        `}
+                    >
+                        {tab} ({groupedStock[tab].length})
+                    </button>
+                ))}
+            </div>
 
-            {/* Resumo Rodapé */}
+            {/* Tabela */}
+            <div className="space-y-4">
+                <TableContainer className="border-none">
+                    <THead>
+                        <Tr>
+                            <Th>Produto & Identificação</Th>
+                            <Th className="text-center">Saldo Atual</Th>
+                            <Th className="text-right">Valor Venda</Th>
+                            <Th>Disponibilidade</Th>
+                            <Th className="w-10">{null}</Th>
+                        </Tr>
+                    </THead>
+                    <TBody>
+                        {loading && stock.length === 0 ? (
+                            [...Array(6)].map((_, i) => (
+                                <Tr key={i} className="animate-pulse">
+                                    <Td><div className="h-5 bg-charcoal-50 rounded w-56" /></Td>
+                                    <Td><div className="h-5 bg-charcoal-50 rounded w-16 mx-auto" /></Td>
+                                    <Td><div className="h-5 bg-charcoal-50 rounded w-24 ml-auto" /></Td>
+                                    <Td><div className="h-7 bg-charcoal-50 rounded-full w-32" /></Td>
+                                    <Td>{null}</Td>
+                                </Tr>
+                            ))
+                        ) : itemsInActiveTab.length > 0 ? (
+                            itemsInActiveTab.map((item) => (
+                                <Tr key={item.code} onClick={() => setEditingProduct(item)}>
+                                    <Td>
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-semibold text-charcoal-950 group-hover:text-ruby-600 transition-colors uppercase tracking-tight">{item.name}</span>
+                                            <span className="text-[10px] font-bold text-charcoal-400 mt-1 uppercase tracking-widest">SKU: {item.code}</span>
+                                        </div>
+                                    </Td>
+                                    <Td className="text-center">
+                                        <div className="flex flex-col items-center">
+                                            <span className={`text-base font-bold tracking-tight ${item.quantity < item.min_stock ? 'text-ruby-600' : 'text-charcoal-900'}`}>
+                                                {item.quantity}
+                                            </span>
+                                            <span className="text-[10px] font-bold text-charcoal-300 uppercase tracking-widest leading-none">{item.unit}</span>
+                                        </div>
+                                    </Td>
+                                    <Td className="text-right">
+                                        <span className="text-sm font-semibold text-charcoal-950 tracking-tight">
+                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.sale_price)}
+                                        </span>
+                                    </Td>
+                                    <Td>
+                                        {getStatusBadge(item)}
+                                    </Td>
+                                    <Td className="text-right">
+                                        <div className="w-8 h-8 rounded-full bg-charcoal-50 flex items-center justify-center text-charcoal-300 group-hover:bg-charcoal-100 group-hover:text-charcoal-600 transition-all">
+                                            <ChevronRight className="w-4 h-4" />
+                                        </div>
+                                    </Td>
+                                </Tr>
+                            ))
+                        ) : (
+                            <Tr>
+                                <Td colSpan={5} className="px-8 py-24 text-center">
+                                    <div className="flex flex-col items-center gap-4">
+                                        <div className="w-16 h-16 bg-charcoal-50 rounded-xl flex items-center justify-center">
+                                            <Package className="w-8 h-8 text-charcoal-200" />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-charcoal-950 font-bold">Nenhum registro encontrado</p>
+                                            <p className="text-charcoal-400 text-xs font-medium uppercase tracking-widest">Tente buscar por outro termo ou categoria</p>
+                                        </div>
+                                    </div>
+                                </Td>
+                            </Tr>
+                        )}
+                    </TBody>
+                </TableContainer>
+            </div>
+
+            {/* Resumo Rodapé (Baseado nos itens da ABA ATIVA para maior clareza) */}
             <div className="bg-charcoal-900 p-6 flex flex-col md:flex-row justify-between items-center text-[10px] font-bold text-white/40 uppercase tracking-widest rounded-xl shadow-lg border border-charcoal-800">
-                <span>Total de Itens: {stock.length}</span>
+                <span>Itens em {activeTab}: {itemsInActiveTab.length}</span>
                 <div className="flex gap-10 mt-4 md:mt-0">
                     <span className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 bg-ruby-600 rounded-full" />
-                        {stock.filter(i => i.quantity <= 0).length} Esgotados
+                        {itemsInActiveTab.filter(i => i.quantity <= 0).length} Esgotados
                     </span>
                     <span className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-                        {stock.filter(i => i.quantity > 0 && i.quantity < i.min_stock).length} Baixo Estoque
+                        {itemsInActiveTab.filter(i => i.quantity > 0 && i.quantity < i.min_stock).length} Baixo Estoque
                     </span>
                     <span className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                        {stock.filter(i => i.quantity >= i.min_stock).length} Saudáveis
+                        {itemsInActiveTab.filter(i => i.quantity >= i.min_stock).length} Saudáveis
                     </span>
                 </div>
             </div>
