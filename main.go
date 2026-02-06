@@ -9,18 +9,111 @@ import (
 	"os"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 )
 
 func main() {
-	// Carregar variáveis de ambiente do arquivo .env (opcional em produção/docker)
+	// Carregar variáveis de ambiente (opcional em produção/docker)
 	_ = godotenv.Load()
 
-	// 1. Configuração do Logger Estruturado (JSON para produção)
+	// 1. Configuração do Logger Estruturado
 	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
 	slog.SetDefault(slog.New(handler))
 
-	// 2. Inicialização do Banco de Dados e Migrações
+	// 2. Inicialização do Banco de Dados (GORM)
+	dsn := getDSN()
+	db, err := database.InitDB(dsn)
+	if err != nil {
+		slog.Error("Failed to initialize database", "error", err)
+		os.Exit(1)
+	}
+	// O GORM não requer Close() manual na maioria das vezes para o pool, 
+	// mas você pode pegar o sql.DB se necessário.
+
+	// 3. Inicialização dos Handlers
+	h := api.NewHandler(db)
+
+	// 4. Setup de Rotas com Chi
+	r := chi.NewRouter()
+
+	// Middlewares Globais
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Logger) // Substitui o LoggingMiddleware customizado se preferir
+	r.Use(middleware.Recoverer)
+	r.Use(middleware.Timeout(60 * time.Second))
+
+	// CORS Configuration
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"}, // Ajustar conforme ALLOWED_ORIGIN no .env
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+
+	// Servir frontend estático
+	r.Handle("/*", http.FileServer(http.Dir("./static")))
+
+	// API Routes
+	r.Route("/api", func(r chi.Router) {
+		// Public Routes
+		r.Post("/login", h.LoginHandler)
+
+		// Protected Routes
+		r.Group(func(r chi.Router) {
+			r.Use(api.AuthMiddleware)
+
+			// NF-e
+			r.Post("/nfe/upload", h.UploadHandler)
+			r.Get("/nfes", h.ListNFesHandler)
+
+			// Products & Stock
+			r.Get("/products", h.ListProductsHandler)
+			r.Put("/products/{code}", h.UpdateProductHandler)
+			r.Get("/stock", h.StockHandler)
+
+			// Movements
+			r.Post("/movements", h.CreateMovementHandler)
+			r.Get("/movements/list", h.ListMovementsHandler)
+
+			// Dashboard
+			r.Get("/dashboard/stats", h.DashboardStatsHandler)
+			r.Get("/dashboard/evolution", h.StockEvolutionHandler)
+
+			// Categories
+			r.Get("/categories", h.CategoriesHandler)
+			r.Post("/categories", h.CategoriesHandler)
+		})
+	})
+
+	// 5. Configuração e Inicialização do Servidor
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8003"
+	}
+
+	srv := &http.Server{
+		Addr:         ":" + port,
+		Handler:      r,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	slog.Info("S.G.E. Backend Modernized is running", "port", port)
+
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		slog.Error("Server critical failure", "error", err)
+		os.Exit(1)
+	}
+}
+
+func getDSN() string {
 	dbUser := os.Getenv("DB_USER")
 	dbPass := os.Getenv("DB_PASS")
 	dbHost := os.Getenv("DB_HOST")
@@ -36,67 +129,7 @@ func main() {
 	}
 
 	if dsn == "" {
-		// Fallback para desenvolvimento ou se preferir DSN direto
 		dsn = "root:root@tcp(localhost:3306)/estoque?parseTime=true"
 	}
-
-	db, err := database.InitDB(dsn)
-	if err != nil {
-		slog.Error("Failed to initialize database", "error", err)
-		os.Exit(1)
-	}
-	defer db.Close()
-
-	// 3. Inicialização dos Handlers com Injeção de Dependência
-	h := api.NewHandler(db)
-
-	// 4. Setup de Rotas e Middleware (net/http nativo)
-	mux := http.NewServeMux()
-
-	// Servir frontend estático
-	mux.Handle("/", http.FileServer(http.Dir("./static")))
-
-	// ===== Rotas Públicas =====
-	mux.HandleFunc("/login", api.LoggingMiddleware(api.CorsMiddleware(h.LoginHandler)))
-
-	// ===== Rotas Protegidas - NF-e =====
-	mux.HandleFunc("/nfe/upload", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.UploadHandler))))
-	mux.HandleFunc("/api/nfes", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.ListNFesHandler))))
-
-	// ===== Rotas Protegidas - Estoque =====
-	mux.HandleFunc("/stock", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.StockHandler))))
-	mux.HandleFunc("/api/products", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.ListProductsHandler))))
-	mux.HandleFunc("/api/products/", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.UpdateProductHandler))))
-
-	// ===== Rotas Protegidas - Movimentações =====
-	mux.HandleFunc("/api/movements", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.CreateMovementHandler))))
-	mux.HandleFunc("/api/movements/list", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.ListMovementsHandler))))
-
-	// ===== Rotas Protegidas - Dashboard =====
-	mux.HandleFunc("/api/dashboard/stats", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.DashboardStatsHandler))))
-	mux.HandleFunc("/api/dashboard/evolution", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.StockEvolutionHandler))))
-
-	// ===== Rotas Protegidas - Categorias =====
-	mux.HandleFunc("/api/categories", api.LoggingMiddleware(api.CorsMiddleware(api.AuthMiddleware(h.CategoriesHandler))))
-
-	// 5. Configuração e Inicialização do Servidor
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8003"
-	}
-
-	srv := &http.Server{
-		Addr:         ":" + port,
-		Handler:      mux,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  30 * time.Second,
-	}
-
-	slog.Info("S.G.E. Backend is running", "port", port, "mode", "production")
-
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		slog.Error("Server critical failure", "error", err)
-		os.Exit(1)
-	}
+	return dsn
 }

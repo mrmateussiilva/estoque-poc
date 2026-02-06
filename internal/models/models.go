@@ -5,9 +5,10 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"gorm.io/gorm"
 )
 
-// ===== NF-e XML Models =====
+// ===== NF-e XML Models (Mantidos como estão) =====
 type NfeProc struct {
 	XMLName xml.Name `xml:"nfeProc"`
 	NFe     NFe      `xml:"NFe"`
@@ -32,24 +33,87 @@ type Prod struct {
 	QCom  float64 `xml:"qCom"`
 }
 
-// ===== Product Models =====
-type Product struct {
-	Code        string     `json:"code"`
-	Name        string     `json:"name"`
-	Description *string    `json:"description,omitempty"`
-	CategoryID  *int       `json:"category_id,omitempty"`
-	Unit        string     `json:"unit"`
-	Barcode     *string    `json:"barcode,omitempty"`
-	CostPrice   float64    `json:"cost_price"`
-	SalePrice   float64    `json:"sale_price"`
-	MinStock    float64    `json:"min_stock"`
-	MaxStock    *float64   `json:"max_stock,omitempty"`
-	Location    *string    `json:"location,omitempty"`
-	SupplierID  *int       `json:"supplier_id,omitempty"`
-	Active      bool       `json:"active"`
-	CreatedAt   time.Time  `json:"created_at"`
-	UpdatedAt   time.Time  `json:"updated_at"`
+// ===== GORM Models =====
+
+type Category struct {
+	ID        uint       `gorm:"primaryKey" json:"id"`
+	Name      string     `gorm:"size:191;not null;unique" json:"name"`
+	ParentID  *uint      `json:"parent_id,omitempty"`
+	Parent    *Category  `gorm:"foreignKey:ParentID" json:"-"`
+	Products  []Product  `json:"-"`
 }
+
+type Supplier struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	Name      string    `gorm:"size:191;not null" json:"name"`
+	CNPJ      *string   `gorm:"size:20;unique" json:"cnpj,omitempty"`
+	Email     *string   `gorm:"size:191" json:"email,omitempty"`
+	Phone     *string   `gorm:"size:20" json:"phone,omitempty"`
+	Address   *string   `gorm:"type:text" json:"address,omitempty"`
+	Active    bool      `gorm:"default:true" json:"active"`
+	CreatedAt time.Time `json:"created_at"`
+	Products  []Product `json:"-"`
+}
+
+type Product struct {
+	Code        string         `gorm:"primaryKey;size:191" json:"code"`
+	Name        string         `gorm:"size:191;not null" json:"name"`
+	Description *string        `gorm:"type:text" json:"description,omitempty"`
+	CategoryID  *uint          `json:"category_id,omitempty"`
+	Category    *Category      `gorm:"foreignKey:CategoryID" json:"category,omitempty"`
+	Unit        string         `gorm:"size:20;default:'UN'" json:"unit"`
+	Barcode     *string        `gorm:"size:191;unique" json:"barcode,omitempty"`
+	CostPrice   float64        `gorm:"type:decimal(19,4);default:0" json:"cost_price"`
+	SalePrice   float64        `gorm:"type:decimal(19,4);default:0" json:"sale_price"`
+	MinStock    float64        `gorm:"type:decimal(19,4);default:0" json:"min_stock"`
+	MaxStock    *float64       `gorm:"type:decimal(19,4)" json:"max_stock,omitempty"`
+	Location    *string        `gorm:"size:191" json:"location,omitempty"`
+	SupplierID  *uint          `json:"supplier_id,omitempty"`
+	Supplier    *Supplier      `gorm:"foreignKey:SupplierID" json:"supplier,omitempty"`
+	Active      bool           `gorm:"default:true" json:"active"`
+	CreatedAt   time.Time      `json:"created_at"`
+	UpdatedAt   time.Time      `json:"updated_at"`
+	DeletedAt   gorm.DeletedAt `gorm:"index" json:"-"`
+	Stock       *Stock         `gorm:"foreignKey:ProductCode" json:"stock,omitempty"`
+}
+
+type Stock struct {
+	ProductCode string  `gorm:"primaryKey;size:191" json:"product_code"`
+	Quantity    float64 `gorm:"type:decimal(19,4);default:0" json:"quantity"`
+}
+
+type User struct {
+	ID        uint      `gorm:"primaryKey" json:"id"`
+	Name      *string   `gorm:"size:191" json:"name,omitempty"`
+	Email     string    `gorm:"size:191;not null;unique" json:"email"`
+	Password  string    `gorm:"size:191;not null" json:"-"` // Ocultar do JSON por padrão
+	Role      string    `gorm:"size:20;default:'OPERADOR'" json:"role"`
+	Active    bool      `gorm:"default:true" json:"active"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type Movement struct {
+	ID          uint      `gorm:"primaryKey" json:"id"`
+	ProductCode string    `gorm:"size:191;not null" json:"product_code"`
+	Type        string    `gorm:"size:20;not null" json:"type"` // ENTRADA ou SAIDA
+	Quantity    float64   `gorm:"type:decimal(19,4);not null" json:"quantity"`
+	Origin      *string   `gorm:"size:191" json:"origin,omitempty"`
+	Reference   *string   `gorm:"size:191" json:"reference,omitempty"`
+	UserID      *uint     `json:"user_id,omitempty"`
+	User        *User     `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Notes       *string   `gorm:"type:text" json:"notes,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+type ProcessedNFe struct {
+	AccessKey    string    `gorm:"primaryKey;size:191" json:"access_key"`
+	Number       *string   `gorm:"size:50" json:"number,omitempty"`
+	SupplierName *string   `gorm:"size:191" json:"supplier_name,omitempty"`
+	TotalItems   int       `json:"total_items"`
+	ProcessedAt  time.Time `json:"processed_at"`
+}
+
+// ===== Auxiliar Types (Request/Response) =====
 
 type StockItem struct {
 	Code         string   `json:"code"`
@@ -61,24 +125,11 @@ type StockItem struct {
 	CategoryName string   `json:"category_name,omitempty"`
 	SalePrice    float64  `json:"sale_price,omitempty"`
 	Description  *string  `json:"description,omitempty"`
-	CategoryID   *int     `json:"category_id,omitempty"`
+	CategoryID   *uint    `json:"category_id,omitempty"`
 	Barcode      *string  `json:"barcode,omitempty"`
 	CostPrice    float64  `json:"cost_price,omitempty"`
 	Location     *string  `json:"location,omitempty"`
-	SupplierID   *int     `json:"supplier_id,omitempty"`
-}
-
-// ===== Movement Models =====
-type Movement struct {
-	ID          int       `json:"id"`
-	ProductCode string    `json:"product_code"`
-	Type        string    `json:"type"` // ENTRADA ou SAIDA
-	Quantity    float64   `json:"quantity"`
-	Origin      *string   `json:"origin,omitempty"`
-	Reference   *string   `json:"reference,omitempty"`
-	UserID      *int      `json:"user_id,omitempty"`
-	Notes       *string   `json:"notes,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
+	SupplierID   *uint    `json:"supplier_id,omitempty"`
 }
 
 type CreateMovementRequest struct {
@@ -88,35 +139,6 @@ type CreateMovementRequest struct {
 	Origin      string  `json:"origin,omitempty"`
 	Reference   string  `json:"reference,omitempty"`
 	Notes       string  `json:"notes,omitempty"`
-}
-
-// ===== Category Models =====
-type Category struct {
-	ID       int     `json:"id"`
-	Name     string  `json:"name"`
-	ParentID *int    `json:"parent_id,omitempty"`
-}
-
-// ===== Supplier Models =====
-type Supplier struct {
-	ID        int       `json:"id"`
-	Name      string    `json:"name"`
-	CNPJ      *string   `json:"cnpj,omitempty"`
-	Email     *string   `json:"email,omitempty"`
-	Phone     *string   `json:"phone,omitempty"`
-	Address   *string   `json:"address,omitempty"`
-	Active    bool      `json:"active"`
-	CreatedAt time.Time `json:"created_at"`
-}
-
-// ===== User Models =====
-type User struct {
-	ID        int       `json:"id"`
-	Name      *string   `json:"name,omitempty"`
-	Email     string    `json:"email"`
-	Role      string    `json:"role"`
-	Active    bool      `json:"active"`
-	CreatedAt time.Time `json:"created_at"`
 }
 
 type LoginRequest struct {
@@ -134,24 +156,14 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-// ===== Dashboard Models =====
 type DashboardStats struct {
 	TotalItems       float64 `json:"total_items"`
-	TotalSKUs        int     `json:"total_skus"`
-	EntriesThisMonth int     `json:"entries_this_month"`
-	LowStockCount    int     `json:"low_stock_count"`
+	TotalSKUs        int64   `json:"total_skus"`
+	EntriesThisMonth int64   `json:"entries_this_month"`
+	LowStockCount    int64   `json:"low_stock_count"`
 }
 
 type StockEvolution struct {
 	Month string  `json:"month"`
 	Items float64 `json:"items"`
-}
-
-// ===== NF-e Models =====
-type ProcessedNFe struct {
-	AccessKey    string    `json:"access_key"`
-	Number       *string   `json:"number,omitempty"`
-	SupplierName *string   `json:"supplier_name,omitempty"`
-	TotalItems   int       `json:"total_items"`
-	ProcessedAt  time.Time `json:"processed_at"`
 }

@@ -1,23 +1,22 @@
 package api
 
 import (
-	"database/sql"
 	"encoding/json"
 	"encoding/xml"
 	"estoque/internal/models"
-	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type Handler struct {
-	DB *sql.DB
+	DB *gorm.DB
 }
 
-func NewHandler(db *sql.DB) *Handler {
+func NewHandler(db *gorm.DB) *Handler {
 	return &Handler{DB: db}
 }
 
@@ -34,12 +33,8 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var user models.User
-	var storedPassword string
-	err := h.DB.QueryRow(`
-		SELECT id, name, email, password, role, active 
-		FROM users WHERE email = ?
-	`, req.Email).Scan(&user.ID, &user.Name, &user.Email, &storedPassword, &user.Role, &user.Active)
-	if err != nil {
+	result := h.DB.Where("email = ?", req.Email).First(&user)
+	if result.Error != nil {
 		RespondWithError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
@@ -49,7 +44,7 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(storedPassword), []byte(req.Password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
 		RespondWithError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
@@ -99,80 +94,83 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tx, err := h.DB.Begin()
-	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "DB Error (beginning transaction): "+err.Error())
-		return
-	}
-	defer tx.Rollback()
-
-	// Verificar duplicação
-	var exists bool
-	err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM processed_nfes WHERE access_key = ?)", proc.NFe.InfNFe.ID).Scan(&exists)
-	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Error checking duplicate NFe: "+err.Error())
-		return
-	}
-	if exists {
-		RespondWithError(w, http.StatusConflict, "Esta NF-e já foi processada anteriormente")
-		return
-	}
-
-	// Registrar NF-e processada
-	totalItems := len(proc.NFe.InfNFe.Det)
-	_, err = tx.Exec(`
-		INSERT INTO processed_nfes (access_key, total_items) 
-		VALUES (?, ?)
-	`, proc.NFe.InfNFe.ID, totalItems)
-	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Error registering NFe: "+err.Error())
-		return
-	}
-
-	// Processar cada produto
-	for _, det := range proc.NFe.InfNFe.Det {
-		// Inserir/atualizar produto
-		_, err = tx.Exec(`
-			INSERT IGNORE INTO products (code, name, unit) 
-			VALUES (?, ?, 'UN')`,
-			det.Prod.CProd, det.Prod.XProd,
-		)
-		if err != nil {
-			RespondWithError(w, http.StatusInternalServerError, "Error inserting product: "+err.Error())
-			return
+	err = h.DB.Transaction(func(tx *gorm.DB) error {
+		// Verificar duplicação
+		var count int64
+		tx.Model(&models.ProcessedNFe{}).Where("access_key = ?", proc.NFe.InfNFe.ID).Count(&count)
+		if count > 0 {
+			return gorm.ErrDuplicatedKey
 		}
 
-		// Criar movimentação de entrada
-		_, err = tx.Exec(`
-			INSERT INTO movements (product_code, type, quantity, origin, reference)
-			VALUES (?, 'ENTRADA', ?, 'NFE', ?)
-		`, det.Prod.CProd, det.Prod.QCom, proc.NFe.InfNFe.ID)
-		if err != nil {
-			RespondWithError(w, http.StatusInternalServerError, "Error creating movement: "+err.Error())
-			return
+		// Registrar NF-e processada
+		totalItems := len(proc.NFe.InfNFe.Det)
+		nfe := models.ProcessedNFe{
+			AccessKey:  proc.NFe.InfNFe.ID,
+			TotalItems: totalItems,
+		}
+		if err := tx.Create(&nfe).Error; err != nil {
+			return err
 		}
 
-		// Atualizar estoque
-		_, err = tx.Exec(`
-			INSERT INTO stock (product_code, quantity) 
-			VALUES (?, ?)
-			ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)`,
-			det.Prod.CProd, det.Prod.QCom,
-		)
-		if err != nil {
-			RespondWithError(w, http.StatusInternalServerError, "Error updating stock: "+err.Error())
+		// Processar cada produto
+		for _, det := range proc.NFe.InfNFe.Det {
+			// Inserir/atualizar produto
+			product := models.Product{
+				Code: det.Prod.CProd,
+				Name: det.Prod.XProd,
+				Unit: "UN",
+			}
+			if err := tx.FirstOrCreate(&product, models.Product{Code: product.Code}).Error; err != nil {
+				return err
+			}
+
+			// Criar movimentação de entrada
+			movement := models.Movement{
+				ProductCode: det.Prod.CProd,
+				Type:        "ENTRADA",
+				Quantity:    det.Prod.QCom,
+				Origin:      stringPtr("NFE"),
+				Reference:   stringPtr(proc.NFe.InfNFe.ID),
+			}
+			if err := tx.Create(&movement).Error; err != nil {
+				return err
+			}
+
+			// Atualizar estoque
+			var stock models.Stock
+			err := tx.First(&stock, "product_code = ?", det.Prod.CProd).Error
+			if err == gorm.ErrRecordNotFound {
+				stock = models.Stock{
+					ProductCode: det.Prod.CProd,
+					Quantity:    det.Prod.QCom,
+				}
+				if err := tx.Create(&stock).Error; err != nil {
+					return err
+				}
+			} else if err != nil {
+				return err
+			} else {
+				stock.Quantity += det.Prod.QCom
+				if err := tx.Save(&stock).Error; err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		if err == gorm.ErrDuplicatedKey {
+			RespondWithError(w, http.StatusConflict, "Esta NF-e já foi processada anteriormente")
 			return
 		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Commit error: "+err.Error())
+		RespondWithError(w, http.StatusInternalServerError, "Transaction error: "+err.Error())
 		return
 	}
 
 	RespondWithJSON(w, http.StatusOK, map[string]interface{}{
 		"message":     "NF-e processada com sucesso",
-		"total_items": totalItems,
+		"total_items": len(proc.NFe.InfNFe.Det),
 	})
 }
 
@@ -182,54 +180,54 @@ func (h *Handler) StockHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	query := `
-		SELECT 
-			p.code, p.name, COALESCE(s.quantity, 0) as quantity, 
-			p.unit, p.min_stock, p.max_stock, p.sale_price,
-			COALESCE(c.name, 'Sem Categoria') as category_name,
-			p.description, p.category_id, p.barcode, p.cost_price,
-			p.location, p.supplier_id
-		FROM products p
-		LEFT JOIN stock s ON p.code = s.product_code
-		LEFT JOIN categories c ON p.category_id = c.id
-		WHERE p.active = 1
-	`
-	args := []interface{}{}
+	db := h.DB.Model(&models.Product{}).
+		Preload("Stock").
+		Preload("Category").
+		Where("active = ?", true)
 
 	// Busca por nome ou código
 	if search := r.URL.Query().Get("search"); search != "" {
-		query += " AND (p.code LIKE ? OR p.name LIKE ?)"
-		pattern := "%" + search + "%"
-		args = append(args, pattern, pattern)
+		db = db.Where("code LIKE ? OR name LIKE ?", "%"+search+"%", "%"+search+"%")
 	}
 
 	// Filtro por categoria
 	if categoryID := r.URL.Query().Get("category_id"); categoryID != "" {
-		query += " AND p.category_id = ?"
-		args = append(args, categoryID)
+		db = db.Where("category_id = ?", categoryID)
 	}
 
-	query += " ORDER BY p.name ASC"
-
-	rows, err := h.DB.Query(query, args...)
-	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "DB Error (querying stock): "+err.Error())
+	var products []models.Product
+	if err := db.Order("name ASC").Find(&products).Error; err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "DB Error: "+err.Error())
 		return
 	}
-	defer rows.Close()
 
+	// Mapear para StockItem (formato esperado pelo frontend)
 	var list []models.StockItem
-	for rows.Next() {
-		var item models.StockItem
-		err := rows.Scan(
-			&item.Code, &item.Name, &item.Quantity, 
-			&item.Unit, &item.MinStock, &item.MaxStock, &item.SalePrice, 
-			&item.CategoryName, &item.Description, &item.CategoryID,
-			&item.Barcode, &item.CostPrice, &item.Location, &item.SupplierID,
-		)
-		if err != nil {
-			slog.Warn("Scan error", "error", err)
-			continue
+	for _, p := range products {
+		qty := 0.0
+		if p.Stock != nil {
+			qty = p.Stock.Quantity
+		}
+		catName := "Sem Categoria"
+		if p.Category != nil {
+			catName = p.Category.Name
+		}
+
+		item := models.StockItem{
+			Code:         p.Code,
+			Name:         p.Name,
+			Quantity:     qty,
+			Unit:         p.Unit,
+			MinStock:     p.MinStock,
+			MaxStock:     p.MaxStock,
+			CategoryName: catName,
+			SalePrice:    p.SalePrice,
+			Description:  p.Description,
+			CategoryID:   p.CategoryID,
+			Barcode:      p.Barcode,
+			CostPrice:    p.CostPrice,
+			Location:     p.Location,
+			SupplierID:   p.SupplierID,
 		}
 		list = append(list, item)
 	}
@@ -239,4 +237,8 @@ func (h *Handler) StockHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RespondWithJSON(w, http.StatusOK, list)
+}
+
+func stringPtr(s string) *string {
+	return &s
 }
