@@ -222,7 +222,7 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		var req struct {
 			Name     string `json:"name"`
-			ParentID *int   `json:"parent_id"`
+			ParentID *int32 `json:"parent_id"`
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

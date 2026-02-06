@@ -36,15 +36,15 @@ type Prod struct {
 // ===== GORM Models =====
 
 type Category struct {
-	ID        int        `gorm:"primaryKey" json:"id"`
+	ID        int32      `gorm:"primaryKey" json:"id"`
 	Name      string     `gorm:"size:191;not null;unique" json:"name"`
-	ParentID  *int       `json:"parent_id,omitempty"`
+	ParentID  *int32     `json:"parent_id,omitempty"`
 	Parent    *Category  `gorm:"foreignKey:ParentID" json:"-"`
 	Products  []Product  `json:"-"`
 }
 
 type Supplier struct {
-	ID        int       `gorm:"primaryKey" json:"id"`
+	ID        int32     `gorm:"primaryKey" json:"id"`
 	Name      string    `gorm:"size:191;not null" json:"name"`
 	CNPJ      *string   `gorm:"size:20;unique" json:"cnpj,omitempty"`
 	Email     *string   `gorm:"size:191" json:"email,omitempty"`
@@ -59,7 +59,7 @@ type Product struct {
 	Code        string         `gorm:"primaryKey;size:191" json:"code"`
 	Name        string         `gorm:"size:191;not null" json:"name"`
 	Description *string        `gorm:"type:text" json:"description,omitempty"`
-	CategoryID  *int           `json:"category_id,omitempty"`
+	CategoryID  *int32         `json:"category_id,omitempty"`
 	Category    *Category      `gorm:"foreignKey:CategoryID" json:"category,omitempty"`
 	Unit        string         `gorm:"size:20;default:'UN'" json:"unit"`
 	Barcode     *string        `gorm:"size:191;unique" json:"barcode,omitempty"`
@@ -68,7 +68,7 @@ type Product struct {
 	MinStock    float64        `gorm:"type:decimal(19,4);default:0" json:"min_stock"`
 	MaxStock    *float64       `gorm:"type:decimal(19,4)" json:"max_stock,omitempty"`
 	Location    *string        `gorm:"size:191" json:"location,omitempty"`
-	SupplierID  *int           `json:"supplier_id,omitempty"`
+	SupplierID  *int32         `json:"supplier_id,omitempty"`
 	Supplier    *Supplier      `gorm:"foreignKey:SupplierID" json:"supplier,omitempty"`
 	Active      bool           `gorm:"default:true" json:"active"`
 	CreatedAt   time.Time      `json:"created_at"`
@@ -83,7 +83,7 @@ type Stock struct {
 }
 
 type User struct {
-	ID        int       `gorm:"primaryKey" json:"id"`
+	ID        int32     `gorm:"primaryKey" json:"id"`
 	Name      *string   `gorm:"size:191" json:"name,omitempty"`
 	Email     string    `gorm:"size:191;not null;unique" json:"email"`
 	Password  string    `gorm:"size:191;not null" json:"-"` // Ocultar do JSON por padrão
@@ -93,13 +93,13 @@ type User struct {
 }
 
 type Movement struct {
-	ID          int       `gorm:"primaryKey" json:"id"`
+	ID          int32     `gorm:"primaryKey" json:"id"`
 	ProductCode string    `gorm:"size:191;not null" json:"product_code"`
 	Type        string    `gorm:"size:20;not null" json:"type"` // ENTRADA ou SAIDA
 	Quantity    float64   `gorm:"type:decimal(19,4);not null" json:"quantity"`
 	Origin      *string   `gorm:"size:191" json:"origin,omitempty"`
 	Reference   *string   `gorm:"size:191" json:"reference,omitempty"`
-	UserID      *int      `json:"user_id,omitempty"`
+	UserID      *int32    `json:"user_id,omitempty"`
 	User        *User     `gorm:"foreignKey:UserID" json:"user,omitempty"`
 	Notes       *string   `gorm:"type:text" json:"notes,omitempty"`
 	CreatedAt   time.Time `json:"created_at"`
@@ -125,11 +125,11 @@ type StockItem struct {
 	CategoryName string   `json:"category_name,omitempty"`
 	SalePrice    float64  `json:"sale_price,omitempty"`
 	Description  *string  `json:"description,omitempty"`
-	CategoryID   *int     `json:"category_id,omitempty"`
+	CategoryID   *int32   `json:"category_id,omitempty"`
 	Barcode      *string  `json:"barcode,omitempty"`
 	CostPrice    float64  `json:"cost_price,omitempty"`
 	Location     *string  `json:"location,omitempty"`
-	SupplierID   *int     `json:"supplier_id,omitempty"`
+	SupplierID   *int32   `json:"supplier_id,omitempty"`
 }
 
 type CreateMovementRequest struct {
