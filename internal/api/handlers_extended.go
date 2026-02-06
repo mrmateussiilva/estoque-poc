@@ -36,7 +36,7 @@ func (h *Handler) DashboardStatsHandler(w http.ResponseWriter, r *http.Request) 
 	err = h.DB.QueryRow(`
 		SELECT COUNT(*) FROM movements 
 		WHERE type = 'ENTRADA' 
-		AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')
+		AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
 	`).Scan(&stats.EntriesThisMonth)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Error counting entries")
@@ -65,10 +65,10 @@ func (h *Handler) StockEvolutionHandler(w http.ResponseWriter, r *http.Request) 
 
 	rows, err := h.DB.Query(`
 		SELECT 
-			strftime('%Y-%m', created_at) as month,
+			DATE_FORMAT(created_at, '%Y-%m') as month,
 			SUM(CASE WHEN type = 'ENTRADA' THEN quantity ELSE -quantity END) as items
 		FROM movements
-		WHERE created_at >= date('now', '-6 months')
+		WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
 		GROUP BY month
 		ORDER BY month
 	`)
@@ -163,7 +163,7 @@ func (h *Handler) CreateMovementHandler(w http.ResponseWriter, r *http.Request) 
 	if req.Type == "ENTRADA" {
 		stockUpdate = `
 			INSERT INTO stock (product_code, quantity) VALUES (?, ?)
-			ON CONFLICT(product_code) DO UPDATE SET quantity = quantity + excluded.quantity
+			ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)
 		`
 	} else {
 		stockUpdate = `

@@ -108,7 +108,7 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Verificar duplicação
 	var exists bool
-	err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM processed_nfes WHERE access_key = $1)", proc.NFe.InfNFe.ID).Scan(&exists)
+	err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM processed_nfes WHERE access_key = ?)", proc.NFe.InfNFe.ID).Scan(&exists)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Error checking duplicate NFe: "+err.Error())
 		return
@@ -122,7 +122,7 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	totalItems := len(proc.NFe.InfNFe.Det)
 	_, err = tx.Exec(`
 		INSERT INTO processed_nfes (access_key, total_items) 
-		VALUES ($1, $2)
+		VALUES (?, ?)
 	`, proc.NFe.InfNFe.ID, totalItems)
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Error registering NFe: "+err.Error())
@@ -133,8 +133,8 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	for _, det := range proc.NFe.InfNFe.Det {
 		// Inserir/atualizar produto
 		_, err = tx.Exec(`
-			INSERT OR IGNORE INTO products (code, name, unit) 
-			VALUES ($1, $2, 'UN')`,
+			INSERT IGNORE INTO products (code, name, unit) 
+			VALUES (?, ?, 'UN')`,
 			det.Prod.CProd, det.Prod.XProd,
 		)
 		if err != nil {
@@ -145,7 +145,7 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		// Criar movimentação de entrada
 		_, err = tx.Exec(`
 			INSERT INTO movements (product_code, type, quantity, origin, reference)
-			VALUES ($1, 'ENTRADA', $2, 'NFE', $3)
+			VALUES (?, 'ENTRADA', ?, 'NFE', ?)
 		`, det.Prod.CProd, det.Prod.QCom, proc.NFe.InfNFe.ID)
 		if err != nil {
 			RespondWithError(w, http.StatusInternalServerError, "Error creating movement: "+err.Error())
@@ -155,9 +155,8 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		// Atualizar estoque
 		_, err = tx.Exec(`
 			INSERT INTO stock (product_code, quantity) 
-			VALUES ($1, $2)
-			ON CONFLICT (product_code) 
-			DO UPDATE SET quantity = quantity + excluded.quantity`,
+			VALUES (?, ?)
+			ON DUPLICATE KEY UPDATE quantity = quantity + VALUES(quantity)`,
 			det.Prod.CProd, det.Prod.QCom,
 		)
 		if err != nil {
