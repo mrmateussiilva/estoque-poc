@@ -1,21 +1,22 @@
 import { ChevronDown } from 'lucide-react';
 
 export const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-    <div className={`bg-white rounded-xl border border-charcoal-200/60 shadow-sm transition-all duration-300 overflow-hidden ${className}`}>
+    <div className={`bg-white rounded-2xl border border-charcoal-200/60 shadow-ruby-sm hover:shadow-ruby transition-all duration-300 overflow-hidden ${className}`}>
         {children}
     </div>
 );
 
 export const KPICard = ({ title, value, subtitle, icon }: { title: string; value: string | number; subtitle?: string; icon?: React.ReactNode }) => (
-    <Card className="p-6">
+    <Card className="p-6 relative group">
+        <div className="absolute top-0 left-0 w-1 h-0 group-hover:h-full bg-ruby-500 transition-all duration-300" />
         <div className="flex items-center justify-between mb-3">
             <p className="text-charcoal-400 text-[11px] font-bold uppercase tracking-wider">{title}</p>
-            <div className="p-2 bg-charcoal-50 rounded-lg border border-charcoal-100 text-charcoal-500">
+            <div className="p-2 bg-ruby-50 rounded-xl border border-ruby-100 text-ruby-600 group-hover:bg-ruby-500 group-hover:text-white transition-all duration-300">
                 {icon || <div className="w-5 h-5 bg-charcoal-100 rounded-md animate-pulse" />}
             </div>
         </div>
         <div className="space-y-0.5">
-            <p className="text-2xl font-bold text-charcoal-900 tracking-tight">{value}</p>
+            <p className="text-3xl font-black text-navy-900 tracking-tight">{value}</p>
             {subtitle && <p className="text-charcoal-400 text-xs font-medium">{subtitle}</p>}
         </div>
     </Card>
@@ -33,20 +34,24 @@ export const Button = ({
     children: React.ReactNode;
     onClick?: () => void;
     disabled?: boolean;
-    variant?: 'primary' | 'outline';
+    variant?: 'primary' | 'outline' | 'secondary';
     loading?: boolean;
     type?: 'button' | 'submit' | 'reset';
     className?: string;
 }) => {
-    const base = "px-5 py-2.5 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm tracking-tight active:scale-[0.98]";
+    const base = "px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 text-sm tracking-tight active:scale-[0.98] shadow-sm overflow-hidden relative group";
     const variants = {
-        primary: "bg-charcoal-900 text-white hover:bg-black border border-charcoal-950",
-        outline: "bg-white border border-charcoal-200 text-charcoal-700 hover:bg-charcoal-100 hover:border-charcoal-300"
+        primary: "bg-ruby-600 text-white hover:bg-ruby-500 hover:shadow-ruby border border-ruby-700",
+        secondary: "bg-navy-950 text-white hover:border-ruby-500/50 border border-charcoal-800",
+        outline: "bg-white border border-charcoal-200 text-charcoal-700 hover:border-ruby-200 hover:text-ruby-600 hover:bg-ruby-50/30"
     };
 
     return (
         <button type={type} onClick={onClick} disabled={disabled || loading} className={`${base} ${variants[variant]} ${className}`}>
-            {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : children}
+            <div className="absolute inset-0 bg-white/10 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+            <span className="relative z-10 flex items-center gap-2">
+                {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : children}
+            </span>
         </button>
     );
 };
@@ -55,8 +60,8 @@ export const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <input
         {...props}
         className={`
-      w-full h-12 px-4 bg-charcoal-50 border border-charcoal-200 rounded-lg 
-      focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white 
+      w-full h-12 px-4 bg-charcoal-50 border border-charcoal-200 rounded-xl 
+      focus:outline-none focus:ring-4 focus:ring-ruby-500/10 focus:border-ruby-500/50 focus:bg-white 
       text-sm font-semibold tracking-tight transition-all placeholder:text-charcoal-300 
       ${props.className || ''}
     `}
@@ -68,8 +73,8 @@ export const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => 
         <select
             {...props}
             className={`
-        w-full h-12 pl-4 pr-10 bg-charcoal-50 border border-charcoal-200 rounded-lg 
-        focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white 
+        w-full h-12 pl-4 pr-10 bg-charcoal-50 border border-charcoal-200 rounded-xl 
+        focus:outline-none focus:ring-4 focus:ring-ruby-500/10 focus:border-ruby-500/50 focus:bg-white 
         text-sm font-semibold tracking-tight transition-all appearance-none cursor-pointer uppercase
         ${props.className || ''}
       `}
@@ -83,39 +88,39 @@ export const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => 
 );
 
 export const Label = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-    <label className={`text-[10px] font-bold text-charcoal-400 uppercase tracking-widest ml-1 ${className}`}>
+    <label className={`text-[10px] font-black text-charcoal-500 uppercase tracking-[0.15em] ml-1 ${className}`}>
         {children}
     </label>
 );
 
 export const TableContainer = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-    <div className={`overflow-x-auto rounded-xl border border-charcoal-200 shadow-sm ${className}`}>
-        <table className="w-full text-left border-collapse">
+    <div className={`w-full overflow-x-auto custom-scrollbar-horizontal pb-4 ${className}`}>
+        <table className="w-full text-left border-separate border-spacing-0 min-w-[800px] md:min-w-full">
             {children}
         </table>
     </div>
 );
 
 export const THead = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-    <thead className={`bg-charcoal-900 text-white/40 uppercase ${className}`}>
+    <thead className={`bg-navy-950 text-white/50 uppercase ${className}`}>
         {children}
     </thead>
 );
 
 export const TBody = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-    <tbody className={`divide-y divide-charcoal-100 bg-white [&_tr:hover]:bg-charcoal-100/50 ${className}`}>
+    <tbody className={`divide-y divide-charcoal-100 bg-white [&_tr:hover]:bg-ruby-50/30 ${className}`}>
         {children}
     </tbody>
 );
 
 export const Th = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-    <th className={`px-8 py-5 text-[10px] font-bold tracking-widest ${className}`}>
+    <th className={`px-8 py-5 text-[10px] font-black tracking-[0.15em] ${className}`}>
         {children}
     </th>
 );
 
 export const Td = ({ children, className = "", colSpan }: { children: React.ReactNode; className?: string; colSpan?: number }) => (
-    <td colSpan={colSpan} className={`px-8 py-6 text-sm font-medium text-charcoal-700 ${className}`}>
+    <td colSpan={colSpan} className={`px-8 py-6 text-sm font-bold text-navy-900 ${className}`}>
         {children}
     </td>
 );
@@ -134,12 +139,12 @@ export const Badge = ({ children, variant = 'default', className = "" }: { child
         default: "bg-charcoal-50 text-charcoal-700 border-charcoal-200",
         success: "bg-emerald-50 text-emerald-700 border-emerald-100",
         warning: "bg-amber-50 text-amber-700 border-amber-100",
-        error: "bg-ruby-50 text-ruby-700 border-ruby-100"
+        error: "bg-ruby-50 text-ruby-700 border-ruby-200"
     };
 
     return (
-        <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-widest border ${variants[variant]} ${className}`}>
-            <div className={`w-1 h-1 rounded-full ${variant === 'success' ? 'bg-emerald-500' : variant === 'warning' ? 'bg-amber-500' : variant === 'error' ? 'bg-ruby-600' : 'bg-charcoal-400'}`} />
+        <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border ${variants[variant]} ${className}`}>
+            <div className={`w-1.5 h-1.5 rounded-full ${variant === 'success' ? 'bg-emerald-500' : variant === 'warning' ? 'bg-amber-500' : variant === 'error' ? 'bg-ruby-600' : 'bg-charcoal-400'}`} />
             {children}
         </span>
     );

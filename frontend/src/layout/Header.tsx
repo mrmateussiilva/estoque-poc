@@ -10,40 +10,43 @@ interface HeaderProps {
 
 export default function Header({ title, onSync, onLogout, onMenuClick, loading }: HeaderProps) {
     return (
-        <header className="h-20 bg-white border-b border-charcoal-100 flex items-center justify-between px-6 md:px-10 sticky top-0 z-40">
-            <div className="flex items-center gap-4">
+        <header className="h-24 bg-white border-b border-charcoal-100/50 flex items-center justify-between px-6 md:px-10 sticky top-0 z-40 transition-all duration-300">
+            <div className="flex items-center gap-6">
                 {onMenuClick && (
                     <button
                         onClick={onMenuClick}
-                        className="md:hidden p-2 text-charcoal-400 hover:text-ruby-700 hover:bg-ruby-50 rounded-lg transition-all"
+                        className="md:hidden p-2 text-charcoal-400 hover:text-ruby-700 hover:bg-ruby-50 rounded-xl transition-all"
                     >
                         <Menu className="w-6 h-6" />
                     </button>
                 )}
-                <div className="flex flex-col">
-                    <h1 className="text-xl md:text-2xl font-bold text-charcoal-950 tracking-tight truncate leading-none">{title}</h1>
-                    <p className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest mt-1 opacity-70">Painel de Controle / {title}</p>
+                <div className="flex items-center gap-5">
+                    <div className="w-1.5 h-10 bg-ruby-600 rounded-full shadow-[0_0_12px_rgba(225,29,72,0.3)]" />
+                    <div className="flex flex-col">
+                        <h1 className="text-2xl md:text-3xl font-black text-navy-900 tracking-tighter truncate leading-none uppercase">{title}</h1>
+                        <p className="text-[10px] font-black text-charcoal-400 uppercase tracking-[0.2em] mt-2 opacity-60">SGE • {title}</p>
+                    </div>
                 </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
                 {onSync && (
                     <button
                         onClick={onSync}
                         disabled={loading}
-                        className="h-10 px-4 bg-white border border-charcoal-200 text-charcoal-700 rounded-lg hover:bg-charcoal-100 hover:border-charcoal-300 transition-all flex items-center gap-2 disabled:opacity-50 active:scale-[0.98]"
+                        className="h-11 px-5 bg-white border border-charcoal-200 text-charcoal-700 rounded-xl hover:border-ruby-200 hover:text-ruby-600 transition-all flex items-center gap-2.5 disabled:opacity-50 active:scale-[0.98] shadow-sm font-bold text-xs"
                     >
-                        <RefreshCw className={`w-3.5 h-3.5 text-emerald-600 ${loading ? 'animate-spin' : ''}`} />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Sincronizar</span>
+                        <RefreshCw className={`w-3.5 h-3.5 text-emerald-500 ${loading ? 'animate-spin' : ''}`} />
+                        <span className="uppercase tracking-widest text-[10px]">Sincronizar</span>
                     </button>
                 )}
-                <div className="w-px h-5 bg-charcoal-100 mx-1 hidden md:block" />
+                <div className="w-px h-6 bg-charcoal-200/50 mx-2 hidden md:block" />
                 {onLogout && (
                     <button
                         onClick={onLogout}
-                        className="h-10 px-4 bg-white border border-charcoal-200 text-ruby-600 rounded-lg hover:bg-ruby-50 hover:border-ruby-200 transition-all flex items-center gap-2 active:scale-[0.98]"
+                        className="h-11 px-5 bg-ruby-50/50 border border-ruby-100 text-ruby-600 rounded-xl hover:bg-ruby-600 hover:text-white hover:border-ruby-700 transition-all flex items-center gap-2.5 active:scale-[0.98] shadow-sm font-bold text-xs group"
                     >
-                        <LogOut className="w-3.5 h-3.5" />
-                        <span className="text-[10px] font-bold uppercase tracking-widest">Sair</span>
+                        <LogOut className="w-3.5 h-3.5 transition-transform group-hover:-translate-x-0.5" />
+                        <span className="uppercase tracking-widest text-[10px]">Sair do Sistema</span>
                     </button>
                 )}
             </div>
