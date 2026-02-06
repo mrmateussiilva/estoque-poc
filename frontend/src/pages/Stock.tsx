@@ -9,32 +9,18 @@ export default function Stock() {
     const { apiFetch } = useAuth();
     const {
         stock, setStock,
-        categories, setCategories
+        categories
     } = useData();
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [editingProduct, setEditingProduct] = useState<StockItem | null>(null);
     const [activeTab, setActiveTab] = useState<string>('');
 
-    const fetchCategories = async () => {
-        if (categories.length > 0) return;
-        try {
-            const response = await apiFetch('/api/categories');
-            if (response.ok) {
-                const data = await response.json();
-                setCategories(data || []);
-            }
-        } catch (err) {
-            console.error('Error fetching categories:', err);
-        }
-    };
-
     const fetchStock = async () => {
         setLoading(true);
         try {
             const query = new URLSearchParams();
             if (search) query.append('search', search);
-            // Removido filtro de categoria da API pois faremos agrupamento local
 
             const response = await apiFetch(`/stock?${query.toString()}`);
             if (response.ok) {
@@ -63,17 +49,12 @@ export default function Stock() {
     };
 
     useEffect(() => {
-        fetchCategories();
-    }, []);
-
-    useEffect(() => {
         const timer = setTimeout(() => {
             fetchStock();
         }, 300);
         return () => clearTimeout(timer);
-    }, [search]); // Removido selectedCategory como dependência
+    }, [search]);
 
-    // Agrupamento de itens por categoria
     const groupedStock = stock.reduce((acc, item) => {
         const cat = item.category_name || 'Sem Categoria';
         if (!acc[cat]) acc[cat] = [];
@@ -83,7 +64,6 @@ export default function Stock() {
 
     const availableTabs = Object.keys(groupedStock).sort();
 
-    // Sincronizar activeTab se ela for perdida ou vazia
     useEffect(() => {
         if (availableTabs.length > 0 && (!activeTab || !availableTabs.includes(activeTab))) {
             setActiveTab(availableTabs[0]);
@@ -101,25 +81,27 @@ export default function Stock() {
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Header / Filtros */}
-            <Card className="p-4 bg-white border border-charcoal-200 shadow-sm flex flex-col md:flex-row gap-4 items-center">
-                <div className="relative flex-1 group w-full">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400 group-focus-within:text-ruby-600 transition-colors" />
-                    <input
-                        type="text"
-                        placeholder="Buscar por nome ou SKU..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 bg-charcoal-50 border border-charcoal-100 rounded-lg text-sm font-semibold tracking-tight focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white outline-none transition-all placeholder:text-charcoal-300"
-                    />
-                </div>
+            <div className="flex flex-col xl:flex-row gap-4 items-start xl:items-center justify-between">
+                <Card className="p-4 bg-white border border-charcoal-200 shadow-sm flex flex-col md:flex-row gap-4 items-center flex-1 w-full">
+                    <div className="relative flex-1 group w-full">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-400 group-focus-within:text-ruby-600 transition-colors" />
+                        <input
+                            type="text"
+                            placeholder="Buscar por nome ou SKU..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="w-full pl-12 pr-4 py-3 bg-charcoal-50 border border-charcoal-100 rounded-lg text-sm font-semibold tracking-tight focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white outline-none transition-all placeholder:text-charcoal-300"
+                        />
+                    </div>
 
-                <div className="flex items-center gap-3 px-4 py-2 bg-ruby-50/50 rounded-lg border border-ruby-100/50">
-                    <Package className="w-4 h-4 text-ruby-600" />
-                    <span className="text-xs font-bold text-ruby-950 uppercase tracking-widest">
-                        {stock.length} Produtos
-                    </span>
-                </div>
-            </Card>
+                    <div className="flex items-center gap-3 px-4 py-2 bg-ruby-50/50 rounded-lg border border-ruby-100/50 whitespace-nowrap">
+                        <Package className="w-4 h-4 text-ruby-600" />
+                        <span className="text-xs font-bold text-ruby-950 uppercase tracking-widest">
+                            {stock.length} Produtos
+                        </span>
+                    </div>
+                </Card>
+            </div>
 
             {/* Abas de Categorias */}
             <div className="flex overflow-x-auto pb-4 gap-2 scrollbar-none no-scrollbar">
