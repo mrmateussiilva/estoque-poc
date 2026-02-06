@@ -3,19 +3,44 @@ package main
 import (
 	"estoque/internal/api"
 	"estoque/internal/database"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	// Carregar variáveis de ambiente do arquivo .env
+	godotenv.Load()
+
 	// 1. Configuração do Logger Estruturado (JSON para produção)
 	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
 	slog.SetDefault(slog.New(handler))
 
 	// 2. Inicialização do Banco de Dados e Migrações
-	db, err := database.InitDB("./estoque.db")
+	dbUser := os.Getenv("DB_USER")
+	dbPass := os.Getenv("DB_PASS")
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbName := os.Getenv("DB_NAME")
+
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" && dbUser != "" {
+		if dbPort == "" {
+			dbPort = "3306"
+		}
+		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPass, dbHost, dbPort, dbName)
+	}
+
+	if dsn == "" {
+		// Fallback para desenvolvimento ou se preferir DSN direto
+		dsn = "root:root@tcp(localhost:3306)/estoque?parseTime=true"
+	}
+
+	db, err := database.InitDB(dsn)
 	if err != nil {
 		slog.Error("Failed to initialize database", "error", err)
 		os.Exit(1)

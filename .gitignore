@@ -1,2 +1,9 @@
 estoque-poc
-estoque.db
+main
+.env
+*.db
+*.exe
+vendor/
+node_modules/
+dist/
+10_129_76_12.json
