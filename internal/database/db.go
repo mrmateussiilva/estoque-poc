@@ -14,7 +14,7 @@ var DB *gorm.DB
 
 func InitDB(dsn string) (*gorm.DB, error) {
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Warn), // Alterado de Info para Warn (mostra apenas avisos e erros)
 	})
 	if err != nil {
 		return nil, err

@@ -30,8 +30,6 @@ func main() {
 		slog.Error("Failed to initialize database", "error", err)
 		os.Exit(1)
 	}
-	// O GORM não requer Close() manual na maioria das vezes para o pool, 
-	// mas você pode pegar o sql.DB se necessário.
 
 	// 3. Inicialização dos Handlers
 	h := api.NewHandler(db)
@@ -42,22 +40,19 @@ func main() {
 	// Middlewares Globais
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger) // Substitui o LoggingMiddleware customizado se preferir
+	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	// CORS Configuration
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"}, // Ajustar conforme ALLOWED_ORIGIN no .env
+		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 		ExposedHeaders:   []string{"Link"},
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
-
-	// Servir frontend estático
-	r.Handle("/*", http.FileServer(http.Dir("./static")))
 
 	// API Routes
 	r.Route("/api", func(r chi.Router) {
@@ -89,6 +84,19 @@ func main() {
 			r.Get("/categories", h.CategoriesHandler)
 			r.Post("/categories", h.CategoriesHandler)
 		})
+	})
+
+	// Servir frontend estático com fallback para SPA (index.html)
+	staticDir := "./static"
+	fileServer := http.FileServer(http.Dir(staticDir))
+	r.Get("/*", func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		// Se não existe o arquivo físico, serve index.html (rota do React)
+		if _, err := os.Stat(staticDir + path); os.IsNotExist(err) {
+			http.ServeFile(w, r, staticDir+"/index.html")
+			return
+		}
+		fileServer.ServeHTTP(w, r)
 	})
 
 	// 5. Configuração e Inicialização do Servidor
