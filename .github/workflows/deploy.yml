@@ -26,21 +26,18 @@ jobs:
             IdentityFile ~/.ssh/deploy_key
             StrictHostKeyChecking no
             UserKnownHostsFile=/dev/null
+            LogLevel VERBOSE
           EOF
           
-          echo "========== VERIFICANDO AMBIENTE =========="
-          ssh vps 'whoami && pwd && echo "Conexao OK"'
+          echo "========== TESTE BASICO DE SSH =========="
+          ssh -vvv vps 'echo "TESTE: Se voce ve isso, SSH funciona"; whoami; pwd' 2>&1 | tail -20
           
           echo ""
-          echo "========== VERIFICANDO SCRIPT DE DEPLOY =========="
-          ssh vps 'ls -lah /opt/apps/estoque-poc/deploy.sh'
+          echo "========== TESTE COM TTY =========="
+          ssh -tt vps 'echo "TESTE COM TTY"; exit 0' || echo "Falhou com TTY"
           
           echo ""
-          echo "========== INICIANDO DEPLOY NA VPS =========="
-          ssh vps 'cd /opt/apps/estoque-poc && bash -x deploy.sh 2>&1 | tee deploy.log; echo "Exit code: $?"'
-          
-          echo ""
-          echo "========== EXIBINDO LOG DO DEPLOY =========="
-          ssh vps 'cat /opt/apps/estoque-poc/deploy.log || echo "ERRO: deploy.log nao foi criado"'
+          echo "========== EXECUTANDO DEPLOY =========="
+          ssh vps 'cd /opt/apps/estoque-poc && pwd && ls -la deploy.sh && bash deploy.sh' 2>&1 || echo "Deploy falhou"
           
           rm -f ~/.ssh/deploy_key
