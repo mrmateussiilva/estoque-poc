@@ -24,5 +24,9 @@ jobs:
             cd /opt/apps/estoque-poc
             git fetch origin main
             git reset --hard origin/main
+            echo "--- Versão do Código baixada: ---"
+            git log -1 --format="%h - %s (%cr)"
             docker compose down
-            docker compose up -d --build 
+            docker compose up -d --build --force-recreate
+            echo "--- Containers Rodando: ---"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"

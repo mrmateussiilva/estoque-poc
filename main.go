@@ -133,7 +133,7 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	slog.Info("S.G.E. Backend Modernized is running", "port", port)
+	slog.Info("S.G.E. Backend Modernized is running", "port", port, "version", "1.1.2", "env", os.Getenv("DATABASE_URL"))
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		slog.Error("Server critical failure", "error", err)
