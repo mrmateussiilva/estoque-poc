@@ -19,33 +19,29 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
+          debug: true
           script_stop: true
           script: |
-            set -e
-            export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
-            
-            echo "--- Verificando Ambiente ---"
-            cd /opt/apps/estoque-poc
+            echo "1. Identificando Usuário e Diretório"
+            whoami
             pwd
-            ls -F
             
-            echo "--- Atualizando Código ---"
-            git fetch origin main
+            echo "2. Verificando Docker e Permissões"
+            docker version || echo "Erro: Docker não encontrado ou sem permissão"
+            docker compose version || docker-compose version || echo "Erro: Compose não encontrado"
+            
+            echo "3. Acessando Projeto"
+            cd /opt/apps/estoque-poc || (echo "Erro: Diretório /opt/apps/estoque-poc não existe" && exit 1)
+            ls -la
+            
+            echo "4. Sincronizando Git"
+            git fetch --all
             git reset --hard origin/main
-            git log -1 --format="%h - %s (%cr)"
             
-            echo "--- Subindo Container ---"
-            # Tenta usar 'docker compose' e falha para 'docker-compose' se necessário
-            if docker compose version > /dev/null 2>&1; then
-              DOCKER_CMD="docker compose"
-            else
-              DOCKER_CMD="docker-compose"
-            fi
+            echo "5. Reiniciando Containers"
+            docker compose down || docker-compose down || true
+            docker compose up -d --build --force-recreate || docker-compose up -d --build --force-recreate
             
-            $DOCKER_CMD down --remove-orphans || true
-            $DOCKER_CMD up -d --build --force-recreate
-            
-            echo "--- Verificação Final (Aguardando 5s) ---"
-            sleep 5
-            $DOCKER_CMD ps -a
-            $DOCKER_CMD logs --tail=30
+            echo "6. Status Final"
+            docker ps -a
+            docker logs sge-backend --tail 20
