@@ -30,11 +30,11 @@ git log -1 --oneline
 
 echo ""
 echo "========== PARANDO CONTAINERS ANTIGOS =========="
-docker compose down 2>/dev/null || docker-compose down 2>/dev/null || echo "Nenhum container para parar"
+docker compose down 2>/dev/null || echo "Nenhum container para parar"
 
 echo ""
 echo "========== CONSTRUINDO E SUBINDO CONTAINER =========="
-docker compose up -d --build --force-recreate || docker-compose up -d --build --force-recreate
+docker compose up -d --build --force-recreate
 
 echo ""
 echo "========== AGUARDANDO INICIALIZAÇÃO =========="
