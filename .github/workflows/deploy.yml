@@ -13,14 +13,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy na VPS via SSH
+      - name: Deploy na VPS
         run: |
-          # Salvar a chave SSH em arquivo temporário
           mkdir -p ~/.ssh
           echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
           
-          # Configurar SSH
           cat >> ~/.ssh/config <<EOF
           Host vps
             HostName ${{ secrets.VPS_HOST }}
@@ -30,38 +28,7 @@ jobs:
             UserKnownHostsFile=/dev/null
           EOF
           
-          echo "========== TESTANDO CONEXAO =========="
-          ssh -v vps 'echo "Conexao OK"; whoami; pwd' || echo "ERRO na conexao SSH"
+          echo "Executando deploy na VPS..."
+          ssh vps 'cd /opt/apps/estoque-poc && bash deploy.sh'
           
-          echo ""
-          echo "========== VERIFICANDO DOCKER =========="
-          ssh vps 'docker version' || echo "ERRO: Docker nao encontrado"
-          
-          echo ""
-          echo "========== VERIFICANDO PROJETO =========="
-          ssh vps 'ls -la /opt/apps/estoque-poc' || echo "ERRO: Diretorio nao existe"
-          
-          echo ""
-          echo "========== VERIFICANDO .ENV =========="
-          ssh vps 'cat /opt/apps/estoque-poc/.env | head -5' || echo "ERRO: .env nao existe"
-          
-          echo ""
-          echo "========== ATUALIZANDO CODIGO =========="
-          ssh vps 'cd /opt/apps/estoque-poc && git fetch --all && git reset --hard origin/main && git log -1 --oneline'
-          
-          echo ""
-          echo "========== SUBINDO CONTAINER =========="
-          ssh vps 'cd /opt/apps/estoque-poc && docker compose down || docker-compose down || true'
-          ssh vps 'cd /opt/apps/estoque-poc && docker compose up -d --build --force-recreate || docker-compose up -d --build --force-recreate'
-          
-          echo ""
-          echo "========== AGUARDANDO CONTAINER =========="
-          sleep 5
-          
-          echo ""
-          echo "========== STATUS FINAL =========="
-          ssh vps 'docker ps -a'
-          ssh vps 'docker logs sge-backend --tail 50 2>&1' || echo "Container nao encontrado"
-          
-          # Limpar chave SSH
           rm -f ~/.ssh/deploy_key
