@@ -34,14 +34,26 @@ jobs:
             cd /opt/apps/estoque-poc || (echo "Erro: Diretório /opt/apps/estoque-poc não existe" && exit 1)
             ls -la
             
-            echo "4. Sincronizando Git"
+            echo "4. Verificando arquivo .env"
+            if [ -f .env ]; then
+              echo "✓ Arquivo .env encontrado"
+              echo "Variáveis definidas:"
+              grep -E '^(DB_|DATABASE_URL|PORT)' .env || echo "Nenhuma variável DB_ encontrada"
+            else
+              echo "✗ ERRO: Arquivo .env NÃO EXISTE!"
+              echo "O backend precisa do .env para conectar no banco de dados."
+              exit 1
+            fi
+            
+            echo "5. Sincronizando Git"
             git fetch --all
             git reset --hard origin/main
             
-            echo "5. Reiniciando Containers"
+            echo "6. Reiniciando Containers"
             docker compose down || docker-compose down || true
             docker compose up -d --build --force-recreate || docker-compose up -d --build --force-recreate
             
-            echo "6. Status Final"
+            echo "7. Status Final"
+            sleep 3
             docker ps -a
-            docker logs sge-backend --tail 20
+            docker logs sge-backend --tail 30 2>&1 || echo "Container sge-backend não encontrado"
