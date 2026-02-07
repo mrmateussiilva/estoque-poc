@@ -22,7 +22,9 @@ export default function Stock() {
             const query = new URLSearchParams();
             if (search) query.append('search', search);
 
-            const response = await apiFetch(`/api/stock?${query.toString()}`);
+            const queryString = query.toString();
+            const url = queryString ? `/api/stock?${queryString}` : '/api/stock';
+            const response = await apiFetch(url);
             if (response.ok) {
                 const data = await response.json();
                 setStock(data || []);

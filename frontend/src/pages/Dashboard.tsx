@@ -178,41 +178,45 @@ export default function Dashboard() {
                     </div>
 
                     <div className="h-[320px] w-full relative z-10 min-h-[320px]">
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={320}>
-                            <LineChart data={evolution}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis
-                                    dataKey="month"
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }}
-                                    dy={10}
-                                />
-                                <YAxis
-                                    axisLine={false}
-                                    tickLine={false}
-                                    tick={{ fill: '#94a3b8', fontSize: 10, fontWeight: 900 }}
-                                />
-                                <Tooltip
-                                    contentStyle={{
-                                        borderRadius: '16px',
-                                        border: '1px solid #fee2e2',
-                                        boxShadow: '0 10px 15px -3px rgba(225,29,72,0.1)',
-                                        fontWeight: 900,
-                                        fontSize: '12px',
-                                        padding: '12px'
-                                    }}
-                                />
-                                <Line
-                                    type="monotone"
-                                    dataKey="items"
-                                    stroke="#e11d48"
-                                    strokeWidth={4}
-                                    dot={{ stroke: '#e11d48', strokeWidth: 3, fill: '#fff', r: 5 }}
-                                    activeDot={{ r: 8, strokeWidth: 0, fill: '#fb7185' }}
-                                />
-                            </LineChart>
-                        </ResponsiveContainer>
+                        {evolution && evolution.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <LineChart data={evolution} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                    <XAxis
+                                        dataKey="date"
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }}
+                                        dy={10}
+                                    />
+                                    <YAxis hide domain={['auto', 'auto']} />
+                                    <Tooltip
+                                        contentStyle={{
+                                            backgroundColor: '#0f172a',
+                                            borderRadius: '16px',
+                                            border: 'none',
+                                            boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
+                                            padding: '12px'
+                                        }}
+                                        itemStyle={{ color: '#fff', fontSize: '10px', fontWeight: '800', textTransform: 'uppercase' }}
+                                        labelStyle={{ color: '#64748b', fontSize: '9px', marginBottom: '4px', fontWeight: '800' }}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="quantity"
+                                        stroke="#e11d48"
+                                        strokeWidth={4}
+                                        dot={{ fill: '#e11d48', strokeWidth: 2, r: 4, stroke: '#fff' }}
+                                        activeDot={{ r: 6, strokeWidth: 0, fill: '#e11d48' }}
+                                        animationDuration={1500}
+                                    />
+                                </LineChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-charcoal-50/50 rounded-2xl border border-dashed border-charcoal-100">
+                                <span className="text-[10px] font-black text-charcoal-300 uppercase tracking-widest">Aguardando dados de movimentação...</span>
+                            </div>
+                        )}
                     </div>
                 </Card>
 

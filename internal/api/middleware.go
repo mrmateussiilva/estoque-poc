@@ -13,6 +13,12 @@ var JwtSecret = []byte("sge-secret-key-change-in-production")
 // AuthMiddleware is a Chi-compatible middleware for JWT authentication
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Pular autenticação para requisições OPTIONS (CORS Preflight)
+		if r.Method == http.MethodOptions {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
 			RespondWithError(w, http.StatusUnauthorized, "Missing authorization header")

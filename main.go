@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"estoque/internal/api"
 	"estoque/internal/database"
 	"estoque/internal/services/nfe_consumer"
@@ -64,6 +65,11 @@ func main() {
 	r.Route("/api", func(r chi.Router) {
 		// Public Routes
 		r.Post("/login", h.LoginHandler)
+		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{"status": "ok", "version": "1.1.0"})
+		})
 
 		// Protected Routes
 		r.Group(func(r chi.Router) {
