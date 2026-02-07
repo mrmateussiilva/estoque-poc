@@ -22,6 +22,6 @@ jobs:
           script: |
             cd /opt/apps/estoque-poc
             git fetch origin
-            git reset --hard origin/main
+            git pull origin main
             docker compose down
             docker compose up -d --build 
