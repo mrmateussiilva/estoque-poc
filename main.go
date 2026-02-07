@@ -89,6 +89,14 @@ func main() {
 			// Categories
 			r.Get("/categories", h.CategoriesHandler)
 			r.Post("/categories", h.CategoriesHandler)
+			r.Put("/categories/{id}", h.CategoriesHandler)
+			r.Delete("/categories/{id}", h.CategoriesHandler)
+
+			// Users (Admin Only - simplified for now)
+			r.Get("/users", h.ListUsersHandler)
+			r.Post("/users", h.CreateUserHandler)
+			r.Put("/users/{id}", h.UpdateUserHandler)
+			r.Delete("/users/{id}", h.DeleteUserHandler)
 		})
 	})
 

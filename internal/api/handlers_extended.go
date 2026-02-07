@@ -5,6 +5,7 @@ import (
 	"estoque/internal/models"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"gorm.io/gorm"
 )
@@ -232,7 +233,7 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 
 		category := models.Category{Name: req.Name, ParentID: req.ParentID}
 		if err := h.DB.Create(&category).Error; err != nil {
-			if err == gorm.ErrDuplicatedKey {
+			if strings.Contains(err.Error(), "Duplicate entry") {
 				RespondWithError(w, http.StatusConflict, "Uma categoria com este nome já existe")
 				return
 			}
@@ -241,6 +242,52 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		RespondWithJSON(w, http.StatusCreated, category)
+		return
+	}
+
+	if r.Method == http.MethodPut {
+		idStr := strings.TrimPrefix(r.URL.Path, "/api/categories/")
+		if idStr == "" {
+			RespondWithError(w, http.StatusBadRequest, "Category ID is required")
+			return
+		}
+
+		var req models.Category
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			RespondWithError(w, http.StatusBadRequest, "Invalid request body")
+			return
+		}
+
+		if err := h.DB.Model(&models.Category{}).Where("id = ?", idStr).Updates(req).Error; err != nil {
+			RespondWithError(w, http.StatusInternalServerError, "Error updating category")
+			return
+		}
+
+		RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Category updated successfully"})
+		return
+	}
+
+	if r.Method == http.MethodDelete {
+		idStr := strings.TrimPrefix(r.URL.Path, "/api/categories/")
+		if idStr == "" {
+			RespondWithError(w, http.StatusBadRequest, "Category ID is required")
+			return
+		}
+
+		// Verificar se existem produtos vinculados
+		var count int64
+		h.DB.Model(&models.Product{}).Where("category_id = ?", idStr).Count(&count)
+		if count > 0 {
+			RespondWithError(w, http.StatusConflict, "Não é possível excluir uma categoria que possui produtos vinculados")
+			return
+		}
+
+		if err := h.DB.Delete(&models.Category{}, idStr).Error; err != nil {
+			RespondWithError(w, http.StatusInternalServerError, "Error deleting category")
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
 		return
 	}
 
