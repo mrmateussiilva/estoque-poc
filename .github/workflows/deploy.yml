@@ -26,18 +26,9 @@ jobs:
             IdentityFile ~/.ssh/deploy_key
             StrictHostKeyChecking no
             UserKnownHostsFile=/dev/null
-            LogLevel VERBOSE
           EOF
           
-          echo "========== TESTE BASICO DE SSH =========="
-          ssh -vvv vps 'echo "TESTE: Se voce ve isso, SSH funciona"; whoami; pwd' 2>&1 | tail -20
-          
-          echo ""
-          echo "========== TESTE COM TTY =========="
-          ssh -tt vps 'echo "TESTE COM TTY"; exit 0' || echo "Falhou com TTY"
-          
-          echo ""
-          echo "========== EXECUTANDO DEPLOY =========="
-          ssh vps 'cd /opt/apps/estoque-poc && pwd && ls -la deploy.sh && bash deploy.sh' 2>&1 || echo "Deploy falhou"
+          echo "========== EXECUTANDO DEPLOY NA VPS =========="
+          ssh -tt vps 'cd /opt/apps/estoque-poc && bash deploy.sh; exit 0'
           
           rm -f ~/.ssh/deploy_key
