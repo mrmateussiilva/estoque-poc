@@ -51,7 +51,7 @@ export default function Dashboard() {
             }
 
             // Buscar top produtos
-            const stockRes = await apiFetch('/stock');
+            const stockRes = await apiFetch('/api/stock');
             if (stockRes.ok) {
                 const stockData = await stockRes.json();
                 const sorted = (stockData || [])
@@ -77,7 +77,7 @@ export default function Dashboard() {
         formData.append('file', file);
 
         try {
-            const response = await apiFetch('/nfe/upload', {
+            const response = await apiFetch('/api/nfe/upload', {
                 method: 'POST',
                 body: formData,
             });
@@ -177,8 +177,8 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    <div className="h-[320px] w-full relative z-10">
-                        <ResponsiveContainer width="100%" height="100%">
+                    <div className="h-[320px] w-full relative z-10 min-h-[320px]">
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={320}>
                             <LineChart data={evolution}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                 <XAxis
