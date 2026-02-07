@@ -26,7 +26,7 @@ echo "========== ATUALIZANDO CÓDIGO =========="
 git fetch --all
 git reset --hard origin/main
 echo "Último commit:"
-git log -1 --oneline
+GIT_PAGER=cat git log -1 --oneline
 
 echo ""
 echo "========== PARANDO CONTAINERS ANTIGOS =========="
