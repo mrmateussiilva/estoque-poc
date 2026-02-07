@@ -28,7 +28,11 @@ jobs:
             UserKnownHostsFile=/dev/null
           EOF
           
-          echo "Executando deploy na VPS..."
-          ssh vps 'cd /opt/apps/estoque-poc && bash deploy.sh'
+          echo "========== INICIANDO DEPLOY NA VPS =========="
+          ssh vps 'cd /opt/apps/estoque-poc && bash deploy.sh 2>&1 | tee deploy.log; exit ${PIPESTATUS[0]}'
+          
+          echo ""
+          echo "========== EXIBINDO LOG DO DEPLOY =========="
+          ssh vps 'cat /opt/apps/estoque-poc/deploy.log'
           
           rm -f ~/.ssh/deploy_key
