@@ -21,14 +21,31 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script_stop: true
           script: |
+            set -e
+            export PATH=$PATH:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+            
+            echo "--- Verificando Ambiente ---"
             cd /opt/apps/estoque-poc
+            pwd
+            ls -F
+            
+            echo "--- Atualizando Código ---"
             git fetch origin main
             git reset --hard origin/main
-            echo "--- Versão do Código baixada: ---"
             git log -1 --format="%h - %s (%cr)"
-            docker compose down
-            docker compose up -d --build --force-recreate
-            echo "--- Status dos Containers (ps -a): ---"
-            docker compose ps -a
-            echo "--- Logs de Inicialização: ---"
-            docker compose logs --tail=50
+            
+            echo "--- Subindo Container ---"
+            # Tenta usar 'docker compose' e falha para 'docker-compose' se necessário
+            if docker compose version > /dev/null 2>&1; then
+              DOCKER_CMD="docker compose"
+            else
+              DOCKER_CMD="docker-compose"
+            fi
+            
+            $DOCKER_CMD down --remove-orphans || true
+            $DOCKER_CMD up -d --build --force-recreate
+            
+            echo "--- Verificação Final (Aguardando 5s) ---"
+            sleep 5
+            $DOCKER_CMD ps -a
+            $DOCKER_CMD logs --tail=30
