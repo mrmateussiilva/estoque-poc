@@ -14,14 +14,16 @@ import (
 )
 
 type Handler struct {
-	DB         *gorm.DB
-	NfeService *services.NfeService
+	DB             *gorm.DB
+	NfeService     *services.NfeService
+	ProductService *services.ProductService
 }
 
 func NewHandler(db *gorm.DB) *Handler {
 	return &Handler{
-		DB:         db,
-		NfeService: services.NewNfeService(db),
+		DB:             db,
+		NfeService:     services.NewNfeService(db),
+		ProductService: services.NewProductService(db),
 	}
 }
 
@@ -121,57 +123,13 @@ func (h *Handler) StockHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := h.DB.Model(&models.Product{}).
-		Preload("Stock").
-		Preload("Category").
-		Where("active = ?", true)
+	search := r.URL.Query().Get("search")
+	categoryID := r.URL.Query().Get("category_id")
 
-	if search := r.URL.Query().Get("search"); search != "" {
-		db = db.Where("code LIKE ? OR name LIKE ?", "%"+search+"%", "%"+search+"%")
-	}
-
-	if categoryID := r.URL.Query().Get("category_id"); categoryID != "" {
-		db = db.Where("category_id = ?", categoryID)
-	}
-
-	var products []models.Product
-	if err := db.Order("name ASC").Find(&products).Error; err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "DB Error: "+err.Error())
+	list, err := h.ProductService.GetStockList(search, categoryID)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Error fetching stock: "+err.Error())
 		return
-	}
-
-	var list []models.StockItem
-	for _, p := range products {
-		qty := 0.0
-		if p.Stock != nil {
-			qty = p.Stock.Quantity
-		}
-		catName := "Sem Categoria"
-		if p.Category != nil {
-			catName = p.Category.Name
-		}
-
-		item := models.StockItem{
-			Code:         p.Code,
-			Name:         p.Name,
-			Quantity:     qty,
-			Unit:         p.Unit,
-			MinStock:     p.MinStock,
-			MaxStock:     p.MaxStock,
-			CategoryName: catName,
-			SalePrice:    p.SalePrice,
-			Description:  p.Description,
-			CategoryID:   p.CategoryID,
-			Barcode:      p.Barcode,
-			CostPrice:    p.CostPrice,
-			Location:     p.Location,
-			SupplierID:   p.SupplierID,
-		}
-		list = append(list, item)
-	}
-
-	if list == nil {
-		list = []models.StockItem{}
 	}
 
 	RespondWithJSON(w, http.StatusOK, list)

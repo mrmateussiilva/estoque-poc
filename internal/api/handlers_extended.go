@@ -76,7 +76,7 @@ func (h *Handler) CreateMovementHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Validações
+	// Validações básicas (também poderiam ir para o service, mas ok manter aqui como pré-check)
 	if req.ProductCode == "" {
 		RespondWithError(w, http.StatusBadRequest, "Product code is required")
 		return
@@ -90,61 +90,14 @@ func (h *Handler) CreateMovementHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Verificar se produto existe
-	var product models.Product
-	if err := h.DB.First(&product, "code = ? AND active = ?", req.ProductCode, true).Error; err != nil {
-		RespondWithError(w, http.StatusNotFound, "Product not found or inactive")
-		return
-	}
-
-	// Iniciar Transação
-	err := h.DB.Transaction(func(tx *gorm.DB) error {
-		// Se for saída, verificar estoque disponível
-		if req.Type == "SAIDA" {
-			var stock models.Stock
-			tx.First(&stock, "product_code = ?", req.ProductCode)
-			if stock.Quantity < req.Quantity {
-				return gorm.ErrInvalidData // Simular erro de regra de negócio
-			}
-		}
-
-		// Criar movimentação
-		movement := models.Movement{
-			ProductCode: req.ProductCode,
-			Type:        req.Type,
-			Quantity:    req.Quantity,
-			Origin:      &req.Origin,
-			Reference:   &req.Reference,
-			Notes:       &req.Notes,
-		}
-		if err := tx.Create(&movement).Error; err != nil {
-			return err
-		}
-
-		// Atualizar estoque
-		var stock models.Stock
-		err := tx.First(&stock, "product_code = ?", req.ProductCode).Error
-		if err == gorm.ErrRecordNotFound {
-			if req.Type == "SAIDA" {
-				return gorm.ErrInvalidData
-			}
-			stock = models.Stock{ProductCode: req.ProductCode, Quantity: req.Quantity}
-			return tx.Create(&stock).Error
-		} else if err != nil {
-			return err
-		}
-
-		if req.Type == "ENTRADA" {
-			stock.Quantity += req.Quantity
-		} else {
-			stock.Quantity -= req.Quantity
-		}
-		return tx.Save(&stock).Error
-	})
-
-	if err != nil {
+	// Executar via Service
+	if err := h.ProductService.CreateMovement(req); err != nil {
 		if err == gorm.ErrInvalidData {
-			RespondWithError(w, http.StatusBadRequest, "Insufficient stock")
+			RespondWithError(w, http.StatusBadRequest, "Insufficient stock or item not found")
+			return
+		}
+		if err == gorm.ErrRecordNotFound {
+			RespondWithError(w, http.StatusNotFound, "Product not found or inactive")
 			return
 		}
 		RespondWithError(w, http.StatusInternalServerError, "Error processing movement: "+err.Error())
