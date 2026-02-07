@@ -28,5 +28,7 @@ jobs:
             git log -1 --format="%h - %s (%cr)"
             docker compose down
             docker compose up -d --build --force-recreate
-            echo "--- Containers Rodando: ---"
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            echo "--- Status dos Containers (ps -a): ---"
+            docker compose ps -a
+            echo "--- Logs de Inicialização: ---"
+            docker compose logs --tail=50

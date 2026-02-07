@@ -28,6 +28,10 @@ func main() {
 
 	// 2. Inicialização do Banco de Dados (GORM)
 	dsn := getDSN()
+	
+	// Garantir que a pasta static existe (mesmo vazia) para evitar erros de stat
+	_ = os.MkdirAll("./static", 0755)
+
 	db, err := database.InitDB(dsn)
 	if err != nil {
 		slog.Error("Failed to initialize database", "error", err)
@@ -133,7 +137,7 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	slog.Info("S.G.E. Backend Modernized is running", "port", port, "version", "1.1.2", "env", os.Getenv("DATABASE_URL"))
+	slog.Info("S.G.E. Backend Modernized is running", "port", port, "version", "1.1.3")
 
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		slog.Error("Server critical failure", "error", err)

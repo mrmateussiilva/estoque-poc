@@ -25,9 +25,9 @@ WORKDIR /app
 
 # Copiar apenas o binário compilado
 COPY --from=builder /app/estoque-poc .
+RUN mkdir -p static
 
-# Nota: O frontend está na Vercel, então não precisamos copiar a pasta /static
-# O backend agirá puramente como API
+# Nota: O frontend está na Vercel, o backend servirá apenas como API
 
 EXPOSE 8003
 
