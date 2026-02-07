@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"estoque/internal/models"
+	"estoque/internal/services"
 	"net/http"
 	"time"
 
@@ -13,11 +14,15 @@ import (
 )
 
 type Handler struct {
-	DB *gorm.DB
+	DB         *gorm.DB
+	NfeService *services.NfeService
 }
 
 func NewHandler(db *gorm.DB) *Handler {
-	return &Handler{DB: db}
+	return &Handler{
+		DB:         db,
+		NfeService: services.NewNfeService(db),
+	}
 }
 
 func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -94,83 +99,19 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.DB.Transaction(func(tx *gorm.DB) error {
-		// Verificar duplicação
-		var count int64
-		tx.Model(&models.ProcessedNFe{}).Where("access_key = ?", proc.NFe.InfNFe.ID).Count(&count)
-		if count > 0 {
-			return gorm.ErrDuplicatedKey
-		}
-
-		// Registrar NF-e processada
-		totalItems := len(proc.NFe.InfNFe.Det)
-		nfe := models.ProcessedNFe{
-			AccessKey:  proc.NFe.InfNFe.ID,
-			TotalItems: int32(totalItems),
-		}
-		if err := tx.Create(&nfe).Error; err != nil {
-			return err
-		}
-
-		// Processar cada produto
-		for _, det := range proc.NFe.InfNFe.Det {
-			// Inserir/atualizar produto
-			product := models.Product{
-				Code: det.Prod.CProd,
-				Name: det.Prod.XProd,
-				Unit: "UN",
-			}
-			if err := tx.FirstOrCreate(&product, models.Product{Code: product.Code}).Error; err != nil {
-				return err
-			}
-
-			// Criar movimentação de entrada
-			movement := models.Movement{
-				ProductCode: det.Prod.CProd,
-				Type:        "ENTRADA",
-				Quantity:    det.Prod.QCom,
-				Origin:      stringPtr("NFE"),
-				Reference:   stringPtr(proc.NFe.InfNFe.ID),
-			}
-			if err := tx.Create(&movement).Error; err != nil {
-				return err
-			}
-
-			// Atualizar estoque
-			var stock models.Stock
-			err := tx.First(&stock, "product_code = ?", det.Prod.CProd).Error
-			if err == gorm.ErrRecordNotFound {
-				stock = models.Stock{
-					ProductCode: det.Prod.CProd,
-					Quantity:    det.Prod.QCom,
-				}
-				if err := tx.Create(&stock).Error; err != nil {
-					return err
-				}
-			} else if err != nil {
-				return err
-			} else {
-				stock.Quantity += det.Prod.QCom
-				if err := tx.Save(&stock).Error; err != nil {
-					return err
-				}
-			}
-		}
-		return nil
-	})
-
+	totalItems, err := h.NfeService.ProcessNfe(&proc)
 	if err != nil {
 		if err == gorm.ErrDuplicatedKey {
 			RespondWithError(w, http.StatusConflict, "Esta NF-e já foi processada anteriormente")
 			return
 		}
-		RespondWithError(w, http.StatusInternalServerError, "Transaction error: "+err.Error())
+		RespondWithError(w, http.StatusInternalServerError, "Error processing NF-e: "+err.Error())
 		return
 	}
 
 	RespondWithJSON(w, http.StatusOK, map[string]interface{}{
 		"message":     "NF-e processada com sucesso",
-		"total_items": len(proc.NFe.InfNFe.Det),
+		"total_items": totalItems,
 	})
 }
 
@@ -185,12 +126,10 @@ func (h *Handler) StockHandler(w http.ResponseWriter, r *http.Request) {
 		Preload("Category").
 		Where("active = ?", true)
 
-	// Busca por nome ou código
 	if search := r.URL.Query().Get("search"); search != "" {
 		db = db.Where("code LIKE ? OR name LIKE ?", "%"+search+"%", "%"+search+"%")
 	}
 
-	// Filtro por categoria
 	if categoryID := r.URL.Query().Get("category_id"); categoryID != "" {
 		db = db.Where("category_id = ?", categoryID)
 	}
@@ -201,7 +140,6 @@ func (h *Handler) StockHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Mapear para StockItem (formato esperado pelo frontend)
 	var list []models.StockItem
 	for _, p := range products {
 		qty := 0.0

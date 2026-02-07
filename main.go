@@ -1,8 +1,10 @@
 package main
 
 import (
+	"context"
 	"estoque/internal/api"
 	"estoque/internal/database"
+	"estoque/internal/services/nfe_consumer"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -31,8 +33,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 3. Inicialização dos Handlers
+	// 3. Inicialização dos Handlers e Serviços
 	h := api.NewHandler(db)
+
+	// Iniciar Consumidor de e-mails de NF-e em background
+	nfeConsumer := nfe_consumer.NewConsumer(db)
+	go nfeConsumer.Start(context.Background())
 
 	// 4. Setup de Rotas com Chi
 	r := chi.NewRouter()
