@@ -13,20 +13,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy na VPS
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          debug: true
-          sync: true
-          script_stop: true
-          script: |
-            exec 2>&1
+      - name: Deploy na VPS via SSH
+        run: |
+          # Salvar a chave SSH em arquivo temporário
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          
+          # Configurar SSH para não pedir confirmação de host
+          cat >> ~/.ssh/config <<EOF
+          Host vps
+            HostName ${{ secrets.VPS_HOST }}
+            User ${{ secrets.VPS_USER }}
+            IdentityFile ~/.ssh/deploy_key
+            StrictHostKeyChecking no
+            UserKnownHostsFile=/dev/null
+          EOF
+          
+          # Executar comandos na VPS
+          ssh vps bash -s <<'ENDSSH'
+            set -e
             set -x
             
-            echo "========== INICIO DO DEPLOY =========="
+            echo "========== DEPLOY INICIADO =========="
             whoami
             pwd
             
@@ -40,10 +49,10 @@ jobs:
             
             echo "========== VERIFICANDO .ENV =========="
             if [ -f .env ]; then
-              echo "Arquivo .env EXISTE"
-              grep -E '^(DB_|DATABASE_URL|PORT)' .env || echo "Nenhuma var DB_ encontrada"
+              echo "✓ Arquivo .env encontrado"
+              grep -E '^(DB_|DATABASE_URL|PORT)' .env | head -3 || echo "Nenhuma var DB_ encontrada"
             else
-              echo "ERRO: .env NAO EXISTE"
+              echo "✗ ERRO: .env não existe!"
               exit 1
             fi
             
@@ -57,8 +66,12 @@ jobs:
             docker compose up -d --build --force-recreate || docker-compose up -d --build --force-recreate
             
             echo "========== STATUS FINAL =========="
-            sleep 3
+            sleep 5
             docker ps -a
-            docker logs sge-backend --tail 30 || echo "Container nao encontrado"
+            docker logs sge-backend --tail 50 2>&1 || echo "Container não encontrado"
             
-            echo "========== FIM DO DEPLOY =========="
+            echo "========== DEPLOY CONCLUIDO =========="
+          ENDSSH
+          
+          # Limpar chave SSH
+          rm -f ~/.ssh/deploy_key
