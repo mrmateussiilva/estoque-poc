@@ -6,15 +6,16 @@ import EntryForm from '../components/EntryForm';
 import EntryTable from '../components/EntryTable';
 import EntryFooter from '../components/EntryFooter';
 import { useData, type EntryItem } from '../contexts/DataContext';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+import { useMovementMutation } from '../hooks/useQueries';
 
 export default function Entries() {
     const { entryItems: items, setEntryItems: setItems, clearEntryItems } = useData();
     const [showForm, setShowForm] = useState(false);
-    const [isConfirming, setIsConfirming] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    
+    const movementMutation = useMovementMutation();
+    const isConfirming = movementMutation.isPending;
 
     const currentStep = items.length === 0 ? 1 : isConfirming ? 3 : 2;
     const stepLabels = ['Adicionando itens', 'Revisando itens', 'Confirmando entrada'];
@@ -33,44 +34,17 @@ export default function Entries() {
     };
 
     const handleConfirm = async () => {
-        setIsConfirming(true);
         setError(null);
         setSuccess(null);
 
         try {
-            const token = localStorage.getItem('auth_token');
-            const headers: HeadersInit = {
-                'Content-Type': 'application/json',
-                ...(token && { 'Authorization': `Bearer ${token}` })
-            };
-
-            // Enviar cada item como uma movimentação
-            for (const item of items) {
-                const response = await fetch(`${API_BASE_URL}/api/movements`, {
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify({
-                        product_code: item.sku,
-                        type: 'ENTRADA',
-                        quantity: item.quantity,
-                        origin: 'MANUAL',
-                        notes: `Entrada manual: ${item.description}`
-                    })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
-                    throw new Error(errorData.error || `Erro ao processar ${item.sku}`);
-                }
-            }
+            await movementMutation.mutateAsync(items);
 
             setSuccess(`${items.length} movimentações registradas com sucesso!`);
             await new Promise(r => setTimeout(r, 1500));
             clearEntryItems();
         } catch (err: any) {
             setError(err.message || 'Erro ao confirmar entradas');
-        } finally {
-            setIsConfirming(false);
         }
     };
 
