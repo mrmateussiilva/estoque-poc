@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, Package, ChevronRight } from 'lucide-react';
 import { Card, TableContainer, THead, TBody, Tr, Th, Td, Badge } from '../components/UI';
 import EditProductModal from '../components/EditProductModal';
-import { StockItem } from '../contexts/DataContext';
+import { type StockItem } from '../contexts/DataContext';
 import { useStockQuery, useProductMutation, useCategoriesQuery } from '../hooks/useQueries';
 
 export default function Stock() {

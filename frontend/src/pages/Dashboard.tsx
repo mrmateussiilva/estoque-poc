@@ -5,7 +5,7 @@ import { Card, KPICard, Button } from '../components/UI';
 import { useAuth } from '../contexts/AuthContext';
 import { useDashboardStatsQuery, useDashboardEvolutionQuery, useStockQuery } from '../hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
-import { StockItem } from '../contexts/DataContext';
+import { type StockItem } from '../contexts/DataContext';
 
 export default function Dashboard() {
     const { apiFetch } = useAuth();

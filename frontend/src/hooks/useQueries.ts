@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
-import { StockItem, Category, EntryItem } from '../contexts/DataContext';
+import { type StockItem, type Category, type EntryItem } from '../contexts/DataContext';
 
 // Tipos adicionais necessários
 interface DashboardStats {
