@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"encoding/xml"
+	"estoque/internal/database"
 	"estoque/internal/models"
 	"estoque/internal/services"
 	"net/http"
