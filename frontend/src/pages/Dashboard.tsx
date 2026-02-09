@@ -3,69 +3,30 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { Upload, ChevronRight, TrendingUp, Package, FileText, AlertTriangle } from 'lucide-react';
 import { Card, KPICard, Button } from '../components/UI';
 import { useAuth } from '../contexts/AuthContext';
-
-interface DashboardStats {
-    total_items: number;
-    total_skus: number;
-    entries_this_month: number;
-    low_stock_count: number;
-}
-
-interface StockEvolution {
-    month: string;
-    items: number;
-}
-
-interface StockItem {
-    code: string;
-    name: string;
-    quantity: number;
-}
+import { useDashboardStatsQuery, useDashboardEvolutionQuery, useStockQuery } from '../hooks/useQueries';
+import { useQueryClient } from '@tanstack/react-query';
+import { StockItem } from '../contexts/DataContext';
 
 export default function Dashboard() {
     const { apiFetch } = useAuth();
-    const [stats, setStats] = useState<DashboardStats | null>(null);
-    const [evolution, setEvolution] = useState<StockEvolution[]>([]);
-    const [topProducts, setTopProducts] = useState<StockItem[]>([]);
+    const queryClient = useQueryClient();
+    
+    // Queries
+    const { data: stats, isLoading: isLoadingStats } = useDashboardStatsQuery();
+    const { data: evolution, isLoading: isLoadingEvolution } = useDashboardEvolutionQuery();
+    const { data: stockData, isLoading: isLoadingStock } = useStockQuery();
+
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
     const [file, setFile] = useState<File | null>(null);
-    const [loading, setLoading] = useState(true);
 
-    const fetchDashboardData = async () => {
-        setLoading(true);
-        try {
-            // Buscar estatísticas
-            const statsRes = await apiFetch('/api/dashboard/stats');
-            if (statsRes.ok) {
-                const statsData = await statsRes.json();
-                setStats(statsData);
-            }
+    // Calcular top products a partir do stockData
+    const topProducts = (stockData || [])
+        .sort((a: StockItem, b: StockItem) => b.quantity - a.quantity)
+        .slice(0, 5);
 
-            // Buscar evolução
-            const evolutionRes = await apiFetch('/api/dashboard/evolution');
-            if (evolutionRes.ok) {
-                const evolutionData = await evolutionRes.json();
-                setEvolution(evolutionData || []);
-            }
-
-            // Buscar top produtos
-            const stockRes = await apiFetch('/api/stock');
-            if (stockRes.ok) {
-                const stockData = await stockRes.json();
-                const sorted = (stockData || [])
-                    .sort((a: StockItem, b: StockItem) => b.quantity - a.quantity)
-                    .slice(0, 5);
-                setTopProducts(sorted);
-            }
-        } catch (err: any) {
-            console.error('Error fetching dashboard data:', err);
-            setError(err.message);
-        } finally {
-            setLoading(false);
-        }
-    };
+    const isLoading = isLoadingStats || isLoadingEvolution || isLoadingStock;
 
     const handleUpload = async () => {
         if (!file) return;
@@ -87,15 +48,18 @@ export default function Dashboard() {
 
             setSuccess('NF-e processada com sucesso');
             setFile(null);
-            await fetchDashboardData();
+            
+            // Invalidar queries para atualizar dados
+            queryClient.invalidateQueries({ queryKey: ['stock'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-evolution'] });
+            
         } catch (err: any) {
             setError(err.message);
         } finally {
             setUploading(false);
         }
     };
-
-    useEffect(() => { fetchDashboardData(); }, []);
 
     useEffect(() => {
         if (error) {
@@ -133,25 +97,25 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <KPICard
                     title="Itens em Estoque"
-                    value={loading ? "..." : stats?.total_items.toFixed(0) || "0"}
+                    value={isLoading ? "..." : stats?.total_items.toFixed(0) || "0"}
                     subtitle="Volume total estocado"
                     icon={<Package className="w-5 h-5" />}
                 />
                 <KPICard
                     title="SKUs Ativos"
-                    value={loading ? "..." : stats?.total_skus || 0}
+                    value={isLoading ? "..." : stats?.total_skus || 0}
                     subtitle="Produtos cadastrados"
                     icon={<FileText className="w-5 h-5" />}
                 />
                 <KPICard
                     title="Entradas no Mês"
-                    value={loading ? "..." : stats?.entries_this_month || 0}
+                    value={isLoading ? "..." : stats?.entries_this_month || 0}
                     subtitle="Documentos fiscais"
                     icon={<TrendingUp className="w-5 h-5" />}
                 />
                 <KPICard
                     title="Alertas de Estoque"
-                    value={loading ? "..." : stats?.low_stock_count || 0}
+                    value={isLoading ? "..." : stats?.low_stock_count || 0}
                     subtitle="Reposição necessária"
                     icon={<AlertTriangle className={`w-5 h-5 ${stats && stats.low_stock_count > 0 ? 'text-ruby-500' : 'text-charcoal-300'}`} />}
                 />
