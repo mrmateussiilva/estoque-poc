@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
-import { type StockItem, type Category, type EntryItem } from '../contexts/DataContext';
+import { type StockItem, type Category, type EntryItem, type FullReportResponse } from '../contexts/DataContext';
 
 // Tipos adicionais necessários
 interface DashboardStats {
@@ -24,6 +24,21 @@ interface User {
 }
 
 // Queries
+export function useReportsQuery(startDate: string, endDate: string) {
+    const { apiFetch } = useAuth();
+    return useQuery({
+        queryKey: ['reports', startDate, endDate],
+        queryFn: async () => {
+            if (!startDate || !endDate) return null;
+            const query = new URLSearchParams({ start_date: startDate, end_date: endDate });
+            const response = await apiFetch(`/api/reports/movements?${query.toString()}`);
+            if (!response.ok) throw new Error('Failed to fetch reports');
+            return response.json() as Promise<FullReportResponse>;
+        },
+        enabled: !!startDate && !!endDate
+    });
+}
+
 export function useStockQuery(search?: string) {
     const { apiFetch } = useAuth();
     return useQuery({
