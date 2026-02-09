@@ -115,6 +115,7 @@ func (User) TableName() string {
 type Movement struct {
 	ID          int32     `gorm:"primaryKey;type:int" json:"id"`
 	ProductCode string    `gorm:"size:191;not null;type:varchar(191)" json:"product_code"`
+	Product     *Product  `gorm:"foreignKey:ProductCode;references:Code" json:"product,omitempty"` // Added for preloading product details
 	Type        string    `gorm:"size:20;not null" json:"type"` // ENTRADA ou SAIDA
 	Quantity    float64   `gorm:"type:decimal(19,4);not null" json:"quantity"`
 	Origin      *string   `gorm:"size:191" json:"origin,omitempty"`
@@ -194,4 +195,32 @@ type DashboardStats struct {
 type StockEvolution struct {
 	Month string  `json:"month"`
 	Items float64 `json:"items"`
+}
+
+// ReportSummary holds aggregated data for a given period
+type ReportSummary struct {
+	TotalEntriesQuantity float64 `json:"total_entries_quantity"`
+	TotalEntriesValue    float64 `json:"total_entries_value"` // Sum of (quantity * cost_price)
+	TotalExitsQuantity   float64 `json:"total_exits_quantity"`
+	TotalExitsValue      float64 `json:"total_exits_value"` // Sum of (quantity * sale_price)
+	NetQuantity          float64 `json:"net_quantity"`      // TotalEntriesQuantity - TotalExitsQuantity
+	NetValue             float64 `json:"net_value"`         // TotalEntriesValue - TotalExitsValue
+	TotalMovements       int64   `json:"total_movements"`
+	UniqueProducts       int64   `json:"unique_products"`
+}
+
+// ReportTimelineItem represents a data point for a chart, grouped by date
+type ReportTimelineItem struct {
+	Date         time.Time `json:"date"`
+	Entries      float64   `json:"entries_quantity"`
+	Exits        float64   `json:"exits_quantity"`
+	EntriesValue float64   `json:"entries_value"`
+	ExitsValue   float64   `json:"exits_value"`
+}
+
+// FullReportResponse combines summary, timeline, and detailed movements
+type FullReportResponse struct {
+    Summary ReportSummary `json:"summary"`
+    Timeline []ReportTimelineItem `json:"timeline"`
+    DetailedMovements []Movement `json:"detailed_movements"` // Reuse existing Movement struct
 }
