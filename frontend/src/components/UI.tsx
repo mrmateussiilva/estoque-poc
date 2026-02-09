@@ -1,4 +1,6 @@
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, X } from 'lucide-react';
+import ReactDOM from 'react-dom';
+import { useEffect } from 'react';
 
 export const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
     <div className={`bg-white rounded-2xl border border-charcoal-200/60 shadow-ruby-sm hover:shadow-ruby transition-all duration-300 overflow-hidden ${className}`}>
@@ -60,9 +62,9 @@ export const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <input
         {...props}
         className={`
-      w-full h-12 px-4 bg-charcoal-50 border border-charcoal-200 rounded-xl 
+      w-full h-12 px-4 bg-charcoal-50 border border-charcoal-300 rounded-xl 
       focus:outline-none focus:ring-4 focus:ring-ruby-500/10 focus:border-ruby-500/50 focus:bg-white 
-      text-sm font-semibold tracking-tight transition-all placeholder:text-charcoal-300 
+      text-sm font-semibold tracking-tight transition-all placeholder:text-charcoal-400 
       ${props.className || ''}
     `}
     />
@@ -73,7 +75,7 @@ export const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => 
         <select
             {...props}
             className={`
-        w-full h-12 pl-4 pr-10 bg-charcoal-50 border border-charcoal-200 rounded-xl 
+        w-full h-12 pl-4 pr-10 bg-charcoal-50 border border-charcoal-300 rounded-xl 
         focus:outline-none focus:ring-4 focus:ring-ruby-500/10 focus:border-ruby-500/50 focus:bg-white 
         text-sm font-semibold tracking-tight transition-all appearance-none cursor-pointer uppercase
         ${props.className || ''}
@@ -88,7 +90,7 @@ export const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => 
 );
 
 export const Label = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-    <label className={`text-[10px] font-black text-charcoal-500 uppercase tracking-[0.15em] ml-1 ${className}`}>
+    <label className={`text-[10px] font-black text-charcoal-700 uppercase tracking-[0.15em] ml-1 ${className}`}>
         {children}
     </label>
 );
@@ -147,5 +149,42 @@ export const Badge = ({ children, variant = 'default', className = "" }: { child
             <div className={`w-1.5 h-1.5 rounded-full ${variant === 'success' ? 'bg-emerald-500' : variant === 'warning' ? 'bg-amber-500' : variant === 'error' ? 'bg-ruby-600' : 'bg-charcoal-400'}`} />
             {children}
         </span>
+    );
+};
+
+export const Modal = ({ children, onClose, title, className = "" }: { children: React.ReactNode, onClose: () => void, title?: string, className?: string }) => {
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [onClose]);
+
+    let modalRoot = document.getElementById('modal-root');
+    if (!modalRoot) {
+        modalRoot = document.createElement('div');
+        modalRoot.setAttribute('id', 'modal-root');
+        document.body.appendChild(modalRoot);
+    }
+
+    return ReactDOM.createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-charcoal-900/40 animate-in fade-in duration-300 backdrop-blur-sm">
+            <div className={`bg-white w-full rounded-xl shadow-2xl border border-charcoal-200 overflow-hidden animate-in zoom-in-95 duration-300 ${className}`}>
+                {title && (
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-charcoal-100 bg-charcoal-50/50">
+                        <h3 className="text-sm font-bold text-charcoal-950 tracking-tight uppercase">{title}</h3>
+                        <button onClick={onClose} className="p-2 text-charcoal-400 hover:text-ruby-700 hover:bg-ruby-50 rounded-lg transition-all">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                )}
+                {children}
+            </div>
+        </div>,
+        modalRoot
     );
 };

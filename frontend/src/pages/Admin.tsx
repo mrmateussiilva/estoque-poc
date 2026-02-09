@@ -14,7 +14,7 @@ import {
     X,
     Check
 } from 'lucide-react';
-import { Card, TableContainer, THead, TBody, Tr, Th, Td, Button } from '../components/UI';
+import { Card, TableContainer, THead, TBody, Tr, Th, Td, Button, Modal } from '../components/UI';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
 
@@ -253,26 +253,31 @@ export default function Admin() {
                         </div>
 
                         {(isAddingCat || editingCatId) && (
-                            <Card className="p-6 border-2 border-charcoal-900 shadow-xl">
-                                <form onSubmit={handleSaveCategory} className="flex flex-col md:flex-row gap-4 items-end">
-                                    <div className="flex-1 space-y-2">
-                                        <label className="text-[10px] font-black text-charcoal-400 uppercase tracking-[0.2em]">
-                                            {editingCatId ? 'Editar Categoria' : 'Novo Nome'}
+                            <Modal
+                                title={editingCatId ? 'Editar Categoria' : 'Nova Categoria'}
+                                onClose={() => { setIsAddingCat(false); setEditingCatId(null); setCatNameInput(''); }}
+                                className="max-w-md"
+                            >
+                                <form onSubmit={handleSaveCategory} className="p-6 space-y-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-charcoal-700 uppercase tracking-[0.2em]">
+                                            Nome da Categoria
                                         </label>
                                         <input
                                             autoFocus
                                             type="text"
                                             value={catNameInput}
                                             onChange={(e) => setCatNameInput(e.target.value)}
-                                            className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-100 rounded-xl font-bold outline-none focus:border-charcoal-900"
+                                            className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-300 rounded-xl font-bold outline-none focus:border-charcoal-900"
+                                            placeholder="Ex: Eletrônicos"
                                         />
                                     </div>
-                                    <div className="flex gap-2">
+                                    <div className="flex gap-3 justify-end pt-2">
+                                        <Button type="button" onClick={() => { setIsAddingCat(false); setEditingCatId(null); }} variant="outline" className="h-11">Cancelar</Button>
                                         <Button type="submit" className="bg-emerald-600 h-11">Salvar</Button>
-                                        <Button type="button" onClick={() => { setIsAddingCat(false); setEditingCatId(null); }} className="bg-charcoal-100 text-charcoal-600 h-11"><X className="w-4 h-4" /></Button>
                                     </div>
                                 </form>
-                            </Card>
+                            </Modal>
                         )}
 
                         <div className="bg-white rounded-3xl border border-charcoal-100 overflow-hidden shadow-premium">
@@ -316,35 +321,38 @@ export default function Admin() {
                         </div>
 
                         {(isAddingUser || editingUser) && (
-                            <Card className="p-8 border-2 border-navy-900 shadow-xl space-y-6">
-                                <h4 className="text-sm font-black uppercase tracking-widest">{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</h4>
-                                <form onSubmit={handleSaveUser} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <Modal
+                                title={editingUser ? 'Editar Usuário' : 'Novo Usuário'}
+                                onClose={() => { setIsAddingUser(false); setEditingUser(null); }}
+                                className="max-w-2xl"
+                            >
+                                <form onSubmit={handleSaveUser} className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-charcoal-400 uppercase tracking-widest">Nome Completo</label>
-                                        <input type="text" value={userInput.name} onChange={e => setUserInput({ ...userInput, name: e.target.value })} className="w-full h-12 px-4 bg-charcoal-50 border rounded-xl font-bold" />
+                                        <label className="text-[10px] font-black text-charcoal-700 uppercase tracking-widest">Nome Completo</label>
+                                        <input type="text" value={userInput.name} onChange={e => setUserInput({ ...userInput, name: e.target.value })} className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-300 rounded-xl font-bold" />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-charcoal-400 uppercase tracking-widest">E-mail de Acesso</label>
-                                        <input type="email" value={userInput.email} onChange={e => setUserInput({ ...userInput, email: e.target.value })} className="w-full h-12 px-4 bg-charcoal-50 border rounded-xl font-bold" />
+                                        <label className="text-[10px] font-black text-charcoal-700 uppercase tracking-widest">E-mail de Acesso</label>
+                                        <input type="email" value={userInput.email} onChange={e => setUserInput({ ...userInput, email: e.target.value })} className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-300 rounded-xl font-bold" />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-charcoal-400 uppercase tracking-widest">Senha {editingUser && '(deixe em branco para manter)'}</label>
-                                        <input type="password" value={userInput.password} onChange={e => setUserInput({ ...userInput, password: e.target.value })} className="w-full h-12 px-4 bg-charcoal-50 border rounded-xl font-bold" />
+                                        <label className="text-[10px] font-black text-charcoal-700 uppercase tracking-widest">Senha {editingUser && '(deixe em branco para manter)'}</label>
+                                        <input type="password" value={userInput.password} onChange={e => setUserInput({ ...userInput, password: e.target.value })} className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-300 rounded-xl font-bold" />
                                     </div>
                                     <div className="space-y-2">
-                                        <label className="text-[10px] font-black text-charcoal-400 uppercase tracking-widest">Perfil</label>
-                                        <select value={userInput.role} onChange={e => setUserInput({ ...userInput, role: e.target.value })} className="w-full h-12 px-4 bg-charcoal-50 border rounded-xl font-bold">
+                                        <label className="text-[10px] font-black text-charcoal-700 uppercase tracking-widest">Perfil</label>
+                                        <select value={userInput.role} onChange={e => setUserInput({ ...userInput, role: e.target.value })} className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-300 rounded-xl font-bold">
                                             <option value="OPERADOR">Operador</option>
                                             <option value="GERENTE">Gerente</option>
                                             <option value="ADMIN">Admin</option>
                                         </select>
                                     </div>
-                                    <div className="md:col-span-2 flex justify-end gap-3 pt-4">
+                                    <div className="md:col-span-2 flex justify-end gap-3 pt-4 border-t border-charcoal-100 mt-2">
                                         <Button type="button" onClick={() => { setIsAddingUser(false); setEditingUser(null); }} variant="outline">Cancelar</Button>
                                         <Button type="submit" className="bg-emerald-600 px-10">Confirmar</Button>
                                     </div>
                                 </form>
-                            </Card>
+                            </Modal>
                         )}
 
                         <div className="bg-white rounded-3xl border border-charcoal-100 overflow-hidden shadow-premium">
@@ -392,14 +400,14 @@ export default function Admin() {
                         <Card className="p-8 space-y-8">
                             <form className="space-y-6">
                                 <div className="space-y-3">
-                                    <label className="text-xs font-black text-charcoal-400 uppercase tracking-widest">E-mail de Entrada (NF-e)</label>
+                                    <label className="text-xs font-black text-charcoal-700 uppercase tracking-widest">E-mail de Entrada (NF-e)</label>
                                     <div className="relative">
                                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-300" />
                                         <input
                                             type="email"
                                             value={emailConfig.inbound_email}
                                             onChange={(e) => setEmailConfig({ ...emailConfig, inbound_email: e.target.value })}
-                                            className="w-full pl-12 pr-4 h-14 bg-charcoal-50 border border-charcoal-100 rounded-xl font-bold outline-none focus:border-ruby-600 transition-colors"
+                                            className="w-full pl-12 pr-4 h-14 bg-charcoal-50 border border-charcoal-300 rounded-xl font-bold outline-none focus:border-ruby-600 transition-colors"
                                         />
                                     </div>
                                     <p className="text-[10px] text-charcoal-400 font-medium italic">As notas enviadas para este e-mail serão processadas automaticamente.</p>
