@@ -29,6 +29,44 @@ export interface EntryItem {
     origin: 'Manual' | 'XML';
 }
 
+export interface Movement {
+    id: number;
+    product_code: string;
+    product?: StockItem;
+    type: 'ENTRADA' | 'SAIDA';
+    quantity: number;
+    origin?: string;
+    reference?: string;
+    user_id?: number;
+    notes?: string;
+    created_at: string;
+}
+
+export interface ReportSummary {
+    total_entries_quantity: number;
+    total_entries_value: number;
+    total_exits_quantity: number;
+    total_exits_value: number;
+    net_quantity: number;
+    net_value: number;
+    total_movements: number;
+    unique_products: number;
+}
+
+export interface ReportTimelineItem {
+    date: string;
+    entries_quantity: number;
+    exits_quantity: number;
+    entries_value: number;
+    exits_value: number;
+}
+
+export interface FullReportResponse {
+    summary: ReportSummary;
+    timeline: ReportTimelineItem[];
+    detailed_movements: Movement[];
+}
+
 interface DataContextType {
     stock: StockItem[];
     setStock: (items: StockItem[]) => void;
