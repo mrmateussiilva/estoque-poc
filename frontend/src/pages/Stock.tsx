@@ -1,61 +1,33 @@
 import { useState, useEffect } from 'react';
 import { Search, Package, ChevronRight } from 'lucide-react';
 import { Card, TableContainer, THead, TBody, Tr, Th, Td, Badge } from '../components/UI';
-import { useAuth } from '../contexts/AuthContext';
 import EditProductModal from '../components/EditProductModal';
-import { useData, type StockItem } from '../contexts/DataContext';
+import { StockItem } from '../contexts/DataContext';
+import { useStockQuery, useProductMutation, useCategoriesQuery } from '../hooks/useQueries';
 
 export default function Stock() {
-    const { apiFetch } = useAuth();
-    const {
-        stock, setStock,
-        categories
-    } = useData();
-    const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [editingProduct, setEditingProduct] = useState<StockItem | null>(null);
     const [activeTab, setActiveTab] = useState<string>('');
 
-    const fetchStock = async () => {
-        setLoading(true);
-        try {
-            const query = new URLSearchParams();
-            if (search) query.append('search', search);
-
-            const queryString = query.toString();
-            const url = queryString ? `/api/stock?${queryString}` : '/api/stock';
-            const response = await apiFetch(url);
-            if (response.ok) {
-                const data = await response.json();
-                setStock(data || []);
-            }
-        } catch (err) {
-            console.error('Error fetching stock:', err);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleSaveProduct = async (updatedProduct: any) => {
-        const response = await apiFetch(`/api/products/${updatedProduct.code}`, {
-            method: 'PUT',
-            body: JSON.stringify(updatedProduct)
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || 'Erro ao salvar produto');
-        }
-
-        fetchStock();
-    };
-
+    // Debounce para busca
     useEffect(() => {
         const timer = setTimeout(() => {
-            fetchStock();
+            setDebouncedSearch(search);
         }, 300);
         return () => clearTimeout(timer);
     }, [search]);
+
+    // React Query Hooks
+    const { data: stock = [], isLoading: loading } = useStockQuery(debouncedSearch);
+    const { data: categories = [] } = useCategoriesQuery();
+    const productMutation = useProductMutation();
+
+    const handleSaveProduct = async (updatedProduct: any) => {
+        await productMutation.mutateAsync(updatedProduct);
+        // Não precisa atualizar estado manual, o React Query invalida e refaz o fetch
+    };
 
     const groupedStock = stock.reduce((acc, item) => {
         const cat = item.category_name || 'Sem Categoria';
@@ -198,29 +170,6 @@ export default function Stock() {
                         )}
                     </TBody>
                 </TableContainer>
-            </div>
-
-            {/* Resumo Rodapé (Baseado nos itens da ABA ATIVA para maior clareza) */}
-            <div className="bg-navy-950 p-8 flex flex-col md:flex-row justify-between items-center text-[10px] font-black text-white/40 uppercase tracking-[0.2em] rounded-3xl shadow-premium border border-navy-800 relative overflow-hidden group">
-                <div className="absolute inset-0 bg-ruby-600/5 translate-y-full group-hover:translate-y-0 transition-transform duration-700" />
-                <span className="relative z-10 flex items-center gap-3">
-                    <div className="w-2 h-2 bg-ruby-600 rounded-full shadow-[0_0_8px_rgba(225,29,72,0.6)]" />
-                    Itens em {activeTab}: <span className="text-white ml-1">{itemsInActiveTab.length}</span>
-                </span>
-                <div className="flex gap-12 mt-6 md:mt-0 relative z-10">
-                    <span className="flex items-center gap-2.5">
-                        <div className="w-1.5 h-1.5 bg-ruby-600 rounded-full shadow-[0_0_6px_rgba(225,29,72,0.4)]" />
-                        <span className="text-white/80">{itemsInActiveTab.filter(i => i.quantity <= 0).length}</span> Esgotados
-                    </span>
-                    <span className="flex items-center gap-2.5">
-                        <div className="w-1.5 h-1.5 bg-amber-500 rounded-full shadow-[0_0_6px_rgba(245,158,11,0.4)]" />
-                        <span className="text-white/80">{itemsInActiveTab.filter(i => i.quantity > 0 && i.quantity < i.min_stock).length}</span> Baixo Estoque
-                    </span>
-                    <span className="flex items-center gap-2.5">
-                        <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full shadow-[0_0_6px_rgba(16,185,129,0.4)]" />
-                        <span className="text-white/80">{itemsInActiveTab.filter(i => i.quantity >= i.min_stock).length}</span> Saudáveis
-                    </span>
-                </div>
             </div>
 
             {/* Modal de Edição */}
