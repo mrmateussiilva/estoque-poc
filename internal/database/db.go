@@ -3,6 +3,8 @@ package database
 import (
 	"estoque/internal/models"
 	"log/slog"
+	"time" // Added time import
+    "sort" // Added sort import
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/mysql"
@@ -85,4 +87,73 @@ func seedCategories(db *gorm.DB) {
 
 func stringPtr(s string) *string {
 	return &s
+}
+
+func GetMovementsReportData(db *gorm.DB, startDate, endDate time.Time) (models.FullReportResponse, error) {
+	var report models.FullReportResponse
+	var movements []models.Movement
+
+	// 1. Fetch Detailed Movements
+	// Preload Product to get cost_price and sale_price for calculations
+	if err := db.Where("movements.created_at BETWEEN ? AND ?", startDate, endDate).
+		Preload("Product"). // Ensure Product is loaded for price access
+		Order("movements.created_at ASC").
+		Find(&movements).Error; err != nil {
+		return report, err
+	}
+	report.DetailedMovements = movements
+
+	// 2. Calculate Report Summary and Timeline
+	summary := models.ReportSummary{}
+	timelineMap := make(map[string]models.ReportTimelineItem) // Key: YYYY-MM-DD
+
+	uniqueProducts := make(map[string]struct{})
+	for _, m := range movements {
+		dateStr := m.CreatedAt.Format("2006-01-02")
+		item, exists := timelineMap[dateStr]
+		if !exists {
+			// Ensure date is UTC and without time components for consistent grouping
+			item.Date = time.Date(m.CreatedAt.Year(), m.CreatedAt.Month(), m.CreatedAt.Day(), 0, 0, 0, 0, time.UTC)
+		}
+
+		productPrice := 0.0
+		if m.Product != nil { 
+			if m.Type == "ENTRADA" {
+				productPrice = m.Product.CostPrice
+			} else if m.Type == "SAIDA" {
+				productPrice = m.Product.SalePrice
+			}
+		}
+
+		if m.Type == "ENTRADA" {
+			summary.TotalEntriesQuantity += m.Quantity
+			summary.TotalEntriesValue += m.Quantity * productPrice
+			item.Entries += m.Quantity
+			item.EntriesValue += m.Quantity * productPrice
+		} else if m.Type == "SAIDA" {
+			summary.TotalExitsQuantity += m.Quantity
+			summary.TotalExitsValue += m.Quantity * productPrice
+			item.Exits += m.Quantity
+			item.ExitsValue += m.Quantity * productPrice
+		}
+		summary.TotalMovements++
+		uniqueProducts[m.ProductCode] = struct{}{} 
+		timelineMap[dateStr] = item
+	}
+
+	summary.NetQuantity = summary.TotalEntriesQuantity - summary.TotalExitsQuantity
+	summary.NetValue = summary.TotalEntriesValue - summary.TotalExitsValue
+	summary.UniqueProducts = int64(len(uniqueProducts))
+
+	report.Summary = summary
+
+	// Convert timeline map to sorted slice
+	for _, item := range timelineMap {
+		report.Timeline = append(report.Timeline, item)
+	}
+	sort.Slice(report.Timeline, func(i, j int) bool {
+		return report.Timeline[i].Date.Before(report.Timeline[j].Date)
+	})
+
+	return report, nil
 }
