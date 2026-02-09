@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
     FolderTree,
     Mail,
@@ -14,8 +14,7 @@ import {
     Check
 } from 'lucide-react';
 import { Card, TableContainer, THead, TBody, Tr, Th, Td, Button, Modal } from '../components/UI';
-import { useAuth } from '../contexts/AuthContext';
-import { useData } from '../contexts/DataContext';
+import { useCategoriesQuery, useUsersQuery, useCategoryMutations, useUserMutations } from '../hooks/useQueries';
 
 type AdminTab = 'categories' | 'users' | 'settings' | 'notifications';
 
@@ -28,9 +27,15 @@ interface User {
 }
 
 export default function Admin() {
-    const { apiFetch } = useAuth();
-    const { categories, setCategories } = useData();
     const [activeTab, setActiveTab] = useState<AdminTab>('categories');
+
+    // Queries
+    const { data: categories = [] } = useCategoriesQuery();
+    const { data: users = [] } = useUsersQuery();
+    
+    // Mutations
+    const { saveCategory, deleteCategory } = useCategoryMutations();
+    const { saveUser, toggleUserStatus } = useUserMutations();
 
     // Categorias state
     const [isAddingCat, setIsAddingCat] = useState(false);
@@ -38,7 +43,6 @@ export default function Admin() {
     const [catNameInput, setCatNameInput] = useState('');
 
     // Usuários state
-    const [users, setUsers] = useState<User[]>([]);
     const [isAddingUser, setIsAddingUser] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [userInput, setUserInput] = useState({ name: '', email: '', password: '', role: 'OPERADOR' });
@@ -58,99 +62,41 @@ export default function Admin() {
         setTimeout(() => setMsg(null), 3000);
     };
 
-    const fetchCategories = async () => {
-        try {
-            const response = await apiFetch('/api/categories');
-            if (response.ok) {
-                const data = await response.json();
-                setCategories(data || []);
-            }
-        } catch (err) {
-            console.error('Error fetching categories:', err);
-        }
-    };
-
-    const fetchUsers = async () => {
-        try {
-            const response = await apiFetch('/api/users');
-            if (response.ok) {
-                const data = await response.json();
-                setUsers(data || []);
-            }
-        } catch (err) {
-            console.error('Error fetching users:', err);
-        }
-    };
-
     const handleSaveCategory = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!catNameInput.trim()) return;
 
         try {
-            const isEdit = editingCatId !== null;
-            const url = isEdit ? `/api/categories/${editingCatId}` : '/api/categories';
-            const method = isEdit ? 'PUT' : 'POST';
-
-            const response = await apiFetch(url, {
-                method,
-                body: JSON.stringify({ name: catNameInput })
-            });
-
-            if (response.ok) {
-                setCatNameInput('');
-                setIsAddingCat(false);
-                setEditingCatId(null);
-                showMsg(isEdit ? 'Categoria atualizada!' : 'Categoria criada!');
-                await fetchCategories();
-            } else {
-                const data = await response.json();
-                showMsg(data.error || 'Erro ao processar categoria', 'error');
-            }
-        } catch (err) {
-            showMsg('Erro ao conectar no servidor', 'error');
+            await saveCategory.mutateAsync({ id: editingCatId, name: catNameInput });
+            setCatNameInput('');
+            setIsAddingCat(false);
+            setEditingCatId(null);
+            showMsg(editingCatId ? 'Categoria atualizada!' : 'Categoria criada!');
+        } catch (err: any) {
+            showMsg(err.message || 'Erro ao processar categoria', 'error');
         }
     };
 
     const handleDeleteCategory = async (id: number) => {
         if (!confirm('Deseja realmente excluir esta categoria?')) return;
         try {
-            const response = await apiFetch(`/api/categories/${id}`, { method: 'DELETE' });
-            if (response.ok) {
-                showMsg('Categoria excluída!');
-                await fetchCategories();
-            } else {
-                const data = await response.json();
-                showMsg(data.error || 'Erro ao excluir (verifique se há produtos vinculados)', 'error');
-            }
-        } catch (err) {
-            showMsg('Erro ao conectar no servidor', 'error');
+            await deleteCategory.mutateAsync(id);
+            showMsg('Categoria excluída!');
+        } catch (err: any) {
+            showMsg(err.message || 'Erro ao excluir (verifique se há produtos vinculados)', 'error');
         }
     };
 
     const handleSaveUser = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            const isEdit = !!editingUser;
-            const url = isEdit ? `/api/users/${editingUser?.id}` : '/api/users';
-            const method = isEdit ? 'PUT' : 'POST';
-
-            const response = await apiFetch(url, {
-                method,
-                body: JSON.stringify(userInput)
-            });
-
-            if (response.ok) {
-                setIsAddingUser(false);
-                setEditingUser(null);
-                setUserInput({ name: '', email: '', password: '', role: 'OPERADOR' });
-                showMsg(isEdit ? 'Usuário atualizado!' : 'Usuário criado!');
-                await fetchUsers();
-            } else {
-                const data = await response.json();
-                showMsg(data.error || 'Erro ao processar usuário', 'error');
-            }
-        } catch (err) {
-            showMsg('Erro ao conectar no servidor', 'error');
+            await saveUser.mutateAsync({ id: editingUser?.id, data: userInput });
+            setIsAddingUser(false);
+            setEditingUser(null);
+            setUserInput({ name: '', email: '', password: '', role: 'OPERADOR' });
+            showMsg(editingUser ? 'Usuário atualizado!' : 'Usuário criado!');
+        } catch (err: any) {
+            showMsg(err.message || 'Erro ao processar usuário', 'error');
         }
     };
 
@@ -158,23 +104,12 @@ export default function Admin() {
         const action = user.active ? 'inativar' : 'ativar';
         if (!confirm(`Deseja realmente ${action} este usuário?`)) return;
         try {
-            const response = await apiFetch(`/api/users/${user.id}`, {
-                method: 'PUT',
-                body: JSON.stringify({ active: !user.active })
-            });
-            if (response.ok) {
-                showMsg(`Usuário ${user.active ? 'inativado' : 'ativado'}!`);
-                await fetchUsers();
-            }
-        } catch (err) {
-            showMsg('Erro ao conectar no servidor', 'error');
+            await toggleUserStatus.mutateAsync(user);
+            showMsg(`Usuário ${user.active ? 'inativado' : 'ativado'}!`);
+        } catch (err: any) {
+            showMsg(err.message || 'Erro ao conectar no servidor', 'error');
         }
     };
-
-    useEffect(() => {
-        if (activeTab === 'categories') fetchCategories();
-        if (activeTab === 'users') fetchUsers();
-    }, [activeTab]);
 
     const tabs = [
         { id: 'categories', label: 'Categorias', icon: FolderTree },
