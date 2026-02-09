@@ -4,46 +4,6 @@ import { StockItem, Category, EntryItem } from '../contexts/DataContext';
 
 // Tipos adicionais necessários
 interface DashboardStats {
-// ... (mantenha o resto)
-
-// ...
-
-// Mutation para Movimentações (Entradas)
-export function useMovementMutation() {
-    const { apiFetch } = useAuth();
-    const queryClient = useQueryClient();
-
-    return useMutation({
-        mutationFn: async (items: EntryItem[]) => {
-            const promises = items.map(async (item) => {
-                const response = await apiFetch('/api/movements', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        product_code: item.sku,
-                        type: 'ENTRADA',
-                        quantity: item.quantity,
-                        origin: 'MANUAL',
-                        notes: `Entrada manual: ${item.description}`
-                    })
-                });
-
-                if (!response.ok) {
-                    const data = await response.json().catch(() => ({}));
-                    throw new Error(data.error || `Erro ao processar item ${item.sku}`);
-                }
-                return response.json();
-            });
-
-            return Promise.all(promises);
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['stock'] });
-            queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-            queryClient.invalidateQueries({ queryKey: ['dashboard-evolution'] });
-        }
-    });
-}
-
     total_items: number;
     total_skus: number;
     entries_this_month: number;
@@ -63,6 +23,7 @@ interface User {
     active: boolean;
 }
 
+// Queries
 export function useStockQuery(search?: string) {
     const { apiFetch } = useAuth();
     return useQuery({
@@ -128,7 +89,7 @@ export function useUsersQuery() {
     });
 }
 
-// Mutations para invalidação de cache
+// Mutations
 export function useProductMutation() {
     const { apiFetch } = useAuth();
     const queryClient = useQueryClient();
@@ -152,7 +113,41 @@ export function useProductMutation() {
     });
 }
 
-// Mutations para Categorias
+export function useMovementMutation() {
+    const { apiFetch } = useAuth();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (items: EntryItem[]) => {
+            const promises = items.map(async (item) => {
+                const response = await apiFetch('/api/movements', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        product_code: item.sku,
+                        type: 'ENTRADA',
+                        quantity: item.quantity,
+                        origin: 'MANUAL',
+                        notes: `Entrada manual: ${item.description}`
+                    })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json().catch(() => ({}));
+                    throw new Error(data.error || `Erro ao processar item ${item.sku}`);
+                }
+                return response.json();
+            });
+
+            return Promise.all(promises);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['stock'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-evolution'] });
+        }
+    });
+}
+
 export function useCategoryMutations() {
     const { apiFetch } = useAuth();
     const queryClient = useQueryClient();
@@ -196,7 +191,6 @@ export function useCategoryMutations() {
     return { saveCategory, deleteCategory };
 }
 
-// Mutations para Usuários
 export function useUserMutations() {
     const { apiFetch } = useAuth();
     const queryClient = useQueryClient();
