@@ -11,7 +11,6 @@ import {
     Database,
     Users,
     Edit2,
-    X,
     Check
 } from 'lucide-react';
 import { Card, TableContainer, THead, TBody, Tr, Th, Td, Button, Modal } from '../components/UI';
