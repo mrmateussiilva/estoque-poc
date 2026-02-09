@@ -91,6 +91,7 @@ func main() {
 			// Movements
 			r.Post("/movements", h.CreateMovementHandler)
 			r.Get("/movements/list", h.ListMovementsHandler)
+			r.Get("/reports/movements", h.GetMovementsReport)
 
 			// Dashboard
 			r.Get("/dashboard/stats", h.DashboardStatsHandler)

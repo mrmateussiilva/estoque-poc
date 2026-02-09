@@ -135,6 +135,44 @@ func (h *Handler) StockHandler(w http.ResponseWriter, r *http.Request) {
 	RespondWithJSON(w, http.StatusOK, list)
 }
 
+func (h *Handler) GetMovementsReport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	startDateStr := r.URL.Query().Get("start_date")
+	endDateStr := r.URL.Query().Get("end_date")
+
+	if startDateStr == "" || endDateStr == "" {
+		RespondWithError(w, http.StatusBadRequest, "Parâmetros 'start_date' e 'end_date' são obrigatórios.")
+		return
+	}
+
+	startDate, err := time.Parse("2006-01-02", startDateStr)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Formato de 'start_date' inválido. Use YYYY-MM-DD.")
+		return
+	}
+
+	endDate, err := time.Parse("2006-01-02", endDateStr)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Formato de 'end_date' inválido. Use YYYY-MM-DD.")
+		return
+	}
+
+	// Adjust endDate to include the entire day
+	endDate = endDate.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
+
+	reportData, err := database.GetMovementsReportData(h.DB, startDate, endDate)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Erro ao gerar relatório de movimentações: "+err.Error())
+		return
+	}
+
+	RespondWithJSON(w, http.StatusOK, reportData)
+}
+
 func stringPtr(s string) *string {
 	return &s
 }
