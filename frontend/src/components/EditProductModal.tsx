@@ -113,7 +113,7 @@ export default function EditProductModal({ product, categories, onClose, onSave 
                                         value={formData.description || ''}
                                         onChange={handleChange}
                                         rows={2}
-                                        className="w-full px-4 py-3 bg-charcoal-50 border border-charcoal-200 rounded-lg focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white text-sm font-semibold tracking-tight transition-all resize-none placeholder:text-charcoal-300"
+                                        className="w-full px-4 py-3 bg-charcoal-50 border border-charcoal-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white text-sm font-semibold tracking-tight transition-all resize-none placeholder:text-charcoal-400"
                                         placeholder="Detalhes do produto..."
                                     />
                                 </div>
@@ -188,29 +188,29 @@ export default function EditProductModal({ product, categories, onClose, onSave 
                             </div>
 
                             <div className="p-6 bg-charcoal-900 border border-charcoal-800 rounded-xl space-y-4">
-                                <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-widest flex items-center gap-2">
+                                <h4 className="text-[10px] font-bold text-white/70 uppercase tracking-widest flex items-center gap-2">
                                     <div className="w-1.5 h-1.5 bg-white/20 rounded-full" />
                                     Níveis de Estoque
                                 </h4>
                                 <div className="space-y-4">
                                     <div className="space-y-1.5">
-                                        <Label className="text-white/30">Estoque Mínimo</Label>
+                                        <Label className="text-white/60">Estoque Mínimo</Label>
                                         <input
                                             type="number"
                                             name="min_stock"
                                             value={formData.min_stock ?? 0}
                                             onChange={handleChange}
-                                            className="w-full h-11 px-4 bg-white/5 border border-white/10 rounded-lg text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-white/10 transition-all"
+                                            className="w-full h-11 px-4 bg-white/5 border border-white/20 rounded-lg text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-white/10 transition-all"
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <Label className="text-white/30">Estoque Máximo</Label>
+                                        <Label className="text-white/60">Estoque Máximo</Label>
                                         <input
                                             type="number"
                                             name="max_stock"
                                             value={formData.max_stock || ''}
                                             onChange={handleChange}
-                                            className="w-full h-11 px-4 bg-white/5 border border-white/10 rounded-lg text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-white/10 transition-all"
+                                            className="w-full h-11 px-4 bg-white/5 border border-white/20 rounded-lg text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-white/10 transition-all"
                                         />
                                     </div>
                                 </div>

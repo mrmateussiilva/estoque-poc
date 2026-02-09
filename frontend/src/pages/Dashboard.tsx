@@ -280,7 +280,7 @@ export default function Dashboard() {
                         <div
                             className={`
                                 relative h-40 border-2 border-dashed rounded-3xl transition-all duration-500 flex flex-col items-center justify-center gap-3 cursor-pointer overflow-hidden
-                                ${file ? 'border-ruby-500 bg-ruby-50/20' : 'border-charcoal-200 bg-charcoal-50/50 hover:border-ruby-500/30 hover:bg-ruby-50/5'}
+                                ${file ? 'border-ruby-500 bg-ruby-50/20' : 'border-charcoal-300 bg-charcoal-50/50 hover:border-ruby-500/30 hover:bg-ruby-50/5'}
                             `}
                         >
                             <input

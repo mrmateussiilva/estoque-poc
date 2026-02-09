@@ -44,25 +44,25 @@ export default function Reports() {
 
                 <div className="lg:col-span-7 space-y-6">
                     <div className="p-8 bg-charcoal-900 rounded-xl relative overflow-hidden group">
-                        <h3 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-6">Consolidado do Período</h3>
+                        <h3 className="text-[10px] font-bold text-white/70 uppercase tracking-widest mb-6">Consolidado do Período</h3>
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Entradas</p>
+                                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Entradas</p>
                                 <p className="text-3xl font-bold text-white tracking-tighter">1.254</p>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Itens Saindo</p>
+                                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Itens Saindo</p>
                                 <p className="text-3xl font-bold text-ruby-500 tracking-tighter">892</p>
                             </div>
                             <div className="space-y-1">
-                                <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Posição SKU</p>
+                                <p className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Posição SKU</p>
                                 <p className="text-3xl font-bold text-white tracking-tighter">15</p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="p-6 bg-white border border-charcoal-200 rounded-xl flex items-center justify-between group hover:border-ruby-200 transition-all">
+                    <div className="p-6 bg-white border border-charcoal-300 rounded-xl flex items-center justify-between group hover:border-ruby-200 transition-all">
                         <div className="space-y-0.5">
                             <h4 className="text-sm font-bold text-charcoal-950 uppercase tracking-tight">Inventário Geral</h4>
                             <p className="text-charcoal-500 text-xs font-medium">Snapshot de todas as posições atuais.</p>
@@ -72,7 +72,7 @@ export default function Reports() {
                         </button>
                     </div>
 
-                    <div className="p-6 bg-white border border-charcoal-200 rounded-xl flex items-center justify-between group hover:border-ruby-200 transition-all">
+                    <div className="p-6 bg-white border border-charcoal-300 rounded-xl flex items-center justify-between group hover:border-ruby-200 transition-all">
                         <div className="space-y-0.5">
                             <h4 className="text-sm font-bold text-charcoal-950 uppercase tracking-tight">Curva ABC de Ativos</h4>
                             <p className="text-charcoal-500 text-xs font-medium">Classificação estratégica por valor.</p>

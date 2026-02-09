@@ -18,7 +18,7 @@ interface EntryTableProps {
 export default function EntryTable({ items, onUpdateQuantity, onRemove }: EntryTableProps) {
     if (items.length === 0) {
         return (
-            <Card className="py-24 text-center border-dashed border-2 border-charcoal-100 bg-charcoal-50/10">
+            <Card className="py-24 text-center border-dashed border-2 border-charcoal-300 bg-charcoal-50/10">
                 <div className="flex flex-col items-center gap-6">
                     <div className="w-20 h-20 bg-white rounded-3xl shadow-sm border border-charcoal-100 flex items-center justify-center">
                         <PackageSearch className="w-10 h-10 text-charcoal-200" />
@@ -56,7 +56,7 @@ export default function EntryTable({ items, onUpdateQuantity, onRemove }: EntryT
                                 min="1"
                                 value={item.quantity}
                                 onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value) || 0)}
-                                className="w-20 px-3 py-2 text-center text-sm font-black border-2 border-transparent hover:border-charcoal-100 focus:border-ruby-600/50 bg-charcoal-50/50 rounded-xl transition-all outline-none"
+                                className="w-20 px-3 py-2 text-center text-sm font-black border-2 border-charcoal-200 hover:border-charcoal-100 focus:border-ruby-600/50 bg-charcoal-50/50 rounded-xl transition-all outline-none"
                             />
                         </Td>
                         <Td className="text-center">

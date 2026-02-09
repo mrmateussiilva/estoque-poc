@@ -92,7 +92,7 @@ export default function Stock() {
                             placeholder="Buscar por nome ou SKU..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-12 pr-4 py-4 bg-charcoal-50 border border-charcoal-100 rounded-xl text-sm font-black tracking-tight focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white outline-none transition-all placeholder:text-charcoal-300 uppercase"
+                            className="w-full pl-12 pr-4 py-4 bg-charcoal-50 border border-charcoal-300 rounded-xl text-sm font-black tracking-tight focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 focus:bg-white outline-none transition-all placeholder:text-charcoal-400 uppercase"
                         />
                     </div>
 
