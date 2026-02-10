@@ -13,61 +13,93 @@ func NewProductService(db *gorm.DB) *ProductService {
 	return &ProductService{DB: db}
 }
 
-// GetStockList retorna a listagem de saldos de produtos com filtros
-func (s *ProductService) GetStockList(search string, categoryID string) ([]models.StockItem, error) {
-	db := s.DB.Model(&models.Product{}).
-		Preload("Stock").
-		Preload("Category").
-		Where("active = ?", true)
+// GetStockList retorna a listagem de saldos de produtos com filtros e paginação
+// Otimizado para evitar queries N+1 usando JOIN ao invés de múltiplos Preloads
+func (s *ProductService) GetStockList(search string, categoryID string, page int, limit int) ([]models.StockItem, int64, error) {
+	// Query base otimizada com JOIN
+	query := s.DB.Table("products").
+		Select(`
+			products.code,
+			products.name,
+			products.unit,
+			products.min_stock,
+			products.max_stock,
+			products.sale_price,
+			products.description,
+			products.category_id,
+			products.barcode,
+			products.cost_price,
+			products.location,
+			products.supplier_id,
+			COALESCE(stock.quantity, 0) as quantity,
+			COALESCE(categories.name, 'Sem Categoria') as category_name
+		`).
+		Joins("LEFT JOIN stock ON products.code = stock.product_code").
+		Joins("LEFT JOIN categories ON products.category_id = categories.id").
+		Where("products.active = ?", true)
 
 	if search != "" {
-		db = db.Where("code LIKE ? OR name LIKE ?", "%"+search+"%", "%"+search+"%")
+		query = query.Where("products.code LIKE ? OR products.name LIKE ?", "%"+search+"%", "%"+search+"%")
 	}
 
 	if categoryID != "" {
-		db = db.Where("category_id = ?", categoryID)
+		query = query.Where("products.category_id = ?", categoryID)
 	}
 
-	var products []models.Product
-	if err := db.Order("name ASC").Find(&products).Error; err != nil {
-		return nil, err
+	// Contar total antes de paginar
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, err
 	}
 
-	var list []models.StockItem
-	for _, p := range products {
-		qty := 0.0
-		if p.Stock != nil {
-			qty = p.Stock.Quantity
-		}
-		catName := "Sem Categoria"
-		if p.Category != nil {
-			catName = p.Category.Name
-		}
-
-		item := models.StockItem{
-			Code:         p.Code,
-			Name:         p.Name,
-			Quantity:     qty,
-			Unit:         p.Unit,
-			MinStock:     p.MinStock,
-			MaxStock:     p.MaxStock,
-			CategoryName: catName,
-			SalePrice:    p.SalePrice,
-			Description:  p.Description,
-			CategoryID:   p.CategoryID,
-			Barcode:      p.Barcode,
-			CostPrice:    p.CostPrice,
-			Location:     p.Location,
-			SupplierID:   p.SupplierID,
-		}
-		list = append(list, item)
+	// Aplicar paginação
+	offset := (page - 1) * limit
+	var results []struct {
+		Code         string   `gorm:"column:code"`
+		Name         string   `gorm:"column:name"`
+		Quantity     float64  `gorm:"column:quantity"`
+		Unit         string   `gorm:"column:unit"`
+		MinStock     float64  `gorm:"column:min_stock"`
+		MaxStock     *float64 `gorm:"column:max_stock"`
+		CategoryName string   `gorm:"column:category_name"`
+		SalePrice    float64  `gorm:"column:sale_price"`
+		Description  *string  `gorm:"column:description"`
+		CategoryID   *int32   `gorm:"column:category_id"`
+		Barcode      *string  `gorm:"column:barcode"`
+		CostPrice    float64  `gorm:"column:cost_price"`
+		Location     *string  `gorm:"column:location"`
+		SupplierID   *int32   `gorm:"column:supplier_id"`
 	}
 
-	if list == nil {
-		list = []models.StockItem{}
+	if err := query.Order("products.name ASC").
+		Offset(offset).
+		Limit(limit).
+		Scan(&results).Error; err != nil {
+		return nil, 0, err
 	}
 
-	return list, nil
+	// Converter para StockItem
+	list := make([]models.StockItem, 0, len(results))
+	for _, r := range results {
+		list = append(list, models.StockItem{
+			Code:         r.Code,
+			Name:         r.Name,
+			Quantity:     r.Quantity,
+			Unit:         r.Unit,
+			MinStock:     r.MinStock,
+			MaxStock:     r.MaxStock,
+			CategoryName: r.CategoryName,
+			SalePrice:    r.SalePrice,
+			Description:  r.Description,
+			CategoryID:   r.CategoryID,
+			Barcode:      r.Barcode,
+			CostPrice:    r.CostPrice,
+			Location:     r.Location,
+			SupplierID:   r.SupplierID,
+		})
+	}
+
+	return list, total, nil
 }
 
 // CreateMovement registra uma nova movimentação de estoque

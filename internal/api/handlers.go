@@ -84,17 +84,30 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Limitar tamanho do formulário a 10MB
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Error parsing form: "+err.Error())
+		HandleError(w, NewAppError(http.StatusBadRequest, "Erro ao processar formulário", err), "Erro ao processar upload")
 		return
 	}
 
-	file, _, err := r.FormFile("file")
+	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
-		RespondWithError(w, http.StatusBadRequest, "File not found (key 'file' required): "+err.Error())
+		HandleError(w, NewAppError(http.StatusBadRequest, "Arquivo não encontrado (chave 'file' obrigatória)", err), "Erro ao processar upload")
 		return
 	}
 	defer file.Close()
+
+	// Validar tamanho do arquivo antes de processar
+	maxSize := int64(10 << 20) // 10MB
+	if fileHeader.Size > maxSize {
+		HandleError(w, NewAppError(http.StatusBadRequest, "Arquivo muito grande. Tamanho máximo: 10MB", nil), "Erro ao processar upload")
+		return
+	}
+
+	if fileHeader.Size == 0 {
+		HandleError(w, NewAppError(http.StatusBadRequest, "Arquivo vazio", nil), "Erro ao processar upload")
+		return
+	}
 
 	var proc models.NfeProc
 	if err := xml.NewDecoder(file).Decode(&proc); err != nil {
@@ -117,6 +130,9 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Invalidar cache do dashboard (estoque mudou)
+	InvalidateCache(CacheKeyDashboardStats)
+
 	RespondWithJSON(w, http.StatusOK, map[string]interface{}{
 		"message":     "NF-e processada com sucesso",
 		"total_items": totalItems,
@@ -131,14 +147,16 @@ func (h *Handler) StockHandler(w http.ResponseWriter, r *http.Request) {
 
 	search := r.URL.Query().Get("search")
 	categoryID := r.URL.Query().Get("category_id")
+	params := ParsePaginationParams(r)
 
-	list, err := h.ProductService.GetStockList(search, categoryID)
+	list, total, err := h.ProductService.GetStockList(search, categoryID, params.Page, params.Limit)
 	if err != nil {
 		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar estoque", err), "Erro ao buscar estoque")
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, list)
+	response := NewPaginatedResponse(list, total, params)
+	RespondWithJSON(w, http.StatusOK, response)
 }
 
 func (h *Handler) GetMovementsReport(w http.ResponseWriter, r *http.Request) {

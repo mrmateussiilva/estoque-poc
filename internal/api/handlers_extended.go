@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"estoque/internal/models"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"gorm.io/gorm"
@@ -15,6 +14,12 @@ import (
 func (h *Handler) DashboardStatsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// Tentar buscar do cache primeiro
+	if cachedStats, ok := GetCachedDashboardStats(); ok {
+		RespondWithJSON(w, http.StatusOK, cachedStats)
 		return
 	}
 
@@ -38,6 +43,9 @@ func (h *Handler) DashboardStatsHandler(w http.ResponseWriter, r *http.Request) 
 		Joins("JOIN products ON stock.product_code = products.code").
 		Where("stock.quantity < products.min_stock AND products.active = ?", true).
 		Count(&stats.LowStockCount)
+
+	// Armazenar no cache
+	SetCachedDashboardStats(&stats)
 
 	RespondWithJSON(w, http.StatusOK, stats)
 }
@@ -120,6 +128,9 @@ func (h *Handler) CreateMovementHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Invalidar cache do dashboard (stats mudaram)
+	InvalidateCache(CacheKeyDashboardStats)
+
 	RespondWithJSON(w, http.StatusCreated, map[string]interface{}{
 		"message": "Movement created successfully",
 	})
@@ -131,7 +142,10 @@ func (h *Handler) ListMovementsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := h.DB.Order("created_at DESC").Limit(100)
+	params := ParsePaginationParams(r)
+	offset := (params.Page - 1) * params.Limit
+
+	db := h.DB.Model(&models.Movement{}).Order("created_at DESC")
 
 	if productCode := r.URL.Query().Get("product_code"); productCode != "" {
 		db = db.Where("product_code = ?", productCode)
@@ -140,13 +154,22 @@ func (h *Handler) ListMovementsHandler(w http.ResponseWriter, r *http.Request) {
 		db = db.Where("type = ?", movType)
 	}
 
-	var movements []models.Movement
-	if err := db.Find(&movements).Error; err != nil {
+	// Contar total
+	var total int64
+	if err := db.Count(&total).Error; err != nil {
 		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar movimentações", err), "Erro ao buscar movimentações")
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, movements)
+	// Buscar com paginação
+	var movements []models.Movement
+	if err := db.Offset(offset).Limit(params.Limit).Find(&movements).Error; err != nil {
+		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar movimentações", err), "Erro ao buscar movimentações")
+		return
+	}
+
+	response := NewPaginatedResponse(movements, total, params)
+	RespondWithJSON(w, http.StatusOK, response)
 }
 
 // ===== Product Handlers =====
@@ -157,7 +180,10 @@ func (h *Handler) ListProductsHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db := h.DB.Where("active = ?", true)
+	params := ParsePaginationParams(r)
+	offset := (params.Page - 1) * params.Limit
+
+	db := h.DB.Model(&models.Product{}).Where("active = ?", true)
 
 	if search := r.URL.Query().Get("search"); search != "" {
 		db = db.Where("code LIKE ? OR name LIKE ?", "%"+search+"%", "%"+search+"%")
@@ -167,24 +193,43 @@ func (h *Handler) ListProductsHandler(w http.ResponseWriter, r *http.Request) {
 		db = db.Where("category_id = ?", categoryID)
 	}
 
-	var products []models.Product
-	if err := db.Order("name ASC").Find(&products).Error; err != nil {
+	// Contar total
+	var total int64
+	if err := db.Count(&total).Error; err != nil {
 		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar produtos", err), "Erro ao buscar produtos")
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, products)
+	// Buscar com paginação
+	var products []models.Product
+	if err := db.Order("name ASC").Offset(offset).Limit(params.Limit).Find(&products).Error; err != nil {
+		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar produtos", err), "Erro ao buscar produtos")
+		return
+	}
+
+	response := NewPaginatedResponse(products, total, params)
+	RespondWithJSON(w, http.StatusOK, response)
 }
 
 // ===== Category Handlers =====
 
 func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
+		// Tentar buscar do cache primeiro
+		if cachedCategories, ok := GetCachedCategories(); ok {
+			RespondWithJSON(w, http.StatusOK, cachedCategories)
+			return
+		}
+
 		var categories []models.Category
 		if err := h.DB.Order("name ASC").Find(&categories).Error; err != nil {
 			HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar categorias", err), "Erro ao buscar categorias")
 			return
 		}
+
+		// Armazenar no cache
+		SetCachedCategories(categories)
+
 		RespondWithJSON(w, http.StatusOK, categories)
 		return
 	}
@@ -210,6 +255,9 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Invalidar cache de categorias
+		InvalidateCache(CacheKeyCategories)
+
 		RespondWithJSON(w, http.StatusCreated, category)
 		return
 	}
@@ -231,6 +279,9 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 			RespondWithError(w, http.StatusInternalServerError, "Error updating category")
 			return
 		}
+
+		// Invalidar cache de categorias
+		InvalidateCache(CacheKeyCategories)
 
 		RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Category updated successfully"})
 		return
@@ -256,6 +307,9 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Invalidar cache de categorias
+		InvalidateCache(CacheKeyCategories)
+
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
@@ -271,20 +325,27 @@ func (h *Handler) ListNFesHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	limit := 50
-	if limitStr := r.URL.Query().Get("limit"); limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
-			limit = l
-		}
-	}
+	params := ParsePaginationParams(r)
+	offset := (params.Page - 1) * params.Limit
 
-	var nfes []models.ProcessedNFe
-	if err := h.DB.Order("processed_at DESC").Limit(limit).Find(&nfes).Error; err != nil {
+	db := h.DB.Model(&models.ProcessedNFe{})
+
+	// Contar total
+	var total int64
+	if err := db.Count(&total).Error; err != nil {
 		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar NF-es", err), "Erro ao buscar NF-es")
 		return
 	}
 
-	RespondWithJSON(w, http.StatusOK, nfes)
+	// Buscar com paginação
+	var nfes []models.ProcessedNFe
+	if err := db.Order("processed_at DESC").Offset(offset).Limit(params.Limit).Find(&nfes).Error; err != nil {
+		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar NF-es", err), "Erro ao buscar NF-es")
+		return
+	}
+
+	response := NewPaginatedResponse(nfes, total, params)
+	RespondWithJSON(w, http.StatusOK, response)
 }
 
 func (h *Handler) UpdateProductHandler(w http.ResponseWriter, r *http.Request) {
