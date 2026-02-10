@@ -41,7 +41,8 @@ export const Button = ({
     type?: 'button' | 'submit' | 'reset';
     className?: string;
 }) => {
-    const base = "px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 text-sm tracking-tight active:scale-[0.98] shadow-sm overflow-hidden relative group";
+    // Touch-friendly: mínimo 44x44px (Apple HIG) / 48x48px (Material Design)
+    const base = "min-h-[48px] min-w-[48px] px-6 py-3 rounded-xl font-bold transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 text-sm tracking-tight active:scale-[0.98] shadow-sm overflow-hidden relative group touch-manipulation";
     const variants = {
         primary: "bg-ruby-600 text-white hover:bg-ruby-500 hover:shadow-ruby border border-ruby-700",
         secondary: "bg-navy-950 text-white hover:border-ruby-500/50 border border-charcoal-800",
@@ -62,9 +63,10 @@ export const Input = (props: React.InputHTMLAttributes<HTMLInputElement>) => (
     <input
         {...props}
         className={`
-      w-full h-12 px-4 bg-charcoal-50 border border-charcoal-300 rounded-xl 
+      w-full min-h-[48px] px-4 bg-charcoal-50 border border-charcoal-300 rounded-xl 
       focus:outline-none focus:ring-4 focus:ring-ruby-500/10 focus:border-ruby-500/50 focus:bg-white 
       text-sm font-semibold tracking-tight transition-all placeholder:text-charcoal-400 
+      touch-manipulation
       ${props.className || ''}
     `}
     />
@@ -75,9 +77,10 @@ export const Select = (props: React.SelectHTMLAttributes<HTMLSelectElement>) => 
         <select
             {...props}
             className={`
-        w-full h-12 pl-4 pr-10 bg-charcoal-50 border border-charcoal-300 rounded-xl 
+        w-full min-h-[48px] pl-4 pr-10 bg-charcoal-50 border border-charcoal-300 rounded-xl 
         focus:outline-none focus:ring-4 focus:ring-ruby-500/10 focus:border-ruby-500/50 focus:bg-white 
         text-sm font-semibold tracking-tight transition-all appearance-none cursor-pointer uppercase
+        touch-manipulation
         ${props.className || ''}
       `}
         >
