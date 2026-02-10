@@ -1,11 +1,13 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
-	"encoding/xml"
 	"estoque/internal/database"
 	"estoque/internal/models"
 	"estoque/internal/services"
+	"estoque/internal/services/worker_pools"
+	"io"
 	"log/slog"
 	"net/http"
 	"time"
@@ -19,13 +21,17 @@ type Handler struct {
 	DB             *gorm.DB
 	NfeService     *services.NfeService
 	ProductService *services.ProductService
+	NFeWorkerPool  *worker_pools.NFeWorkerPool
+	ExportPool     *worker_pools.ExportWorkerPool
 }
 
-func NewHandler(db *gorm.DB) *Handler {
+func NewHandler(db *gorm.DB, nfePool *worker_pools.NFeWorkerPool, exportPool *worker_pools.ExportWorkerPool) *Handler {
 	return &Handler{
 		DB:             db,
 		NfeService:     services.NewNfeService(db),
 		ProductService: services.NewProductService(db),
+		NFeWorkerPool:  nfePool,
+		ExportPool:     exportPool,
 	}
 }
 
@@ -117,38 +123,48 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var proc models.NfeProc
-	if err := xml.NewDecoder(file).Decode(&proc); err != nil {
-		RespondWithError(w, http.StatusBadRequest, "Error decoding XML: "+err.Error())
+	// Ler XML completo para enviar ao worker pool
+	xmlData, err := io.ReadAll(file)
+	if err != nil {
+		HandleError(w, NewAppError(http.StatusBadRequest, "Erro ao ler arquivo", err), "Erro ao processar upload")
 		return
 	}
 
-	totalItems, err := h.NfeService.ProcessNfe(&proc)
+	// Obter usuário do contexto
+	user, _ := GetUserFromContext(r)
+	var userID *int32
+	userEmail := "system"
+	if user != nil {
+		userID = &user.ID
+		userEmail = user.Email
+	}
+
+	// Processar via worker pool (assíncrono)
+	result, err := h.NFeWorkerPool.ProcessXMLFromReader(r.Context(), bytes.NewReader(xmlData), userID, userEmail)
 	if err != nil {
-		if err == gorm.ErrDuplicatedKey {
+		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao processar NF-e", err), "Erro ao processar upload")
+		return
+	}
+
+	if !result.Success {
+		if result.Error == gorm.ErrDuplicatedKey {
 			HandleError(w, ErrDuplicateNFe, "Erro ao processar NF-e")
 			return
 		}
 		HandleError(w, NewAppErrorWithContext(
 			http.StatusInternalServerError,
 			"Erro ao processar NF-e",
-			err,
-			map[string]interface{}{"access_key": proc.NFe.InfNFe.ID},
+			result.Error,
+			map[string]interface{}{"access_key": result.AccessKey},
 		), "Erro ao processar NF-e")
 		return
 	}
 
-	// Log estruturado
-	user, _ := GetUserFromContext(r)
-	userEmail := "system"
-	if user != nil {
-		userEmail = user.Email
-	}
-
 	slog.Info("NF-e processada",
-		"access_key", proc.NFe.InfNFe.ID,
-		"total_items", totalItems,
+		"access_key", result.AccessKey,
+		"total_items", result.Items,
 		"user_email", userEmail,
+		"duration_ms", result.Duration.Milliseconds(),
 	)
 
 	// Invalidar cache do dashboard (estoque mudou)
@@ -156,7 +172,8 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	RespondWithJSON(w, http.StatusOK, map[string]interface{}{
 		"message":     "NF-e processada com sucesso",
-		"total_items": totalItems,
+		"total_items": result.Items,
+		"access_key":  result.AccessKey,
 	})
 }
 

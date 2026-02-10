@@ -6,10 +6,14 @@ import (
 	"estoque/internal/api"
 	"estoque/internal/database"
 	"estoque/internal/services/nfe_consumer"
+	"estoque/internal/services/worker_pools"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -45,8 +49,36 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 4. Inicialização dos Handlers e Serviços
-	h := api.NewHandler(db)
+	// 4. Inicialização dos Worker Pools
+	nfeWorkers := 5 // Configurável via env
+	if nfeWorkersStr := os.Getenv("NFE_WORKERS"); nfeWorkersStr != "" {
+		if n, err := strconv.Atoi(nfeWorkersStr); err == nil && n > 0 {
+			nfeWorkers = n
+		}
+	}
+	
+	exportWorkers := 3 // Configurável via env
+	if exportWorkersStr := os.Getenv("EXPORT_WORKERS"); exportWorkersStr != "" {
+		if n, err := strconv.Atoi(exportWorkersStr); err == nil && n > 0 {
+			exportWorkers = n
+		}
+	}
+	
+	exportDir := os.Getenv("EXPORT_DIR")
+	if exportDir == "" {
+		exportDir = "./exports"
+	}
+	
+	// Criar worker pools
+	nfePool := worker_pools.NewNFeWorkerPool(nfeWorkers, db)
+	exportPool := worker_pools.NewExportWorkerPool(exportWorkers, db, exportDir)
+	
+	// Iniciar worker pools
+	nfePool.Start()
+	exportPool.Start()
+	
+	// 5. Inicialização dos Handlers e Serviços
+	h := api.NewHandler(db, nfePool, exportPool)
 
 	// Iniciar Consumidor de e-mails de NF-e em background
 	nfeConsumer := nfe_consumer.NewConsumer(db)
@@ -168,11 +200,52 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	slog.Info("S.G.E. Backend Modernized is running", "port", port, "version", "1.1.3")
+	slog.Info("S.G.E. Backend Modernized is running", 
+		"port", port, 
+		"version", "1.1.3",
+		"nfe_workers", nfeWorkers,
+		"export_workers", exportWorkers,
+	)
 
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	// Canal para sinais do sistema (graceful shutdown)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	// Servidor em goroutine
+	serverErr := make(chan error, 1)
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			serverErr <- err
+		}
+	}()
+
+	// Aguardar sinal de shutdown ou erro do servidor
+	select {
+	case err := <-serverErr:
 		slog.Error("Server critical failure", "error", err)
 		os.Exit(1)
+	case sig := <-sigChan:
+		slog.Info("Received shutdown signal", "signal", sig.String())
+		slog.Info("Shutting down gracefully...")
+
+		// Context com timeout para shutdown (30 segundos)
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+
+		// Parar worker pools
+		slog.Info("Stopping worker pools...")
+		nfePool.Stop()
+		exportPool.Stop()
+
+		// Parar consumidor de e-mails (se tiver método Stop)
+		// nfeConsumer.Stop(shutdownCtx)
+
+		// Shutdown do servidor HTTP
+		if err := srv.Shutdown(shutdownCtx); err != nil {
+			slog.Error("Server shutdown error", "error", err)
+		} else {
+			slog.Info("Server stopped gracefully")
+		}
 	}
 }
 
