@@ -90,17 +90,33 @@ func (h *Handler) CreateMovementHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Obter usuário do contexto
+	user, ok := GetUserFromContext(r)
+	if !ok {
+		HandleError(w, ErrUnauthorized, "Usuário não autenticado")
+		return
+	}
+
 	// Executar via Service
-	if err := h.ProductService.CreateMovement(req); err != nil {
+	if err := h.ProductService.CreateMovement(req, user.ID); err != nil {
 		if err == gorm.ErrInvalidData {
-			RespondWithError(w, http.StatusBadRequest, "Insufficient stock or item not found")
+			HandleError(w, ErrInsufficientStock, "Erro ao processar movimentação")
 			return
 		}
 		if err == gorm.ErrRecordNotFound {
-			RespondWithError(w, http.StatusNotFound, "Product not found or inactive")
+			HandleError(w, ErrProductNotFound, "Erro ao processar movimentação")
 			return
 		}
-		RespondWithError(w, http.StatusInternalServerError, "Error processing movement: "+err.Error())
+		HandleError(w, NewAppErrorWithContext(
+			http.StatusInternalServerError,
+			"Erro ao processar movimentação",
+			err,
+			map[string]interface{}{
+				"product_code": req.ProductCode,
+				"type":         req.Type,
+				"user_id":      user.ID,
+			},
+		), "Erro ao processar movimentação")
 		return
 	}
 
@@ -126,7 +142,7 @@ func (h *Handler) ListMovementsHandler(w http.ResponseWriter, r *http.Request) {
 
 	var movements []models.Movement
 	if err := db.Find(&movements).Error; err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Database error")
+		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar movimentações", err), "Erro ao buscar movimentações")
 		return
 	}
 
@@ -153,7 +169,7 @@ func (h *Handler) ListProductsHandler(w http.ResponseWriter, r *http.Request) {
 
 	var products []models.Product
 	if err := db.Order("name ASC").Find(&products).Error; err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Database error")
+		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar produtos", err), "Erro ao buscar produtos")
 		return
 	}
 
@@ -166,7 +182,7 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		var categories []models.Category
 		if err := h.DB.Order("name ASC").Find(&categories).Error; err != nil {
-			RespondWithError(w, http.StatusInternalServerError, "Database error")
+			HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar categorias", err), "Erro ao buscar categorias")
 			return
 		}
 		RespondWithJSON(w, http.StatusOK, categories)
@@ -264,7 +280,7 @@ func (h *Handler) ListNFesHandler(w http.ResponseWriter, r *http.Request) {
 
 	var nfes []models.ProcessedNFe
 	if err := h.DB.Order("processed_at DESC").Limit(limit).Find(&nfes).Error; err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Database error")
+		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar NF-es", err), "Erro ao buscar NF-es")
 		return
 	}
 

@@ -12,7 +12,7 @@ import (
 func (h *Handler) ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 	var users []models.User
 	if err := h.DB.Order("name ASC").Find(&users).Error; err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Database error")
+		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar usuários", err), "Erro ao buscar usuários")
 		return
 	}
 	RespondWithJSON(w, http.StatusOK, users)
@@ -40,10 +40,10 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.DB.Create(&req).Error; err != nil {
 		if strings.Contains(err.Error(), "Duplicate entry") {
-			RespondWithError(w, http.StatusConflict, "User with this email already exists")
+			HandleError(w, NewAppError(http.StatusConflict, "Já existe um usuário com este email", err), "Erro ao criar usuário")
 			return
 		}
-		RespondWithError(w, http.StatusInternalServerError, "Error creating user")
+		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao criar usuário", err), "Erro ao criar usuário")
 		return
 	}
 
@@ -65,7 +65,7 @@ func (h *Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	var user models.User
 	if err := h.DB.First(&user, idStr).Error; err != nil {
-		RespondWithError(w, http.StatusNotFound, "User not found")
+		HandleError(w, ErrUserNotFound, "Erro ao buscar usuário")
 		return
 	}
 

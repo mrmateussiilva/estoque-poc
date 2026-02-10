@@ -68,7 +68,7 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	tokenString, err := token.SignedString(JwtSecret)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Error generating token")
+		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao gerar token", err), "Erro ao processar autenticação")
 		return
 	}
 
@@ -105,10 +105,15 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	totalItems, err := h.NfeService.ProcessNfe(&proc)
 	if err != nil {
 		if err == gorm.ErrDuplicatedKey {
-			RespondWithError(w, http.StatusConflict, "Esta NF-e já foi processada anteriormente")
+			HandleError(w, ErrDuplicateNFe, "Erro ao processar NF-e")
 			return
 		}
-		RespondWithError(w, http.StatusInternalServerError, "Error processing NF-e: "+err.Error())
+		HandleError(w, NewAppErrorWithContext(
+			http.StatusInternalServerError,
+			"Erro ao processar NF-e",
+			err,
+			map[string]interface{}{"access_key": proc.NFe.InfNFe.ID},
+		), "Erro ao processar NF-e")
 		return
 	}
 
@@ -129,7 +134,7 @@ func (h *Handler) StockHandler(w http.ResponseWriter, r *http.Request) {
 
 	list, err := h.ProductService.GetStockList(search, categoryID)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Error fetching stock: "+err.Error())
+		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar estoque", err), "Erro ao buscar estoque")
 		return
 	}
 
@@ -167,7 +172,15 @@ func (h *Handler) GetMovementsReport(w http.ResponseWriter, r *http.Request) {
 
 	reportData, err := database.GetMovementsReportData(h.DB, startDate, endDate)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Erro ao gerar relatório de movimentações: "+err.Error())
+		HandleError(w, NewAppErrorWithContext(
+			http.StatusInternalServerError,
+			"Erro ao gerar relatório de movimentações",
+			err,
+			map[string]interface{}{
+				"start_date": startDateStr,
+				"end_date":   endDateStr,
+			},
+		), "Erro ao gerar relatório")
 		return
 	}
 
