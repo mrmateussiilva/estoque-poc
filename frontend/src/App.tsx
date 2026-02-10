@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Sidebar from './layout/Sidebar';
 import Header from './layout/Header';
+import MobileBottomNav from './components/MobileBottomNav';
 import Dashboard from './pages/Dashboard';
 import Entries from './pages/Entries';
 import Stock from './pages/Stock';
@@ -57,9 +58,15 @@ function MainApp() {
           onLogout={logout}
           onMenuClick={() => setIsMobileMenuOpen(true)}
         />
-        <main className="flex-1 overflow-auto p-4 md:p-8">
+        <main className="flex-1 overflow-auto p-4 md:p-8 pb-20 md:pb-8">
           <PageComponent />
         </main>
+        
+        {/* Bottom Navigation para Mobile */}
+        <MobileBottomNav
+          currentPage={currentPage}
+          onNavigate={handleNavigate}
+        />
       </div>
     </div>
   );

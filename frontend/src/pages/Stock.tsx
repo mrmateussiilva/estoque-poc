@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Search, Package, ChevronRight, Download } from 'lucide-react';
+import { Search, Package, ChevronRight, Download, ScanLine } from 'lucide-react';
 import { Card, TableContainer, THead, TBody, Tr, Th, Td, Badge, Button } from '../components/UI';
+import StockCard from '../components/StockCard';
+import BarcodeScanner from '../components/BarcodeScanner';
 import EditProductModal from '../components/EditProductModal';
 import { type StockItem } from '../contexts/DataContext';
 import { useStockQuery, useProductMutation, useCategoriesQuery } from '../hooks/useQueries';
@@ -13,6 +15,7 @@ export default function Stock() {
     const [editingProduct, setEditingProduct] = useState<StockItem | null>(null);
     const [activeTab, setActiveTab] = useState<string>('');
     const [exporting, setExporting] = useState(false);
+    const [showScanner, setShowScanner] = useState(false);
 
     // Debounce para busca
     useEffect(() => {
@@ -53,6 +56,12 @@ export default function Stock() {
         if (item.quantity <= 0) return <Badge variant="error">Esgotado</Badge>;
         if (item.quantity < item.min_stock) return <Badge variant="warning">Baixo Estoque</Badge>;
         return <Badge variant="success">Em Estoque</Badge>;
+    };
+
+    const handleBarcodeScan = (code: string) => {
+        // Buscar produto pelo código escaneado
+        setSearch(code);
+        setDebouncedSearch(code);
     };
 
     const handleExport = async () => {
@@ -99,7 +108,7 @@ export default function Stock() {
                         />
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
                         <div className="flex items-center gap-4 px-6 py-3 bg-navy-950 rounded-xl shadow-premium whitespace-nowrap border border-navy-800">
                             <Package className="w-4 h-4 text-ruby-500" />
                             <span className="text-xs font-black text-white uppercase tracking-[0.2em]">
@@ -107,13 +116,21 @@ export default function Stock() {
                             </span>
                         </div>
                         <Button
+                            onClick={() => setShowScanner(true)}
+                            variant="primary"
+                            className="whitespace-nowrap min-h-[48px]"
+                        >
+                            <ScanLine className="w-4 h-4" />
+                            <span className="hidden sm:inline text-xs font-bold uppercase tracking-widest">Escanear</span>
+                        </Button>
+                        <Button
                             onClick={handleExport}
                             loading={exporting}
                             variant="outline"
-                            className="whitespace-nowrap"
+                            className="whitespace-nowrap min-h-[48px]"
                         >
                             <Download className="w-4 h-4" />
-                            <span className="text-xs font-bold uppercase tracking-widest">Exportar CSV</span>
+                            <span className="hidden sm:inline text-xs font-bold uppercase tracking-widest">Exportar CSV</span>
                         </Button>
                     </div>
                 </Card>
@@ -140,79 +157,123 @@ export default function Stock() {
                 ))}
             </div>
 
-            {/* Tabela */}
+            {/* Tabela (Desktop) / Cards (Mobile) */}
             <div className="space-y-4">
-                <TableContainer className="border-none shadow-premium rounded-3xl overflow-hidden">
-                    <THead>
-                        <Tr className="bg-navy-950 border-none">
-                            <Th className="text-white py-6">Produto & Identificação</Th>
-                            <Th className="text-center text-white">Saldo Atual</Th>
-                            <Th className="text-right text-white">Valor Venda</Th>
-                            <Th className="text-white">Disponibilidade</Th>
-                            <Th className="w-10 text-white">{null}</Th>
-                        </Tr>
-                    </THead>
-                    <TBody>
-                        {loading && stock.length === 0 ? (
-                            [...Array(6)].map((_, i) => (
-                                <Tr key={i} className="animate-pulse">
-                                    <Td><div className="h-5 bg-charcoal-50 rounded w-56" /></Td>
-                                    <Td><div className="h-5 bg-charcoal-50 rounded w-16 mx-auto" /></Td>
-                                    <Td><div className="h-5 bg-charcoal-50 rounded w-24 ml-auto" /></Td>
-                                    <Td><div className="h-7 bg-charcoal-50 rounded-full w-32" /></Td>
-                                    <Td>{null}</Td>
-                                </Tr>
-                            ))
-                        ) : itemsInActiveTab.length > 0 ? (
-                            itemsInActiveTab.map((item) => (
-                                <Tr key={item.code} onClick={() => setEditingProduct(item)}>
-                                    <Td>
-                                        <div className="flex flex-col">
-                                            <span className="text-sm font-semibold text-charcoal-950 group-hover:text-ruby-600 transition-colors uppercase tracking-tight">{item.name}</span>
-                                            <span className="text-[10px] font-bold text-charcoal-400 mt-1 uppercase tracking-widest">SKU: {item.code}</span>
-                                        </div>
-                                    </Td>
-                                    <Td className="text-center">
-                                        <div className="flex flex-col items-center">
-                                            <span className={`text-base font-bold tracking-tight ${item.quantity < item.min_stock ? 'text-ruby-600' : 'text-charcoal-900'}`}>
-                                                {item.quantity}
-                                            </span>
-                                            <span className="text-[10px] font-bold text-charcoal-300 uppercase tracking-widest leading-none">{item.unit}</span>
-                                        </div>
-                                    </Td>
-                                    <Td className="text-right">
-                                        <span className="text-sm font-semibold text-charcoal-950 tracking-tight">
-                                            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.sale_price)}
-                                        </span>
-                                    </Td>
-                                    <Td>
-                                        {getStatusBadge(item)}
-                                    </Td>
-                                    <Td className="text-right">
-                                        <div className="w-8 h-8 rounded-full bg-charcoal-50 flex items-center justify-center text-charcoal-300 group-hover:bg-charcoal-100 group-hover:text-charcoal-600 transition-all">
-                                            <ChevronRight className="w-4 h-4" />
-                                        </div>
-                                    </Td>
-                                </Tr>
-                            ))
-                        ) : (
-                            <Tr>
-                                <Td colSpan={5} className="px-8 py-24 text-center">
-                                    <div className="flex flex-col items-center gap-4">
-                                        <div className="w-16 h-16 bg-charcoal-50 rounded-xl flex items-center justify-center">
-                                            <Package className="w-8 h-8 text-charcoal-200" />
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-charcoal-950 font-bold">Nenhum registro encontrado</p>
-                                            <p className="text-charcoal-400 text-xs font-medium uppercase tracking-widest">Tente buscar por outro termo ou categoria</p>
-                                        </div>
-                                    </div>
-                                </Td>
+                {/* Mobile: Cards View */}
+                <div className="md:hidden grid grid-cols-1 gap-4">
+                    {loading && stock.length === 0 ? (
+                        [...Array(6)].map((_, i) => (
+                            <Card key={i} className="p-4 animate-pulse">
+                                <div className="h-6 bg-charcoal-50 rounded w-3/4 mb-3" />
+                                <div className="h-4 bg-charcoal-50 rounded w-1/2" />
+                            </Card>
+                        ))
+                    ) : itemsInActiveTab.length > 0 ? (
+                        itemsInActiveTab.map((item) => (
+                            <StockCard
+                                key={item.code}
+                                item={item}
+                                onEdit={setEditingProduct}
+                            />
+                        ))
+                    ) : (
+                        <Card className="p-8 text-center">
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="w-16 h-16 bg-charcoal-50 rounded-xl flex items-center justify-center">
+                                    <Package className="w-8 h-8 text-charcoal-200" />
+                                </div>
+                                <div className="space-y-1">
+                                    <p className="text-charcoal-950 font-bold">Nenhum registro encontrado</p>
+                                    <p className="text-charcoal-400 text-xs font-medium uppercase tracking-widest">Tente buscar por outro termo ou categoria</p>
+                                </div>
+                            </div>
+                        </Card>
+                    )}
+                </div>
+
+                {/* Desktop: Table View */}
+                <div className="hidden md:block">
+                    <TableContainer className="border-none shadow-premium rounded-3xl overflow-hidden">
+                        <THead>
+                            <Tr className="bg-navy-950 border-none">
+                                <Th className="text-white py-6">Produto & Identificação</Th>
+                                <Th className="text-center text-white">Saldo Atual</Th>
+                                <Th className="text-right text-white">Valor Venda</Th>
+                                <Th className="text-white">Disponibilidade</Th>
+                                <Th className="w-10 text-white">{null}</Th>
                             </Tr>
-                        )}
-                    </TBody>
-                </TableContainer>
+                        </THead>
+                        <TBody>
+                            {loading && stock.length === 0 ? (
+                                [...Array(6)].map((_, i) => (
+                                    <Tr key={i} className="animate-pulse">
+                                        <Td><div className="h-5 bg-charcoal-50 rounded w-56" /></Td>
+                                        <Td><div className="h-5 bg-charcoal-50 rounded w-16 mx-auto" /></Td>
+                                        <Td><div className="h-5 bg-charcoal-50 rounded w-24 ml-auto" /></Td>
+                                        <Td><div className="h-7 bg-charcoal-50 rounded-full w-32" /></Td>
+                                        <Td>{null}</Td>
+                                    </Tr>
+                                ))
+                            ) : itemsInActiveTab.length > 0 ? (
+                                itemsInActiveTab.map((item) => (
+                                    <Tr key={item.code} onClick={() => setEditingProduct(item)}>
+                                        <Td>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-semibold text-charcoal-950 group-hover:text-ruby-600 transition-colors uppercase tracking-tight">{item.name}</span>
+                                                <span className="text-[10px] font-bold text-charcoal-400 mt-1 uppercase tracking-widest">SKU: {item.code}</span>
+                                            </div>
+                                        </Td>
+                                        <Td className="text-center">
+                                            <div className="flex flex-col items-center">
+                                                <span className={`text-base font-bold tracking-tight ${item.quantity < item.min_stock ? 'text-ruby-600' : 'text-charcoal-900'}`}>
+                                                    {item.quantity}
+                                                </span>
+                                                <span className="text-[10px] font-bold text-charcoal-300 uppercase tracking-widest leading-none">{item.unit}</span>
+                                            </div>
+                                        </Td>
+                                        <Td className="text-right">
+                                            <span className="text-sm font-semibold text-charcoal-950 tracking-tight">
+                                                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.sale_price)}
+                                            </span>
+                                        </Td>
+                                        <Td>
+                                            {getStatusBadge(item)}
+                                        </Td>
+                                        <Td className="text-right">
+                                            <div className="w-8 h-8 rounded-full bg-charcoal-50 flex items-center justify-center text-charcoal-300 group-hover:bg-charcoal-100 group-hover:text-charcoal-600 transition-all">
+                                                <ChevronRight className="w-4 h-4" />
+                                            </div>
+                                        </Td>
+                                    </Tr>
+                                ))
+                            ) : (
+                                <Tr>
+                                    <Td colSpan={5} className="px-8 py-24 text-center">
+                                        <div className="flex flex-col items-center gap-4">
+                                            <div className="w-16 h-16 bg-charcoal-50 rounded-xl flex items-center justify-center">
+                                                <Package className="w-8 h-8 text-charcoal-200" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-charcoal-950 font-bold">Nenhum registro encontrado</p>
+                                                <p className="text-charcoal-400 text-xs font-medium uppercase tracking-widest">Tente buscar por outro termo ou categoria</p>
+                                            </div>
+                                        </div>
+                                    </Td>
+                                </Tr>
+                            )}
+                        </TBody>
+                    </TableContainer>
+                </div>
             </div>
+
+            {/* Scanner de Código de Barras */}
+            {showScanner && (
+                <BarcodeScanner
+                    onScan={handleBarcodeScan}
+                    onClose={() => setShowScanner(false)}
+                    title="Escanear Código de Barras"
+                />
+            )}
 
             {/* Modal de Edição */}
             {editingProduct && (
