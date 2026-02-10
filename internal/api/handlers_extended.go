@@ -3,6 +3,8 @@ package api
 import (
 	"encoding/json"
 	"estoque/internal/models"
+	"estoque/internal/services"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -84,24 +86,16 @@ func (h *Handler) CreateMovementHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Validações básicas (também poderiam ir para o service, mas ok manter aqui como pré-check)
-	if req.ProductCode == "" {
-		RespondWithError(w, http.StatusBadRequest, "Product code is required")
-		return
-	}
-	if req.Type != "ENTRADA" && req.Type != "SAIDA" {
-		RespondWithError(w, http.StatusBadRequest, "Type must be ENTRADA or SAIDA")
-		return
-	}
-	if req.Quantity <= 0 {
-		RespondWithError(w, http.StatusBadRequest, "Quantity must be positive")
-		return
-	}
-
 	// Obter usuário do contexto
 	user, ok := GetUserFromContext(r)
 	if !ok {
 		HandleError(w, ErrUnauthorized, "Usuário não autenticado")
+		return
+	}
+
+	// Validar dados usando service
+	if err := services.ValidateMovementRequest(req.ProductCode, req.Type, req.Quantity); err != nil {
+		HandleError(w, NewAppError(http.StatusBadRequest, err.Error(), err), "Erro de validação")
 		return
 	}
 
@@ -128,11 +122,20 @@ func (h *Handler) CreateMovementHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Log estruturado da ação
+	slog.Info("Movimentação criada",
+		"product_code", req.ProductCode,
+		"type", req.Type,
+		"quantity", req.Quantity,
+		"user_id", user.ID,
+		"user_email", user.Email,
+	)
+
 	// Invalidar cache do dashboard (stats mudaram)
 	InvalidateCache(CacheKeyDashboardStats)
 
 	RespondWithJSON(w, http.StatusCreated, map[string]interface{}{
-		"message": "Movement created successfully",
+		"message": "Movimentação criada com sucesso",
 	})
 }
 
@@ -241,7 +244,13 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			RespondWithError(w, http.StatusBadRequest, "Invalid request body")
+			RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido")
+			return
+		}
+
+		// Validar dados usando service
+		if err := services.ValidateCategoryRequest(req.Name); err != nil {
+			HandleError(w, NewAppError(http.StatusBadRequest, err.Error(), err), "Erro de validação")
 			return
 		}
 
@@ -254,6 +263,12 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 			RespondWithError(w, http.StatusInternalServerError, "Error creating category")
 			return
 		}
+
+		// Log estruturado
+		slog.Info("Categoria criada",
+			"category_id", category.ID,
+			"category_name", category.Name,
+		)
 
 		// Invalidar cache de categorias
 		InvalidateCache(CacheKeyCategories)

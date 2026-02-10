@@ -6,6 +6,7 @@ import (
 	"estoque/internal/database"
 	"estoque/internal/models"
 	"estoque/internal/services"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -72,6 +73,13 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Log estruturado do login (sem senha)
+	slog.Info("Login realizado",
+		"user_id", user.ID,
+		"user_email", user.Email,
+		"user_role", user.Role,
+	)
+
 	RespondWithJSON(w, http.StatusOK, models.LoginResponse{
 		Token: tokenString,
 		User:  user,
@@ -129,6 +137,19 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		), "Erro ao processar NF-e")
 		return
 	}
+
+	// Log estruturado
+	user, _ := GetUserFromContext(r)
+	userEmail := "system"
+	if user != nil {
+		userEmail = user.Email
+	}
+
+	slog.Info("NF-e processada",
+		"access_key", proc.NFe.InfNFe.ID,
+		"total_items", totalItems,
+		"user_email", userEmail,
+	)
 
 	// Invalidar cache do dashboard (estoque mudou)
 	InvalidateCache(CacheKeyDashboardStats)

@@ -3,6 +3,8 @@ package api
 import (
 	"encoding/json"
 	"estoque/internal/models"
+	"estoque/internal/services"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -25,8 +27,9 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Email == "" || req.Password == "" {
-		RespondWithError(w, http.StatusBadRequest, "Email and password are required")
+	// Validar dados usando service
+	if err := services.ValidateUserRequest(req.Email, req.Password); err != nil {
+		HandleError(w, NewAppError(http.StatusBadRequest, err.Error(), err), "Erro de validação")
 		return
 	}
 
@@ -46,6 +49,13 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao criar usuário", err), "Erro ao criar usuário")
 		return
 	}
+
+	// Log estruturado
+	slog.Info("Usuário criado",
+		"user_id", req.ID,
+		"user_email", req.Email,
+		"user_role", req.Role,
+	)
 
 	RespondWithJSON(w, http.StatusCreated, req)
 }
