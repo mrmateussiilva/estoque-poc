@@ -38,6 +38,7 @@ func AuthMiddleware(db *gorm.DB) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Pular autenticação para requisições OPTIONS (CORS Preflight)
+			// O middleware de CORS já trata essas requisições
 			if r.Method == http.MethodOptions {
 				next.ServeHTTP(w, r)
 				return
