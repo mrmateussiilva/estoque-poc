@@ -11,10 +11,20 @@ export default function Dashboard() {
     const { apiFetch } = useAuth();
     const queryClient = useQueryClient();
     
-    // Queries
+    // Queries com polling automático (atualiza a cada 30 segundos)
     const { data: stats, isLoading: isLoadingStats } = useDashboardStatsQuery();
     const { data: evolution, isLoading: isLoadingEvolution } = useDashboardEvolutionQuery();
     const { data: stockData, isLoading: isLoadingStock } = useStockQuery();
+
+    // Polling automático para atualizar dashboard
+    useEffect(() => {
+        const interval = setInterval(() => {
+            queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+            queryClient.invalidateQueries({ queryKey: ['dashboard-evolution'] });
+        }, 30000); // 30 segundos
+
+        return () => clearInterval(interval);
+    }, [queryClient]);
 
     const [uploading, setUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
