@@ -111,7 +111,11 @@ export default function Entries() {
                     </div>
                     {items.length > 0 && (
                         <button
-                            onClick={() => window.confirm('Limpar todos os itens?') && setItems([])}
+                            onClick={() => {
+                                if (window.confirm('Tem certeza que deseja limpar todos os itens? Esta ação não pode ser desfeita.')) {
+                                    setItems([]);
+                                }
+                            }}
                             className="px-4 py-2 text-[10px] font-bold text-charcoal-400 hover:text-ruby-700 hover:bg-ruby-50 rounded-lg transition-all uppercase tracking-widest border border-charcoal-100 hover:border-ruby-100"
                         >
                             Limpar Mesa

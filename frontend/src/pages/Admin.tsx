@@ -14,6 +14,7 @@ import {
     Check
 } from 'lucide-react';
 import { Card, TableContainer, THead, TBody, Tr, Th, Td, Button, Modal } from '../components/UI';
+import ConfirmModal from '../components/ConfirmModal';
 import { useCategoriesQuery, useUsersQuery, useCategoryMutations, useUserMutations } from '../hooks/useQueries';
 
 type AdminTab = 'categories' | 'users' | 'settings' | 'notifications';
@@ -47,6 +48,21 @@ export default function Admin() {
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [userInput, setUserInput] = useState({ name: '', email: '', password: '', role: 'OPERADOR' });
 
+    // Confirmação state
+    const [confirmModal, setConfirmModal] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        variant?: 'danger' | 'warning' | 'info';
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => {},
+        variant: 'danger'
+    });
+
     // Settings state
     const [emailConfig, setEmailConfig] = useState({
         inbound_email: 'financeiro@empresa.com.br',
@@ -78,13 +94,22 @@ export default function Admin() {
     };
 
     const handleDeleteCategory = async (id: number) => {
-        if (!confirm('Deseja realmente excluir esta categoria?')) return;
-        try {
-            await deleteCategory.mutateAsync(id);
-            showMsg('Categoria excluída!');
-        } catch (err: any) {
-            showMsg(err.message || 'Erro ao excluir (verifique se há produtos vinculados)', 'error');
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: 'Confirmar Exclusão',
+            message: 'Tem certeza que deseja excluir esta categoria? Esta ação não pode ser desfeita. Verifique se não há produtos vinculados.',
+            onConfirm: async () => {
+                try {
+                    await deleteCategory.mutateAsync(id);
+                    showMsg('Categoria excluída!');
+                    setConfirmModal({ ...confirmModal, isOpen: false });
+                } catch (err: any) {
+                    showMsg(err.message || 'Erro ao excluir (verifique se há produtos vinculados)', 'error');
+                    setConfirmModal({ ...confirmModal, isOpen: false });
+                }
+            },
+            variant: 'danger'
+        });
     };
 
     const handleSaveUser = async (e: React.FormEvent) => {
@@ -102,13 +127,24 @@ export default function Admin() {
 
     const handleDeactivateUser = async (user: User) => {
         const action = user.active ? 'inativar' : 'ativar';
-        if (!confirm(`Deseja realmente ${action} este usuário?`)) return;
-        try {
-            await toggleUserStatus.mutateAsync(user);
-            showMsg(`Usuário ${user.active ? 'inativado' : 'ativado'}!`);
-        } catch (err: any) {
-            showMsg(err.message || 'Erro ao conectar no servidor', 'error');
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: user.active ? 'Confirmar Inativação' : 'Confirmar Ativação',
+            message: user.active 
+                ? `Tem certeza que deseja inativar o usuário "${user.email}"? Ele não poderá mais acessar o sistema.`
+                : `Tem certeza que deseja ativar o usuário "${user.email}"?`,
+            onConfirm: async () => {
+                try {
+                    await toggleUserStatus.mutateAsync(user);
+                    showMsg(`Usuário ${user.active ? 'inativado' : 'ativado'}!`);
+                    setConfirmModal({ ...confirmModal, isOpen: false });
+                } catch (err: any) {
+                    showMsg(err.message || 'Erro ao conectar no servidor', 'error');
+                    setConfirmModal({ ...confirmModal, isOpen: false });
+                }
+            },
+            variant: user.active ? 'danger' : 'info'
+        });
     };
 
     const tabs = [
@@ -386,6 +422,18 @@ export default function Admin() {
                     </div>
                 )}
             </div>
+
+            {/* Modal de Confirmação */}
+            <ConfirmModal
+                isOpen={confirmModal.isOpen}
+                onClose={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                onConfirm={confirmModal.onConfirm}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                variant={confirmModal.variant}
+                confirmText="Confirmar"
+                cancelText="Cancelar"
+            />
         </div>
     );
 }
