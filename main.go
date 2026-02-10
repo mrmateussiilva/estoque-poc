@@ -15,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/go-chi/httprate"
 	"github.com/joho/godotenv"
 )
 
@@ -26,7 +27,13 @@ func main() {
 	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
 	slog.SetDefault(slog.New(handler))
 
-	// 2. Inicialização do Banco de Dados (GORM)
+	// 2. Inicialização do JWT Secret
+	if err := api.InitJwtSecret(); err != nil {
+		slog.Error("Failed to initialize JWT secret", "error", err)
+		os.Exit(1)
+	}
+
+	// 3. Inicialização do Banco de Dados (GORM)
 	dsn := getDSN()
 	
 	// Garantir que a pasta static existe (mesmo vazia) para evitar erros de stat
@@ -38,14 +45,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	// 3. Inicialização dos Handlers e Serviços
+	// 4. Inicialização dos Handlers e Serviços
 	h := api.NewHandler(db)
 
 	// Iniciar Consumidor de e-mails de NF-e em background
 	nfeConsumer := nfe_consumer.NewConsumer(db)
 	go nfeConsumer.Start(context.Background())
 
-	// 4. Setup de Rotas com Chi
+	// 6. Setup de Rotas com Chi
 	r := chi.NewRouter()
 
 	// Middlewares Globais
@@ -68,7 +75,8 @@ func main() {
 	// API Routes
 	r.Route("/api", func(r chi.Router) {
 		// Public Routes
-		r.Post("/login", h.LoginHandler)
+		// Rate limiting no login: 5 tentativas por minuto por IP
+		r.With(httprate.LimitByIP(5, 1*time.Minute)).Post("/login", h.LoginHandler)
 		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
@@ -77,7 +85,9 @@ func main() {
 
 		// Protected Routes
 		r.Group(func(r chi.Router) {
-			r.Use(api.AuthMiddleware)
+			r.Use(api.AuthMiddleware(db))
+			// Rate limiting geral: 100 requisições por minuto por IP
+			r.Use(httprate.LimitByIP(100, 1*time.Minute))
 
 			// NF-e
 			r.Post("/nfe/upload", h.UploadHandler)
@@ -103,11 +113,14 @@ func main() {
 			r.Put("/categories/{id}", h.CategoriesHandler)
 			r.Delete("/categories/{id}", h.CategoriesHandler)
 
-			// Users (Admin Only - simplified for now)
-			r.Get("/users", h.ListUsersHandler)
-			r.Post("/users", h.CreateUserHandler)
-			r.Put("/users/{id}", h.UpdateUserHandler)
-			r.Delete("/users/{id}", h.DeleteUserHandler)
+			// Users (Admin Only)
+			r.Group(func(r chi.Router) {
+				r.Use(api.RoleMiddleware("ADMIN"))
+				r.Get("/users", h.ListUsersHandler)
+				r.Post("/users", h.CreateUserHandler)
+				r.Put("/users/{id}", h.UpdateUserHandler)
+				r.Delete("/users/{id}", h.DeleteUserHandler)
+			})
 		})
 	})
 
@@ -124,7 +137,7 @@ func main() {
 		fileServer.ServeHTTP(w, r)
 	})
 
-	// 5. Configuração e Inicialização do Servidor
+	// 7. Configuração e Inicialização do Servidor
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8003"
