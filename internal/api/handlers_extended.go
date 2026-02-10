@@ -6,6 +6,7 @@ import (
 	"estoque/internal/services"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"gorm.io/gorm"
@@ -131,6 +132,18 @@ func (h *Handler) CreateMovementHandler(w http.ResponseWriter, r *http.Request) 
 		"user_email", user.Email,
 	)
 
+	// Registrar no audit log
+	LogAuditAction(h.DB, r, &user.ID, "CREATE", "movement", req.ProductCode,
+		"Movimentação de estoque criada",
+		nil,
+		map[string]interface{}{
+			"product_code": req.ProductCode,
+			"type":         req.Type,
+			"quantity":     req.Quantity,
+			"origin":       req.Origin,
+		},
+	)
+
 	// Invalidar cache do dashboard (stats mudaram)
 	InvalidateCache(CacheKeyDashboardStats)
 
@@ -141,14 +154,14 @@ func (h *Handler) CreateMovementHandler(w http.ResponseWriter, r *http.Request) 
 
 func (h *Handler) ListMovementsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
 		return
 	}
 
 	params := ParsePaginationParams(r)
 	offset := (params.Page - 1) * params.Limit
 
-	db := h.DB.Model(&models.Movement{}).Order("created_at DESC")
+	db := h.DB.Model(&models.Movement{}).Order("created_at DESC").Preload("Product").Preload("User")
 
 	if productCode := r.URL.Query().Get("product_code"); productCode != "" {
 		db = db.Where("product_code = ?", productCode)
@@ -270,6 +283,19 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 			"category_name", category.Name,
 		)
 
+		// Registrar no audit log
+		user, _ := GetUserFromContext(r)
+		var userID *int32
+		if user != nil {
+			userID = &user.ID
+		}
+		categoryIDStr := strconv.FormatInt(int64(category.ID), 10)
+		LogAuditAction(h.DB, r, userID, "CREATE", "category", categoryIDStr,
+			"Categoria criada",
+			nil,
+			map[string]interface{}{"name": category.Name},
+		)
+
 		// Invalidar cache de categorias
 		InvalidateCache(CacheKeyCategories)
 
@@ -295,10 +321,22 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Registrar no audit log
+		user, _ := GetUserFromContext(r)
+		var userID *int32
+		if user != nil {
+			userID = &user.ID
+		}
+		LogAuditAction(h.DB, r, userID, "UPDATE", "category", idStr,
+			"Categoria atualizada",
+			nil,
+			req,
+		)
+
 		// Invalidar cache de categorias
 		InvalidateCache(CacheKeyCategories)
 
-		RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Category updated successfully"})
+		RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Categoria atualizada com sucesso"})
 		return
 	}
 
@@ -321,6 +359,18 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 			RespondWithError(w, http.StatusInternalServerError, "Error deleting category")
 			return
 		}
+
+		// Registrar no audit log
+		user, _ := GetUserFromContext(r)
+		var userID *int32
+		if user != nil {
+			userID = &user.ID
+		}
+		LogAuditAction(h.DB, r, userID, "DELETE", "category", idStr,
+			"Categoria excluída",
+			nil,
+			nil,
+		)
 
 		// Invalidar cache de categorias
 		InvalidateCache(CacheKeyCategories)

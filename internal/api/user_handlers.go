@@ -6,6 +6,7 @@ import (
 	"estoque/internal/services"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
@@ -57,6 +58,22 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		"user_role", req.Role,
 	)
 
+	// Registrar no audit log
+	user, _ := GetUserFromContext(r)
+	var userID *int32
+	if user != nil {
+		userID = &user.ID
+	}
+	userIDStr := strconv.FormatInt(int64(req.ID), 10)
+	LogAuditAction(h.DB, r, userID, "CREATE", "user", userIDStr,
+		"Usuário criado",
+		nil,
+		map[string]interface{}{
+			"email": req.Email,
+			"role":  req.Role,
+		},
+	)
+
 	RespondWithJSON(w, http.StatusCreated, req)
 }
 
@@ -91,10 +108,35 @@ func (h *Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		req.Password = user.Password // Manter a senha antiga se não enviada
 	}
 
+	// Salvar valores antigos para audit log
+	oldValues := map[string]interface{}{
+		"name":  user.Name,
+		"email": user.Email,
+		"role":  user.Role,
+		"active": user.Active,
+	}
+
 	if err := h.DB.Model(&user).Updates(req).Error; err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Error updating user")
+		RespondWithError(w, http.StatusInternalServerError, "Erro ao atualizar usuário")
 		return
 	}
+
+	// Registrar no audit log
+	auditUser, _ := GetUserFromContext(r)
+	var userID *int32
+	if auditUser != nil {
+		userID = &auditUser.ID
+	}
+	LogAuditAction(h.DB, r, userID, "UPDATE", "user", idStr,
+		"Usuário atualizado",
+		oldValues,
+		map[string]interface{}{
+			"name":  req.Name,
+			"email": req.Email,
+			"role":  req.Role,
+			"active": req.Active,
+		},
+	)
 
 	RespondWithJSON(w, http.StatusOK, user)
 }
@@ -106,11 +148,30 @@ func (h *Handler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Inativar usuário em vez de excluir fisicamente (melhor prática)
-	if err := h.DB.Model(&models.User{}).Where("id = ?", idStr).Update("active", false).Error; err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Error deactivating user")
+	// Buscar usuário antes de inativar (para audit log)
+	var user models.User
+	if err := h.DB.First(&user, idStr).Error; err != nil {
+		HandleError(w, ErrUserNotFound, "Erro ao buscar usuário")
 		return
 	}
+
+	// Inativar usuário em vez de excluir fisicamente (melhor prática)
+	if err := h.DB.Model(&models.User{}).Where("id = ?", idStr).Update("active", false).Error; err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Erro ao inativar usuário")
+		return
+	}
+
+	// Registrar no audit log
+	auditUser, _ := GetUserFromContext(r)
+	var userID *int32
+	if auditUser != nil {
+		userID = &auditUser.ID
+	}
+	LogAuditAction(h.DB, r, userID, "DELETE", "user", idStr,
+		"Usuário inativado",
+		map[string]interface{}{"active": true},
+		map[string]interface{}{"active": false},
+	)
 
 	w.WriteHeader(http.StatusNoContent)
 }
