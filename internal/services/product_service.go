@@ -71,7 +71,7 @@ func (s *ProductService) GetStockList(search string, categoryID string) ([]model
 }
 
 // CreateMovement registra uma nova movimentação de estoque
-func (s *ProductService) CreateMovement(req models.CreateMovementRequest) error {
+func (s *ProductService) CreateMovement(req models.CreateMovementRequest, userID int32) error {
 	return s.DB.Transaction(func(tx *gorm.DB) error {
 		// Se for saída, verificar estoque disponível
 		if req.Type == "SAIDA" {
@@ -95,6 +95,7 @@ func (s *ProductService) CreateMovement(req models.CreateMovementRequest) error 
 			Origin:      &req.Origin,
 			Reference:   &req.Reference,
 			Notes:       &req.Notes,
+			UserID:      &userID,
 		}
 		if err := tx.Create(&movement).Error; err != nil {
 			return err
