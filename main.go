@@ -102,6 +102,10 @@ func main() {
 			r.Post("/movements", h.CreateMovementHandler)
 			r.Get("/movements/list", h.ListMovementsHandler)
 			r.Get("/reports/movements", h.GetMovementsReport)
+			r.Get("/export/movements", h.ExportMovementsHandler)
+
+			// Export
+			r.Get("/export/stock", h.ExportStockHandler)
 
 			// Dashboard
 			r.Get("/dashboard/stats", h.DashboardStatsHandler)
