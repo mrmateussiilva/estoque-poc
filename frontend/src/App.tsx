@@ -4,6 +4,7 @@ import Sidebar from './layout/Sidebar';
 import Header from './layout/Header';
 import MobileBottomNav from './components/MobileBottomNav';
 import OfflineIndicator from './components/OfflineIndicator';
+import InstallPrompt from './components/InstallPrompt';
 import Dashboard from './pages/Dashboard';
 import Entries from './pages/Entries';
 import Stock from './pages/Stock';
@@ -53,6 +54,7 @@ function MainApp() {
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <OfflineIndicator />
+      <InstallPrompt />
       
       {/* Sidebar apenas em desktop */}
       <div className="hidden md:block">
