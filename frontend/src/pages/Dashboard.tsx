@@ -32,9 +32,9 @@ export default function Dashboard() {
     const [file, setFile] = useState<File | null>(null);
 
     // Calcular top products a partir do stockData
-    const topProducts = (stockData || [])
-        .sort((a: StockItem, b: StockItem) => b.quantity - a.quantity)
-        .slice(0, 5);
+    const topProducts = Array.isArray(stockData) 
+        ? stockData.sort((a: StockItem, b: StockItem) => b.quantity - a.quantity).slice(0, 5)
+        : [];
 
     const isLoading = isLoadingStats || isLoadingEvolution || isLoadingStock;
 
@@ -157,7 +157,7 @@ export default function Dashboard() {
                                 <LineChart data={evolution} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                     <XAxis
-                                        dataKey="date"
+                                        dataKey="month"
                                         axisLine={false}
                                         tickLine={false}
                                         tick={{ fill: '#64748b', fontSize: 10, fontWeight: 800 }}
@@ -177,7 +177,7 @@ export default function Dashboard() {
                                     />
                                     <Line
                                         type="monotone"
-                                        dataKey="quantity"
+                                        dataKey="items"
                                         stroke="#e11d48"
                                         strokeWidth={4}
                                         dot={{ fill: '#e11d48', strokeWidth: 2, r: 4, stroke: '#fff' }}

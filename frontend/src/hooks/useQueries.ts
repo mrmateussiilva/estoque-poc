@@ -51,7 +51,9 @@ export function useStockQuery(search?: string) {
             
             const response = await apiFetch(url);
             if (!response.ok) throw new Error('Failed to fetch stock');
-            return response.json() as Promise<StockItem[]>;
+            const data = await response.json();
+            // Backend retorna resposta paginada, extrair o array de data
+            return (Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : [])) as StockItem[];
         }
     });
 }
