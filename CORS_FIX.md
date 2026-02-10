@@ -39,32 +39,119 @@ VITE_API_BASE_URL=http://localhost:8003
 
 ### 4. Verificação de Proxy/Reverse Proxy
 
-O erro **502 (Bad Gateway)** sugere que pode haver um problema de configuração no proxy/reverse proxy (nginx, caddy, etc.) que está na frente da API.
+O erro **502 (Bad Gateway)** indica que o proxy/reverse proxy não está conseguindo se comunicar com o backend. Isso pode acontecer por:
 
-**Verificações necessárias:**
+1. **Backend não está rodando** na porta configurada
+2. **Proxy não está configurado corretamente** para passar requisições ao backend
+3. **Firewall bloqueando** conexões entre proxy e backend
 
-1. **Nginx/Caddy deve passar os headers CORS corretamente:**
-   ```nginx
-   # Exemplo para Nginx
-   location /api {
-       proxy_pass http://localhost:8003;
-       proxy_set_header Host $host;
-       proxy_set_header X-Real-IP $remote_addr;
-       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-       proxy_set_header X-Forwarded-Proto $scheme;
-       
-       # Não sobrescrever headers CORS do backend
-       proxy_hide_header Access-Control-Allow-Origin;
-   }
+**Configuração de Proxy (Nginx):**
+
+```nginx
+# Exemplo completo para Nginx
+server {
+    listen 443 ssl http2;
+    server_name api-sge.finderbit.com.br;
+
+    # Certificados SSL
+    ssl_certificate /path/to/cert.pem;
+    ssl_certificate_key /path/to/key.pem;
+
+    location /api {
+        # IMPORTANTE: Passar todas as requisições, incluindo OPTIONS
+        proxy_pass http://localhost:8003;
+        
+        # Headers básicos
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+        
+        # IMPORTANTE: Não sobrescrever headers CORS do backend
+        # O backend já adiciona os headers CORS corretos
+        # Não adicione headers CORS aqui, deixe o backend fazer isso
+        
+        # Permitir requisições OPTIONS
+        if ($request_method = 'OPTIONS') {
+            add_header 'Access-Control-Allow-Origin' '*' always;
+            add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, PATCH, DELETE, OPTIONS' always;
+            add_header 'Access-Control-Allow-Headers' 'Accept, Authorization, Content-Type, X-CSRF-Token, X-Requested-With' always;
+            add_header 'Access-Control-Max-Age' 1728000;
+            add_header 'Content-Type' 'text/plain; charset=utf-8';
+            add_header 'Content-Length' 0;
+            return 204;
+        }
+    }
+}
+```
+
+**Configuração de Proxy (Caddy):**
+
+```caddy
+api-sge.finderbit.com.br {
+    reverse_proxy localhost:8003 {
+        # Headers
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Proto {scheme}
+        
+        # Timeouts
+        transport http {
+            dial_timeout 60s
+            response_header_timeout 60s
+        }
+    }
+}
+```
+
+**Verificações de Diagnóstico:**
+
+1. **Verificar se o backend está rodando:**
+   ```bash
+   # No servidor onde o backend está rodando
+   curl http://localhost:8003/api/health
+   # Deve retornar: {"status":"ok","version":"1.1.0"}
    ```
 
-2. **Verificar se o proxy não está bloqueando requisições OPTIONS:**
-   - As requisições OPTIONS (preflight) devem passar direto para o backend
-   - O backend já está configurado para responder corretamente a OPTIONS
-
-3. **Verificar se o backend está rodando e acessível:**
+2. **Verificar se o proxy consegue acessar o backend:**
    ```bash
-   curl -I https://api-sge.finderbit.com.br/api/health
+   # Do servidor do proxy
+   curl http://localhost:8003/api/health
+   # Se falhar, verificar firewall/network
+   ```
+
+3. **Testar requisição OPTIONS diretamente no backend:**
+   ```bash
+   curl -X OPTIONS \
+        -H "Origin: https://sge.finderbit.com.br" \
+        -H "Access-Control-Request-Method: GET" \
+        -H "Access-Control-Request-Headers: Authorization" \
+        http://localhost:8003/api/stock \
+        -v
+   ```
+   Deve retornar headers CORS corretos.
+
+4. **Verificar logs do backend:**
+   ```bash
+   # Verificar se as requisições estão chegando no backend
+   tail -f /var/log/estoque-poc.log
+   # ou
+   journalctl -u estoque-poc -f
+   ```
+
+5. **Verificar logs do proxy:**
+   ```bash
+   # Nginx
+   tail -f /var/log/nginx/error.log
+   
+   # Caddy
+   tail -f /var/log/caddy/access.log
    ```
 
 ## Teste Local
