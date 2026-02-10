@@ -188,14 +188,20 @@ func (c *AdvancedCache) cleanup() {
 	
 	for range ticker.C {
 		now := time.Now()
+		// Coletar chaves expiradas primeiro (evitar modificar durante Range)
+		var expiredKeys []string
 		c.data.Range(func(key, value interface{}) bool {
 			entry := value.(*CacheEntry)
 			if now.After(entry.ExpiresAt) {
-				c.data.Delete(key)
-				c.removeKeyFromTags(key.(string))
+				expiredKeys = append(expiredKeys, key.(string))
 			}
 			return true
 		})
+		
+		// Deletar chaves expiradas
+		for _, key := range expiredKeys {
+			c.Delete(key)
+		}
 	}
 }
 

@@ -2,9 +2,10 @@ package database
 
 import (
 	"estoque/internal/models"
+	"fmt"
 	"log/slog"
-	"time" // Added time import
-    "sort" // Added sort import
+	"sort"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/driver/mysql"
@@ -94,35 +95,51 @@ func stringPtr(s string) *string {
 }
 
 // createIndexes cria índices para melhorar performance das queries
+// MySQL 5.6 não suporta "IF NOT EXISTS", então verificamos se o índice existe antes de criar
 func createIndexes(db *gorm.DB) {
-	// Índices para movements (consultas frequentes)
-	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_movements_product_code ON movements(product_code)").Error; err != nil {
-		slog.Warn("Failed to create index idx_movements_product_code", "error", err)
-	}
-	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_movements_created_at ON movements(created_at)").Error; err != nil {
-		slog.Warn("Failed to create index idx_movements_created_at", "error", err)
-	}
-	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_movements_type ON movements(type)").Error; err != nil {
-		slog.Warn("Failed to create index idx_movements_type", "error", err)
-	}
-	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_movements_user_id ON movements(user_id)").Error; err != nil {
-		slog.Warn("Failed to create index idx_movements_user_id", "error", err)
-	}
-
-	// Índices para products
-	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_products_category_id ON products(category_id)").Error; err != nil {
-		slog.Warn("Failed to create index idx_products_category_id", "error", err)
-	}
-	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_products_active ON products(active)").Error; err != nil {
-		slog.Warn("Failed to create index idx_products_active", "error", err)
-	}
-	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_products_name ON products(name)").Error; err != nil {
-		slog.Warn("Failed to create index idx_products_name", "error", err)
+	indexes := []struct {
+		name      string
+		table     string
+		columns   string
+		unique    bool
+	}{
+		{"idx_movements_product_code", "movements", "product_code", false},
+		{"idx_movements_created_at", "movements", "created_at", false},
+		{"idx_movements_type", "movements", "type", false},
+		{"idx_movements_user_id", "movements", "user_id", false},
+		{"idx_products_category_id", "products", "category_id", false},
+		{"idx_products_active", "products", "active", false},
+		{"idx_products_name", "products", "name", false},
+		{"idx_products_active_name", "products", "active, name", false},
 	}
 
-	// Índice composto para busca de produtos
-	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_products_active_name ON products(active, name)").Error; err != nil {
-		slog.Warn("Failed to create index idx_products_active_name", "error", err)
+	for _, idx := range indexes {
+		// Verificar se o índice já existe
+		var count int64
+		db.Raw(`
+			SELECT COUNT(*) FROM information_schema.statistics 
+			WHERE table_schema = DATABASE() 
+			AND table_name = ? 
+			AND index_name = ?
+		`, idx.table, idx.name).Scan(&count)
+
+		if count > 0 {
+			// Índice já existe, pular
+			continue
+		}
+
+		// Criar índice (MySQL 5.6 não suporta IF NOT EXISTS)
+		uniqueClause := ""
+		if idx.unique {
+			uniqueClause = "UNIQUE "
+		}
+		
+		sql := fmt.Sprintf("CREATE %sINDEX %s ON %s(%s)", uniqueClause, idx.name, idx.table, idx.columns)
+		if err := db.Exec(sql).Error; err != nil {
+			slog.Warn("Failed to create index", "index", idx.name, "error", err)
+		} else {
+			slog.Debug("Index created", "index", idx.name)
+		}
 	}
 
 	slog.Info("Database indexes created successfully")
