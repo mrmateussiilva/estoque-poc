@@ -144,8 +144,8 @@ func (h *Handler) CreateMovementHandler(w http.ResponseWriter, r *http.Request) 
 		},
 	)
 
-	// Invalidar cache do dashboard (stats mudaram)
-	InvalidateCache(CacheKeyDashboardStats)
+	// Invalidar cache do dashboard usando tag (mais eficiente)
+	InvalidateCacheByTag(TagDashboard)
 
 	RespondWithJSON(w, http.StatusCreated, map[string]interface{}{
 		"message": "Movimentação criada com sucesso",
@@ -296,8 +296,8 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 			map[string]interface{}{"name": category.Name},
 		)
 
-		// Invalidar cache de categorias
-		InvalidateCache(CacheKeyCategories)
+		// Invalidar cache de categorias usando tag
+		InvalidateCacheByTag(TagCategories)
 
 		RespondWithJSON(w, http.StatusCreated, category)
 		return
@@ -333,8 +333,8 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 			req,
 		)
 
-		// Invalidar cache de categorias
-		InvalidateCache(CacheKeyCategories)
+		// Invalidar cache de categorias usando tag
+		InvalidateCacheByTag(TagCategories)
 
 		RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Categoria atualizada com sucesso"})
 		return
@@ -372,8 +372,8 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 			nil,
 		)
 
-		// Invalidar cache de categorias
-		InvalidateCache(CacheKeyCategories)
+		// Invalidar cache de categorias usando tag
+		InvalidateCacheByTag(TagCategories)
 
 		w.WriteHeader(http.StatusNoContent)
 		return
@@ -443,5 +443,9 @@ func (h *Handler) UpdateProductHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Invalidar cache do produto específico e estoque
+	InvalidateProductCache(code)
+	InvalidateCacheByTag(TagStock)
+	
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Product updated successfully"})
 }

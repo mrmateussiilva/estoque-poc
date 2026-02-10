@@ -167,8 +167,8 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		"duration_ms", result.Duration.Milliseconds(),
 	)
 
-	// Invalidar cache do dashboard (estoque mudou)
-	InvalidateCache(CacheKeyDashboardStats)
+	// Invalidar cache do dashboard e estoque usando tags (mais eficiente)
+	InvalidateCacheByTags(TagDashboard, TagStock)
 
 	RespondWithJSON(w, http.StatusOK, map[string]interface{}{
 		"message":     "NF-e processada com sucesso",
