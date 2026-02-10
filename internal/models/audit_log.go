@@ -15,8 +15,8 @@ type AuditLog struct {
 	EntityType  string    `gorm:"size:50;not null" json:"entity_type"` // product, movement, user, category, etc.
 	EntityID    string    `gorm:"size:255" json:"entity_id"` // ID do registro alterado
 	Description string    `gorm:"type:text" json:"description"` // Descrição da ação
-	OldValues   *string   `gorm:"type:json" json:"old_values,omitempty"` // Valores antigos (JSON)
-	NewValues   *string   `gorm:"type:json" json:"new_values,omitempty"` // Valores novos (JSON)
+	OldValues   *string   `gorm:"type:text" json:"old_values,omitempty"` // Valores antigos (JSON armazenado como TEXT)
+	NewValues   *string   `gorm:"type:text" json:"new_values,omitempty"` // Valores novos (JSON armazenado como TEXT)
 	IPAddress   *string   `gorm:"size:45" json:"ip_address,omitempty"` // IP do cliente
 	UserAgent   *string   `gorm:"type:text" json:"user_agent,omitempty"` // User agent do navegador
 	CreatedAt   time.Time `json:"created_at"`
