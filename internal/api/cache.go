@@ -142,7 +142,10 @@ func GetCachedDashboardStats() (*models.DashboardStats, bool) {
 	data, ok := GetAdvancedCache().Get(CacheKeyDashboardStats)
 	if !ok {
 		// Fallback para cache antigo (compatibilidade)
-		return GetCachedDashboardStats()
+		data, ok = GetCache().Get(CacheKeyDashboardStats)
+		if !ok {
+			return nil, false
+		}
 	}
 	stats, ok := data.(*models.DashboardStats)
 	return stats, ok
