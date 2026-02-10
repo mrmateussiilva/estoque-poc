@@ -12,10 +12,11 @@ export default function Header({ title, onSync, onLogout, onMenuClick, loading }
     return (
         <header className="h-24 bg-white border-b border-charcoal-100/50 flex items-center justify-between px-6 md:px-10 sticky top-0 z-40 transition-all duration-300">
             <div className="flex items-center gap-6">
+                {/* Menu hambúrguer apenas em desktop (quando sidebar existe) */}
                 {onMenuClick && (
                     <button
                         onClick={onMenuClick}
-                        className="md:hidden p-2 text-charcoal-400 hover:text-ruby-700 hover:bg-ruby-50 rounded-xl transition-all"
+                        className="hidden md:block p-2 text-charcoal-400 hover:text-ruby-700 hover:bg-ruby-50 rounded-xl transition-all"
                     >
                         <Menu className="w-6 h-6" />
                     </button>

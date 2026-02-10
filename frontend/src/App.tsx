@@ -15,7 +15,6 @@ import Admin from './pages/Admin';
 function MainApp() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isAuthenticated, logout } = useAuth();
 
   // Registrar Service Worker para PWA
@@ -33,7 +32,6 @@ function MainApp() {
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page);
-    setIsMobileMenuOpen(false);
   };
 
   const pageConfig = {
@@ -56,13 +54,16 @@ function MainApp() {
     <div className="flex h-screen bg-background overflow-hidden">
       <OfflineIndicator />
       
-      <Sidebar
-        currentPage={currentPage}
-        onNavigate={handleNavigate}
-        onCollapse={setSidebarCollapsed}
-        isOpen={isMobileMenuOpen}
-        onMobileClose={() => setIsMobileMenuOpen(false)}
-      />
+      {/* Sidebar apenas em desktop */}
+      <div className="hidden md:block">
+        <Sidebar
+          currentPage={currentPage}
+          onNavigate={handleNavigate}
+          onCollapse={setSidebarCollapsed}
+          isOpen={false}
+          onMobileClose={() => {}}
+        />
+      </div>
 
       <div className={`
         flex-1 flex flex-col transition-all duration-300 min-w-0
@@ -72,7 +73,7 @@ function MainApp() {
           title={config.title}
           onSync={config.showSync ? () => window.location.reload() : undefined}
           onLogout={logout}
-          onMenuClick={() => setIsMobileMenuOpen(true)}
+          onMenuClick={undefined} // Sem menu hambúrguer em mobile
         />
         <main className="flex-1 overflow-auto p-4 md:p-8 pb-20 md:pb-8">
           <PageComponent />
