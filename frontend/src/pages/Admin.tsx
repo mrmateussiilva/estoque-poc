@@ -126,7 +126,6 @@ export default function Admin() {
     };
 
     const handleDeactivateUser = async (user: User) => {
-        const action = user.active ? 'inativar' : 'ativar';
         setConfirmModal({
             isOpen: true,
             title: user.active ? 'Confirmar Inativação' : 'Confirmar Ativação',
