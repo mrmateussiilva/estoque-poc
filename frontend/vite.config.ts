@@ -52,22 +52,11 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Não interceptar requisições de API - deixar passar direto
+        // O Service Worker não deve interferir com requisições cross-origin
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/api-sge\.finderbit\.com\.br\/api\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'api-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 5 * 60 // 5 minutos
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
+            // Apenas cachear imagens de domínios externos
             urlPattern: /^https?:\/\/.*\.(?:png|jpg|jpeg|svg|gif|webp)/i,
             handler: 'CacheFirst',
             options: {
@@ -80,7 +69,10 @@ export default defineConfig({
           }
         ],
         skipWaiting: true,
-        clientsClaim: true
+        clientsClaim: true,
+        // Não interceptar requisições de API
+        navigateFallback: null,
+        navigateFallbackDenylist: [/^\/api\//, /^\/_/, /\/[^/?]+\.[^/]+$/]
       },
       devOptions: {
         enabled: false // Desabilitar em dev para evitar problemas
