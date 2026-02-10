@@ -39,6 +39,9 @@ func InitDB(dsn string) (*gorm.DB, error) {
 		return nil, err
 	}
 
+	// Criar índices para melhorar performance
+	createIndexes(db)
+
 	seedUser(db)
 	seedCategories(db)
 
@@ -87,6 +90,41 @@ func seedCategories(db *gorm.DB) {
 
 func stringPtr(s string) *string {
 	return &s
+}
+
+// createIndexes cria índices para melhorar performance das queries
+func createIndexes(db *gorm.DB) {
+	// Índices para movements (consultas frequentes)
+	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_movements_product_code ON movements(product_code)").Error; err != nil {
+		slog.Warn("Failed to create index idx_movements_product_code", "error", err)
+	}
+	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_movements_created_at ON movements(created_at)").Error; err != nil {
+		slog.Warn("Failed to create index idx_movements_created_at", "error", err)
+	}
+	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_movements_type ON movements(type)").Error; err != nil {
+		slog.Warn("Failed to create index idx_movements_type", "error", err)
+	}
+	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_movements_user_id ON movements(user_id)").Error; err != nil {
+		slog.Warn("Failed to create index idx_movements_user_id", "error", err)
+	}
+
+	// Índices para products
+	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_products_category_id ON products(category_id)").Error; err != nil {
+		slog.Warn("Failed to create index idx_products_category_id", "error", err)
+	}
+	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_products_active ON products(active)").Error; err != nil {
+		slog.Warn("Failed to create index idx_products_active", "error", err)
+	}
+	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_products_name ON products(name)").Error; err != nil {
+		slog.Warn("Failed to create index idx_products_name", "error", err)
+	}
+
+	// Índice composto para busca de produtos
+	if err := db.Exec("CREATE INDEX IF NOT EXISTS idx_products_active_name ON products(active, name)").Error; err != nil {
+		slog.Warn("Failed to create index idx_products_active_name", "error", err)
+	}
+
+	slog.Info("Database indexes created successfully")
 }
 
 func GetMovementsReportData(db *gorm.DB, startDate, endDate time.Time) (models.FullReportResponse, error) {
