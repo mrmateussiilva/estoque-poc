@@ -63,14 +63,18 @@ func main() {
 	r.Use(middleware.Timeout(60 * time.Second))
 
 	// CORS Configuration
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"https://sge.finderbit.com.br", "http://localhost:5173", "http://localhost:3000"}, // Origens permitidas
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-		ExposedHeaders:   []string{"Link"},
+	// IMPORTANTE: CORS deve estar ANTES de qualquer middleware que possa bloquear OPTIONS
+	corsMiddleware := cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"https://sge.finderbit.com.br", "http://localhost:5173", "http://localhost:3000", "http://localhost:8003"}, // Origens permitidas
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "X-Requested-With"},
+		ExposedHeaders:   []string{"Link", "Content-Disposition"},
 		AllowCredentials: true,
 		MaxAge:           300,
-	}))
+		// Permitir todas as origens em desenvolvimento (não usar em produção)
+		// Debug: true,
+	})
+	r.Use(corsMiddleware)
 
 	// API Routes
 	r.Route("/api", func(r chi.Router) {
