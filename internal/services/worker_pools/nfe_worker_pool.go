@@ -88,14 +88,20 @@ func (p *NFeWorkerPool) Stop() {
 
 // Submit envia um job para processamento assíncrono
 func (p *NFeWorkerPool) Submit(job NFeJob) error {
+	// Verificar se contexto foi cancelado primeiro
+	select {
+	case <-p.ctx.Done():
+		return p.ctx.Err()
+	default:
+	}
+	
 	select {
 	case <-p.ctx.Done():
 		return p.ctx.Err()
 	case p.jobQueue <- job:
 		return nil
 	default:
-		// Queue cheia - retornar erro ou bloquear?
-		// Por enquanto, vamos bloquear para garantir que o job seja processado
+		// Queue cheia - bloquear até ter espaço
 		select {
 		case <-p.ctx.Done():
 			return p.ctx.Err()

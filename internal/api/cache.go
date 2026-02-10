@@ -96,41 +96,88 @@ func (c *InMemoryCache) cleanup() {
 
 // Cache keys
 const (
-	CacheKeyCategories = "categories"
+	CacheKeyCategories    = "categories"
 	CacheKeyDashboardStats = "dashboard:stats"
+	CacheKeyStock         = "stock"
+	CacheKeyStockList     = "stock:list"
+	CacheKeyProduct       = "product" // product:{code}
+	CacheKeyEvolution     = "dashboard:evolution"
+)
+
+// Cache tags para invalidação inteligente
+const (
+	TagCategories = "tag:categories"
+	TagDashboard  = "tag:dashboard"
+	TagStock      = "tag:stock"
+	TagProduct    = "tag:product" // tag:product:{code}
+	TagEvolution  = "tag:evolution"
 )
 
 // GetCachedCategories retorna categorias do cache ou nil se não existir
 func GetCachedCategories() ([]models.Category, bool) {
-	data, ok := GetCache().Get(CacheKeyCategories)
+	// Usar AdvancedCache para melhor performance
+	data, ok := GetAdvancedCache().Get(CacheKeyCategories)
 	if !ok {
-		return nil, false
+		// Fallback para cache antigo (compatibilidade)
+		data, ok = GetCache().Get(CacheKeyCategories)
+		if !ok {
+			return nil, false
+		}
 	}
 	categories, ok := data.([]models.Category)
 	return categories, ok
 }
 
-// SetCachedCategories armazena categorias no cache
+// SetCachedCategories armazena categorias no cache com tag
 func SetCachedCategories(categories []models.Category) {
+	// Usar AdvancedCache com tag para invalidação inteligente
+	GetAdvancedCache().Set(CacheKeyCategories, categories, 30*time.Minute, TagCategories)
+	// Manter compatibilidade com cache antigo
 	GetCache().Set(CacheKeyCategories, categories, 30*time.Minute)
 }
 
 // GetCachedDashboardStats retorna stats do dashboard do cache ou nil se não existir
 func GetCachedDashboardStats() (*models.DashboardStats, bool) {
-	data, ok := GetCache().Get(CacheKeyDashboardStats)
+	// Usar AdvancedCache para melhor performance
+	data, ok := GetAdvancedCache().Get(CacheKeyDashboardStats)
 	if !ok {
-		return nil, false
+		// Fallback para cache antigo (compatibilidade)
+		return GetCachedDashboardStats()
 	}
 	stats, ok := data.(*models.DashboardStats)
 	return stats, ok
 }
 
-// SetCachedDashboardStats armazena stats do dashboard no cache
+// SetCachedDashboardStats armazena stats do dashboard no cache com tag
 func SetCachedDashboardStats(stats *models.DashboardStats) {
+	// Usar AdvancedCache com tag para invalidação inteligente
+	GetAdvancedCache().Set(CacheKeyDashboardStats, stats, 5*time.Minute, TagDashboard)
+	// Manter compatibilidade com cache antigo
 	GetCache().Set(CacheKeyDashboardStats, stats, 5*time.Minute)
 }
 
 // InvalidateCache invalida um cache específico
 func InvalidateCache(key string) {
-	GetCache().Delete(key)
+	GetAdvancedCache().Delete(key)
+	GetCache().Delete(key) // Compatibilidade
+}
+
+// InvalidateCacheByTag invalida todos os caches com uma tag específica
+func InvalidateCacheByTag(tag string) {
+	GetAdvancedCache().InvalidateByTag(tag)
+}
+
+// InvalidateCacheByTags invalida todos os caches com qualquer uma das tags fornecidas
+func InvalidateCacheByTags(tags ...string) {
+	GetAdvancedCache().InvalidateByTags(tags...)
+}
+
+// Helper para criar tag de produto específico
+func ProductTag(productCode string) string {
+	return TagProduct + ":" + productCode
+}
+
+// Helper para invalidar cache de um produto específico
+func InvalidateProductCache(productCode string) {
+	GetAdvancedCache().InvalidateByTag(ProductTag(productCode))
 }

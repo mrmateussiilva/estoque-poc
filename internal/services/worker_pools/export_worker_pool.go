@@ -112,6 +112,13 @@ func (p *ExportWorkerPool) Stop() {
 
 // Submit envia um job para processamento assíncrono
 func (p *ExportWorkerPool) Submit(job ExportJob) error {
+	// Verificar se contexto foi cancelado primeiro
+	select {
+	case <-p.ctx.Done():
+		return p.ctx.Err()
+	default:
+	}
+	
 	select {
 	case <-p.ctx.Done():
 		return p.ctx.Err()
