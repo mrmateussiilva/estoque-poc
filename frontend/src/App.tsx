@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import Sidebar from './layout/Sidebar';
 import Header from './layout/Header';
 import MobileBottomNav from './components/MobileBottomNav';
+import OfflineIndicator from './components/OfflineIndicator';
 import Dashboard from './pages/Dashboard';
 import Entries from './pages/Entries';
 import Stock from './pages/Stock';
@@ -16,6 +17,19 @@ function MainApp() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isAuthenticated, logout } = useAuth();
+
+  // Registrar Service Worker para PWA
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      // O service worker será registrado automaticamente pelo vite-plugin-pwa
+      // após o build. Em desenvolvimento, não fazemos nada.
+      if (import.meta.env.PROD) {
+        navigator.serviceWorker.ready.then(() => {
+          console.log('Service Worker registrado e pronto');
+        });
+      }
+    }
+  }, []);
 
   const handleNavigate = (page: string) => {
     setCurrentPage(page);
@@ -40,6 +54,8 @@ function MainApp() {
 
   return (
     <div className="flex h-screen bg-background overflow-hidden">
+      <OfflineIndicator />
+      
       <Sidebar
         currentPage={currentPage}
         onNavigate={handleNavigate}
