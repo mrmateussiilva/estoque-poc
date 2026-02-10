@@ -61,8 +61,8 @@ export default function Stock() {
             const params = new URLSearchParams();
             if (debouncedSearch) params.append('search', debouncedSearch);
             
-            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
-            const response = await apiFetch(`${apiUrl}/api/export/stock?${params.toString()}`);
+            // apiFetch já inclui a URL base, não precisa adicionar novamente
+            const response = await apiFetch(`/api/export/stock?${params.toString()}`);
             
             if (!response.ok) throw new Error('Erro ao exportar');
             
