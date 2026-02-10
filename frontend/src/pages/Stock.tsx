@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Search, Package, ChevronRight } from 'lucide-react';
-import { Card, TableContainer, THead, TBody, Tr, Th, Td, Badge } from '../components/UI';
+import { Search, Package, ChevronRight, Download } from 'lucide-react';
+import { Card, TableContainer, THead, TBody, Tr, Th, Td, Badge, Button } from '../components/UI';
 import EditProductModal from '../components/EditProductModal';
 import { type StockItem } from '../contexts/DataContext';
 import { useStockQuery, useProductMutation, useCategoriesQuery } from '../hooks/useQueries';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Stock() {
+    const { apiFetch } = useAuth();
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [editingProduct, setEditingProduct] = useState<StockItem | null>(null);
     const [activeTab, setActiveTab] = useState<string>('');
+    const [exporting, setExporting] = useState(false);
 
     // Debounce para busca
     useEffect(() => {
@@ -52,6 +55,34 @@ export default function Stock() {
         return <Badge variant="success">Em Estoque</Badge>;
     };
 
+    const handleExport = async () => {
+        setExporting(true);
+        try {
+            const params = new URLSearchParams();
+            if (debouncedSearch) params.append('search', debouncedSearch);
+            
+            const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
+            const response = await apiFetch(`${apiUrl}/api/export/stock?${params.toString()}`);
+            
+            if (!response.ok) throw new Error('Erro ao exportar');
+            
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `estoque_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        } catch (err: any) {
+            console.error('Erro ao exportar:', err);
+            alert('Erro ao exportar dados. Tente novamente.');
+        } finally {
+            setExporting(false);
+        }
+    };
+
     return (
         <div className="space-y-8 animate-in fade-in duration-500">
             {/* Header / Filtros */}
@@ -68,11 +99,22 @@ export default function Stock() {
                         />
                     </div>
 
-                    <div className="flex items-center gap-4 px-6 py-3 bg-navy-950 rounded-xl shadow-premium whitespace-nowrap border border-navy-800">
-                        <Package className="w-4 h-4 text-ruby-500" />
-                        <span className="text-xs font-black text-white uppercase tracking-[0.2em]">
-                            {stock.length} <span className="text-charcoal-500">Produtos</span>
-                        </span>
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-4 px-6 py-3 bg-navy-950 rounded-xl shadow-premium whitespace-nowrap border border-navy-800">
+                            <Package className="w-4 h-4 text-ruby-500" />
+                            <span className="text-xs font-black text-white uppercase tracking-[0.2em]">
+                                {stock.length} <span className="text-charcoal-500">Produtos</span>
+                            </span>
+                        </div>
+                        <Button
+                            onClick={handleExport}
+                            loading={exporting}
+                            variant="outline"
+                            className="whitespace-nowrap"
+                        >
+                            <Download className="w-4 h-4" />
+                            <span className="text-xs font-bold uppercase tracking-widest">Exportar CSV</span>
+                        </Button>
                     </div>
                 </Card>
             </div>
