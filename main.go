@@ -108,6 +108,14 @@ func main() {
 	})
 	r.Use(corsMiddleware)
 
+	// Handler global para OPTIONS (CORS Preflight) - DEVE estar ANTES de qualquer rota
+	// Isso garante que requisições OPTIONS sejam tratadas antes de qualquer middleware
+	r.Options("/*", func(w http.ResponseWriter, r *http.Request) {
+		// O middleware CORS já adiciona os headers necessários
+		// Este handler apenas garante que a requisição seja processada
+		w.WriteHeader(http.StatusNoContent)
+	})
+
 	// API Routes
 	r.Route("/api", func(r chi.Router) {
 		// Public Routes
@@ -118,7 +126,7 @@ func main() {
 			json.NewEncoder(w).Encode(map[string]string{"status": "ok", "version": "1.1.0"})
 		})
 		
-		// Handler explícito para OPTIONS (CORS Preflight) - deve estar antes de qualquer middleware de autenticação
+		// Handler explícito para OPTIONS dentro de /api também
 		r.Options("/*", func(w http.ResponseWriter, r *http.Request) {
 			// O middleware CORS já adiciona os headers necessários
 			// Este handler apenas garante que a requisição seja processada
