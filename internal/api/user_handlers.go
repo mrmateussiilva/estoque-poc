@@ -65,7 +65,7 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	)
 
 	// Registrar no audit log
-	authUser, _ := GetUserFromContext(r)
+	authUser, _ := GetUserFromContext(r, h.DB)
 	var authUserID *int32
 	if authUser != nil {
 		authUserID = &authUser.ID
@@ -140,7 +140,7 @@ func (h *Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Registrar no audit log
-	auditUser, _ := GetUserFromContext(r)
+	auditUser, _ := GetUserFromContext(r, h.DB)
 	var authUserID *int32
 	if auditUser != nil {
 		authUserID = &auditUser.ID
@@ -180,7 +180,7 @@ func (h *Handler) DeleteUserHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Registrar no audit log
-	auditUser, _ := GetUserFromContext(r)
+	auditUser, _ := GetUserFromContext(r, h.DB)
 	var userID *int32
 	if auditUser != nil {
 		userID = &auditUser.ID

@@ -36,11 +36,11 @@ type Prod struct {
 // ===== GORM Models =====
 
 type Category struct {
-	ID        int32      `gorm:"primaryKey;type:int" json:"id"`
-	Name      string     `gorm:"size:191;not null;unique" json:"name"`
-	ParentID  *int32     `gorm:"type:int" json:"parent_id,omitempty"`
-	Parent    *Category  `gorm:"foreignKey:ParentID" json:"-"`
-	Products  []Product  `json:"-"`
+	ID       int32     `gorm:"primaryKey;type:int" json:"id"`
+	Name     string    `gorm:"size:191;not null;unique" json:"name"`
+	ParentID *int32    `gorm:"type:int" json:"parent_id,omitempty"`
+	Parent   *Category `gorm:"foreignKey:ParentID" json:"-"`
+	Products []Product `json:"-"`
 }
 
 func (Category) TableName() string {
@@ -116,7 +116,7 @@ type Movement struct {
 	ID          int32     `gorm:"primaryKey;type:int" json:"id"`
 	ProductCode string    `gorm:"size:191;not null;type:varchar(191)" json:"product_code"`
 	Product     *Product  `gorm:"foreignKey:ProductCode;references:Code" json:"product,omitempty"` // Added for preloading product details
-	Type        string    `gorm:"size:20;not null" json:"type"` // ENTRADA ou SAIDA
+	Type        string    `gorm:"size:20;not null" json:"type"`                                    // ENTRADA ou SAIDA
 	Quantity    float64   `gorm:"type:decimal(19,4);not null" json:"quantity"`
 	Origin      *string   `gorm:"size:191" json:"origin,omitempty"`
 	Reference   *string   `gorm:"size:191" json:"reference,omitempty"`
@@ -150,7 +150,7 @@ type StockItem struct {
 	Quantity     float64  `json:"quantity"`
 	Unit         string   `json:"unit,omitempty"`
 	MinStock     float64  `json:"min_stock,omitempty"`
-	MaxStock     *float64  `json:"max_stock,omitempty"`
+	MaxStock     *float64 `json:"max_stock,omitempty"`
 	CategoryName string   `json:"category_name,omitempty"`
 	SalePrice    float64  `json:"sale_price,omitempty"`
 	Description  *string  `json:"description,omitempty"`
@@ -181,7 +181,9 @@ type LoginResponse struct {
 }
 
 type Claims struct {
-	Email string `json:"email"`
+	UserID int32  `json:"user_id"`
+	Email  string `json:"email"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -235,7 +237,7 @@ type UpdateUserRequest struct {
 
 // FullReportResponse combines summary, timeline, and detailed movements
 type FullReportResponse struct {
-    Summary ReportSummary `json:"summary"`
-    Timeline []ReportTimelineItem `json:"timeline"`
-    DetailedMovements []Movement `json:"detailed_movements"` // Reuse existing Movement struct
+	Summary           ReportSummary        `json:"summary"`
+	Timeline          []ReportTimelineItem `json:"timeline"`
+	DetailedMovements []Movement           `json:"detailed_movements"` // Reuse existing Movement struct
 }

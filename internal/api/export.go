@@ -14,7 +14,7 @@ func (h *Handler) ExportStockHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Obter usuário do contexto
-	user, _ := GetUserFromContext(r)
+	user, _ := GetUserFromContext(r, h.DB)
 	var userID *int32
 	userEmail := "system"
 	if user != nil {
@@ -83,7 +83,7 @@ func (h *Handler) ExportMovementsHandler(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Obter usuário do contexto
-	user, _ := GetUserFromContext(r)
+	user, _ := GetUserFromContext(r, h.DB)
 	var userID *int32
 	userEmail := "system"
 	if user != nil {

@@ -7,6 +7,7 @@ import (
 	"estoque/internal/models"
 	"estoque/internal/services"
 	"estoque/internal/services/worker_pools"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -66,9 +67,12 @@ func (h *Handler) LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &models.Claims{
-		Email: req.Email,
+		UserID: user.ID,
+		Email:  user.Email,
+		Role:   user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			Subject:   fmt.Sprintf("%d", user.ID),
 		},
 	}
 
@@ -131,7 +135,7 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Obter usuário do contexto
-	user, _ := GetUserFromContext(r)
+	user, _ := GetUserFromContext(r, h.DB)
 	var userID *int32
 	userEmail := "system"
 	if user != nil {

@@ -88,7 +88,7 @@ func (h *Handler) CreateMovementHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Obter usuário do contexto
-	user, ok := GetUserFromContext(r)
+	user, ok := GetUserFromContext(r, h.DB)
 	if !ok {
 		HandleError(w, ErrUnauthorized, "Usuário não autenticado")
 		return
@@ -284,7 +284,7 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 		)
 
 		// Registrar no audit log
-		user, _ := GetUserFromContext(r)
+		user, _ := GetUserFromContext(r, h.DB)
 		var userID *int32
 		if user != nil {
 			userID = &user.ID
@@ -322,7 +322,7 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Registrar no audit log
-		user, _ := GetUserFromContext(r)
+		user, _ := GetUserFromContext(r, h.DB)
 		var userID *int32
 		if user != nil {
 			userID = &user.ID
@@ -361,7 +361,7 @@ func (h *Handler) CategoriesHandler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Registrar no audit log
-		user, _ := GetUserFromContext(r)
+		user, _ := GetUserFromContext(r, h.DB)
 		var userID *int32
 		if user != nil {
 			userID = &user.ID
@@ -446,6 +446,6 @@ func (h *Handler) UpdateProductHandler(w http.ResponseWriter, r *http.Request) {
 	// Invalidar cache do produto específico e estoque
 	InvalidateProductCache(code)
 	InvalidateCacheByTag(TagStock)
-	
+
 	RespondWithJSON(w, http.StatusOK, map[string]string{"message": "Product updated successfully"})
 }
