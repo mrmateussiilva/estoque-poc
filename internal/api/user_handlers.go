@@ -22,7 +22,7 @@ func (h *Handler) ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
-	var req models.User
+	var req models.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
@@ -39,10 +39,16 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusInternalServerError, "Error hashing password")
 		return
 	}
-	req.Password = string(hashedPassword)
-	req.Active = true
 
-	if err := h.DB.Create(&req).Error; err != nil {
+	user := models.User{
+		Name:     req.Name,
+		Email:    req.Email,
+		Password: string(hashedPassword),
+		Role:     req.Role,
+		Active:   true,
+	}
+
+	if err := h.DB.Create(&user).Error; err != nil {
 		if strings.Contains(err.Error(), "Duplicate entry") {
 			HandleError(w, NewAppError(http.StatusConflict, "Já existe um usuário com este email", err), "Erro ao criar usuário")
 			return
@@ -53,28 +59,28 @@ func (h *Handler) CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Log estruturado
 	slog.Info("Usuário criado",
-		"user_id", req.ID,
-		"user_email", req.Email,
-		"user_role", req.Role,
+		"user_id", user.ID,
+		"user_email", user.Email,
+		"user_role", user.Role,
 	)
 
 	// Registrar no audit log
-	user, _ := GetUserFromContext(r)
-	var userID *int32
-	if user != nil {
-		userID = &user.ID
+	authUser, _ := GetUserFromContext(r)
+	var authUserID *int32
+	if authUser != nil {
+		authUserID = &authUser.ID
 	}
-	userIDStr := strconv.FormatInt(int64(req.ID), 10)
-	LogAuditAction(h.DB, r, userID, "CREATE", "user", userIDStr,
+	userIDStr := strconv.FormatInt(int64(user.ID), 10)
+	LogAuditAction(h.DB, r, authUserID, "CREATE", "user", userIDStr,
 		"Usuário criado",
 		nil,
 		map[string]interface{}{
-			"email": req.Email,
-			"role":  req.Role,
+			"email": user.Email,
+			"role":  user.Role,
 		},
 	)
 
-	RespondWithJSON(w, http.StatusCreated, req)
+	RespondWithJSON(w, http.StatusCreated, user)
 }
 
 func (h *Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
@@ -84,7 +90,7 @@ func (h *Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req models.User
+	var req models.UpdateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		RespondWithError(w, http.StatusBadRequest, "Invalid request body")
 		return
@@ -96,6 +102,14 @@ func (h *Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Salvar valores antigos para audit log
+	oldValues := map[string]interface{}{
+		"name":   user.Name,
+		"email":  user.Email,
+		"role":   user.Role,
+		"active": user.Active,
+	}
+
 	// Se houver nova senha, fazer o hash
 	if req.Password != "" {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
@@ -103,38 +117,42 @@ func (h *Handler) UpdateUserHandler(w http.ResponseWriter, r *http.Request) {
 			RespondWithError(w, http.StatusInternalServerError, "Error hashing password")
 			return
 		}
-		req.Password = string(hashedPassword)
-	} else {
-		req.Password = user.Password // Manter a senha antiga se não enviada
+		user.Password = string(hashedPassword)
 	}
 
-	// Salvar valores antigos para audit log
-	oldValues := map[string]interface{}{
-		"name":  user.Name,
-		"email": user.Email,
-		"role":  user.Role,
-		"active": user.Active,
+	// Atualizar outros campos
+	if req.Name != nil {
+		user.Name = req.Name
+	}
+	if req.Email != "" {
+		user.Email = req.Email
+	}
+	if req.Role != "" {
+		user.Role = req.Role
+	}
+	if req.Active != nil {
+		user.Active = *req.Active
 	}
 
-	if err := h.DB.Model(&user).Updates(req).Error; err != nil {
+	if err := h.DB.Save(&user).Error; err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Erro ao atualizar usuário")
 		return
 	}
 
 	// Registrar no audit log
 	auditUser, _ := GetUserFromContext(r)
-	var userID *int32
+	var authUserID *int32
 	if auditUser != nil {
-		userID = &auditUser.ID
+		authUserID = &auditUser.ID
 	}
-	LogAuditAction(h.DB, r, userID, "UPDATE", "user", idStr,
+	LogAuditAction(h.DB, r, authUserID, "UPDATE", "user", idStr,
 		"Usuário atualizado",
 		oldValues,
 		map[string]interface{}{
-			"name":  req.Name,
-			"email": req.Email,
-			"role":  req.Role,
-			"active": req.Active,
+			"name":   user.Name,
+			"email":  user.Email,
+			"role":   user.Role,
+			"active": user.Active,
 		},
 	)
 

@@ -218,6 +218,21 @@ type ReportTimelineItem struct {
 	ExitsValue   float64   `json:"exits_value"`
 }
 
+type CreateUserRequest struct {
+	Name     *string `json:"name"`
+	Email    string  `json:"email"`
+	Password string  `json:"password"`
+	Role     string  `json:"role"`
+}
+
+type UpdateUserRequest struct {
+	Name     *string `json:"name"`
+	Email    string  `json:"email"`
+	Password string  `json:"password"`
+	Role     string  `json:"role"`
+	Active   *bool   `json:"active"`
+}
+
 // FullReportResponse combines summary, timeline, and detailed movements
 type FullReportResponse struct {
     Summary ReportSummary `json:"summary"`
