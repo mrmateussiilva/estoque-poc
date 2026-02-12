@@ -81,7 +81,7 @@ func main() {
 	h := api.NewHandler(db, nfePool, exportPool)
 
 	// Iniciar Consumidor de e-mails de NF-e em background
-	nfeConsumer := nfe_consumer.NewConsumer(db)
+	nfeConsumer := nfe_consumer.NewConsumer(db, nfePool)
 	go nfeConsumer.Start(context.Background())
 
 	// 6. Setup de Rotas com Chi
@@ -177,6 +177,11 @@ func main() {
 				r.Post("/users", h.CreateUserHandler)
 				r.Put("/users/{id}", h.UpdateUserHandler)
 				r.Delete("/users/{id}", h.DeleteUserHandler)
+
+				// Configurações de Sistema
+				r.Get("/config/email", h.GetEmailConfigHandler)
+				r.Put("/config/email", h.UpdateEmailConfigHandler)
+				r.Post("/config/email/test", h.TestEmailConnectionHandler)
 			})
 		})
 	})
