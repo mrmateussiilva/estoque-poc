@@ -24,6 +24,7 @@ func (c *Consumer) processEmails() {
 	}
 
 	if len(configs) == 0 {
+		slog.Info("Nenhuma configuração de e-mail ativa encontrada no banco.")
 		return
 	}
 	config := configs[0]
@@ -56,6 +57,7 @@ func (c *Consumer) processEmails() {
 	}
 
 	if mbox.Messages == 0 {
+		slog.Info("A pasta selecionada está vazia", "folder", config.IMAPFolder)
 		return
 	}
 
@@ -74,8 +76,11 @@ func (c *Consumer) processEmails() {
 	}
 
 	if len(ids) == 0 {
+		slog.Info("Nenhum e-mail não lido encontrado para processamento.")
 		return
 	}
+
+	slog.Info("E-mails novos encontrados!", "quantidade", len(ids))
 
 	// Lista de remetentes permitidos (opcional)
 	var allowedSenders []string
@@ -100,41 +105,60 @@ func (c *Consumer) processEmails() {
 	}()
 
 	for msg := range messages {
-		// Validar remetente se o filtro estiver ativo
+		// Ensure Envelope is available for filtering
+		if msg.Envelope == nil {
+			slog.Debug("Email ignorado: Envelope não disponível", "seqnum", msg.SeqNum)
+			continue
+		}
+
+		fromAddress := ""
+		if len(msg.Envelope.From) > 0 {
+			fromAddress = fmt.Sprintf("%s@%s", msg.Envelope.From[0].MailboxName, msg.Envelope.From[0].HostName)
+		}
+		fromAddress = strings.ToLower(fromAddress)
+
+		// Filtrar por remetente se configurado
 		if len(allowedSenders) > 0 {
-			found := false
-			if msg.Envelope != nil && len(msg.Envelope.From) > 0 {
-				fromEmail := fmt.Sprintf("%s@%s", msg.Envelope.From[0].MailboxName, msg.Envelope.From[0].HostName)
-				fromEmail = strings.ToLower(fromEmail)
-				for _, allowed := range allowedSenders {
-					if strings.Contains(fromEmail, allowed) {
-						found = true
-						break
-					}
+			allowed := false
+			for _, allowedSender := range allowedSenders {
+				if strings.Contains(fromAddress, strings.ToLower(allowedSender)) {
+					allowed = true
+					break
 				}
 			}
-			if !found {
-				slog.Debug("Email ignorado: remetente não autorizado", "from", msg.Envelope.From[0].MailboxName)
+			if !allowed {
+				slog.Debug("E-mail ignorado: Remetente não permitido", "from", fromAddress, "subject", msg.Envelope.Subject)
 				continue
 			}
 		}
+
+		// Filtrar por assunto se configurado
+		if config.IMAPSubjectFilter != "" && !strings.Contains(strings.ToLower(msg.Envelope.Subject), strings.ToLower(config.IMAPSubjectFilter)) {
+			slog.Debug("E-mail ignorado: Assunto não condiz com o filtro", "subject", msg.Envelope.Subject, "from", fromAddress)
+			continue
+		}
+
 		r := msg.GetBody(section)
 		if r == nil {
+			slog.Debug("E-mail ignorado: Corpo da mensagem não disponível", "subject", msg.Envelope.Subject, "from", fromAddress)
 			continue
 		}
 
+		// Processar partes da mensagem (anexos)
 		mr, err := mail.CreateReader(r)
 		if err != nil {
-			slog.Error("Error creating mail reader", "error", err)
+			slog.Error("Erro ao criar reader de e-mail", "error", err)
 			continue
 		}
 
+		foundAttachment := false
 		for {
 			p, err := mr.NextPart()
 			if err == io.EOF {
 				break
-			} else if err != nil {
-				slog.Error("Error reading mail part", "error", err)
+			}
+			if err != nil {
+				slog.Error("Erro ao ler parte do e-mail", "error", err)
 				break
 			}
 
@@ -143,19 +167,25 @@ func (c *Consumer) processEmails() {
 				filename, _ := h.Filename()
 				ext := strings.ToLower(filename)
 				if strings.HasSuffix(ext, ".xml") {
+					slog.Info("Identificado anexo XML de NF-e", "arquivo", filename)
 					c.processXMLAttachment(p.Body, filename)
+					foundAttachment = true
 				} else if strings.HasSuffix(ext, ".zip") {
+					slog.Info("Identificado anexo ZIP de NF-e", "arquivo", filename)
 					c.processZipAttachment(p.Body, filename)
+					foundAttachment = true
 				}
 			}
 		}
 
-		// Mark as seen
-		item := imap.FormatFlagsOp(imap.AddFlags, true)
-		flags := []interface{}{imap.SeenFlag}
-		msgSeq := new(imap.SeqSet)
-		msgSeq.AddNum(msg.SeqNum)
-		imapClient.Store(msgSeq, item, flags, nil)
+		if !foundAttachment {
+			slog.Debug("E-mail processado, mas nenhum anexo XML/ZIP encontrado", "subject", msg.Envelope.Subject, "from", fromAddress)
+		}
+
+		// Marcar como lido (Visto)
+		seqSet := new(imap.SeqSet)
+		seqSet.AddNum(msg.SeqNum)
+		imapClient.Store(seqSet, imap.FormatFlagsOp(imap.AddFlags, true), []interface{}{imap.SeenFlag}, nil)
 	}
 
 	if err := <-done; err != nil {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"estoque/internal/models"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 
@@ -52,15 +53,27 @@ func (h *Handler) UpdateEmailConfigHandler(w http.ResponseWriter, r *http.Reques
 		}
 	} else {
 		config := configs[0]
+		isNewPassword := req.IMAPPassword != "********"
+
 		// Se a senha enviada for "********", mantemos a atual
-		if req.IMAPPassword == "********" {
+		if !isNewPassword {
 			req.IMAPPassword = config.IMAPPassword
 		}
 
-		// Atualizar existente
-		if err := h.DB.Model(&config).Updates(req).Error; err != nil {
+		// Garante que o ID e metadados sejam preservados para o Save
+		req.ID = config.ID
+		req.CreatedAt = config.CreatedAt
+
+		// Usar Save para garantir que TODOS os campos sejam atualizados (incluindo booleans false)
+		if err := h.DB.Save(&req).Error; err != nil {
 			RespondWithError(w, http.StatusInternalServerError, "Erro ao atualizar configuração")
 			return
+		}
+
+		if isNewPassword {
+			slog.Info("Configuração de e-mail atualizada com NOVA senha")
+		} else {
+			slog.Info("Configuração de e-mail atualizada (mantendo senha atual)")
 		}
 	}
 

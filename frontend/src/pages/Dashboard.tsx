@@ -10,7 +10,7 @@ import { type StockItem } from '../contexts/DataContext';
 export default function Dashboard() {
     const { apiFetch } = useAuth();
     const queryClient = useQueryClient();
-    
+
     // Queries com polling automático (atualiza a cada 30 segundos)
     const { data: stats, isLoading: isLoadingStats } = useDashboardStatsQuery();
     const { data: evolution, isLoading: isLoadingEvolution } = useDashboardEvolutionQuery();
@@ -32,7 +32,7 @@ export default function Dashboard() {
     const [file, setFile] = useState<File | null>(null);
 
     // Calcular top products a partir do stockData
-    const topProducts = Array.isArray(stockData) 
+    const topProducts = Array.isArray(stockData)
         ? stockData.sort((a: StockItem, b: StockItem) => b.quantity - a.quantity).slice(0, 5)
         : [];
 
@@ -58,12 +58,12 @@ export default function Dashboard() {
 
             setSuccess('NF-e processada com sucesso');
             setFile(null);
-            
+
             // Invalidar queries para atualizar dados
             queryClient.invalidateQueries({ queryKey: ['stock'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
             queryClient.invalidateQueries({ queryKey: ['dashboard-evolution'] });
-            
+
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -153,7 +153,7 @@ export default function Dashboard() {
 
                     <div className="h-[320px] w-full relative z-10 min-h-[320px]">
                         {evolution && evolution.length > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                 <LineChart data={evolution} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                                     <XAxis

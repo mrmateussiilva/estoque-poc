@@ -28,6 +28,7 @@ func (c *Consumer) Start(ctx context.Context) {
 	defer ticker.Stop()
 
 	// Initial run
+	slog.Info("Iniciando busca automática de e-mails de NF-e...")
 	c.processEmails()
 
 	for {
