@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -476,6 +477,10 @@ func (h *Handler) StreamNotificationsHandler(w http.ResponseWriter, r *http.Requ
 	fmt.Fprintf(w, "event: connected\ndata: {\"message\": \"SSE connected\"}\n\n")
 	flusher.Flush()
 
+	// Ticker para Heartbeat (evita desconexão por inatividade)
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
 	// Loop de streaming
 	for {
 		select {
@@ -485,6 +490,10 @@ func (h *Handler) StreamNotificationsHandler(w http.ResponseWriter, r *http.Requ
 				continue
 			}
 			fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event.Type, jsonData)
+			flusher.Flush()
+		case <-ticker.C:
+			// Enviar comentário SSE para manter a conexão viva
+			fmt.Fprintf(w, ": heartbeat\n\n")
 			flusher.Flush()
 		case <-r.Context().Done():
 			return

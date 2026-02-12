@@ -92,7 +92,7 @@ func main() {
 	r.Use(middleware.RealIP)
 	r.Use(api.LoggerMiddleware)
 	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(60 * time.Second))
+	// r.Use(middleware.Timeout(60 * time.Second)) // Removido globalmente para não derrubar SSE
 
 	// CORS Configuration
 	// IMPORTANTE: CORS deve estar ANTES de qualquer middleware que possa bloquear OPTIONS
@@ -139,6 +139,8 @@ func main() {
 		// Protected Routes
 		r.Group(func(r chi.Router) {
 			r.Use(api.AuthMiddleware(db))
+			// Aplicar timeout apenas para rotas que NÃO são de streaming
+			r.Use(middleware.Timeout(60 * time.Second))
 			// Rate limiting geral: 100 requisições por minuto por IP
 			r.Use(httprate.LimitByIP(100, 1*time.Minute))
 
@@ -146,7 +148,12 @@ func main() {
 			r.Post("/nfe/upload", h.UploadHandler)
 			r.Get("/nfes", h.ListNFesHandler)
 			r.Post("/nfes/{accessKey}/process", h.ProcessNfeHandler)
-			r.Get("/notifications/stream", h.StreamNotificationsHandler)
+
+			// Rotas de Streaming (Sem o middleware de timeout acima)
+			r.Group(func(r chi.Router) {
+				r.Use(api.AuthMiddleware(db))
+				r.Get("/notifications/stream", h.StreamNotificationsHandler)
+			})
 
 			// Products & Stock
 			r.Get("/products", h.ListProductsHandler)
@@ -211,7 +218,7 @@ func main() {
 		Addr:         ":" + port,
 		Handler:      r,
 		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
+		WriteTimeout: 0, // 0 significa sem timeout (necessário para SSE)
 		IdleTimeout:  60 * time.Second,
 	}
 
