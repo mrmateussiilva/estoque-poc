@@ -13,10 +13,24 @@ import Reports from './pages/Reports';
 import Login from './pages/Login';
 import Admin from './pages/Admin';
 
+import { notificationService } from './services/NotificationService';
+
 function MainApp() {
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { isAuthenticated, logout } = useAuth();
+
+  // Inicializar Notificações PWA
+  useEffect(() => {
+    if (isAuthenticated) {
+      notificationService.requestPermission().then(granted => {
+        if (granted) {
+          notificationService.connect();
+        }
+      });
+    }
+    return () => notificationService.disconnect();
+  }, [isAuthenticated]);
 
   // Registrar Service Worker para PWA
   useEffect(() => {

@@ -2,6 +2,7 @@ package services
 
 import (
 	"encoding/xml"
+	"estoque/internal/events"
 	"estoque/internal/models"
 	"time"
 
@@ -37,7 +38,14 @@ func (s *NfeService) RegisterNfe(proc *models.NfeProc, xmlData []byte) error {
 			ProcessedAt:  time.Now(),
 		}
 
-		return tx.Create(&nfe).Error
+		if err := tx.Create(&nfe).Error; err != nil {
+			return err
+		}
+
+		// Notificar via SSE em tempo real usando o hub global
+		go events.NotifyNewNFe(proc.NFe.InfNFe.Ide.NNF, proc.NFe.InfNFe.Emit.XNome)
+
+		return nil
 	})
 }
 

@@ -2,8 +2,10 @@ package api
 
 import (
 	"encoding/json"
+	"estoque/internal/events"
 	"estoque/internal/models"
 	"estoque/internal/services"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -447,6 +449,47 @@ func (h *Handler) ProcessNfeHandler(w http.ResponseWriter, r *http.Request) {
 		"message": "Nota fiscal processada com sucesso e estoque atualizado",
 		"items":   totalItems,
 	})
+}
+
+func (h *Handler) StreamNotificationsHandler(w http.ResponseWriter, r *http.Request) {
+	// Configurar headers para SSE
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
+	// Criar canal para este cliente
+	clientChan := make(chan events.NotificationEvent, 10)
+	hub := events.GetHub()
+	hub.Register <- clientChan
+
+	defer func() {
+		hub.Unregister <- clientChan
+	}()
+
+	// Flush inicial para confirmar conexão
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "Streaming not supported", http.StatusInternalServerError)
+		return
+	}
+	fmt.Fprintf(w, "event: connected\ndata: {\"message\": \"SSE connected\"}\n\n")
+	flusher.Flush()
+
+	// Loop de streaming
+	for {
+		select {
+		case event := <-clientChan:
+			jsonData, err := json.Marshal(event)
+			if err != nil {
+				continue
+			}
+			fmt.Fprintf(w, "event: %s\ndata: %s\n\n", event.Type, jsonData)
+			flusher.Flush()
+		case <-r.Context().Done():
+			return
+		}
+	}
 }
 
 func (h *Handler) UpdateProductHandler(w http.ResponseWriter, r *http.Request) {
