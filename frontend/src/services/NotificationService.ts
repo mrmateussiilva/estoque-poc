@@ -4,6 +4,11 @@ class NotificationService {
     constructor() {
     }
 
+    getPermissionStatus() {
+        if (!('Notification' in window)) return 'denied';
+        return Notification.permission;
+    }
+
     async requestPermission() {
         if (!('Notification' in window)) {
             console.log('Este navegador não suporta notificações desktop');

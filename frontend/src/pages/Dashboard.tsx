@@ -1,20 +1,30 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Upload, ChevronRight, TrendingUp, Package, FileText, AlertTriangle } from 'lucide-react';
+import { Bell, Upload, ChevronRight, TrendingUp, Package, FileText, AlertTriangle } from 'lucide-react';
 import { Card, KPICard, Button } from '../components/UI';
 import { useAuth } from '../contexts/AuthContext';
 import { useDashboardStatsQuery, useDashboardEvolutionQuery, useStockQuery } from '../hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { type StockItem } from '../contexts/DataContext';
+import { notificationService } from '../services/NotificationService';
 
 export default function Dashboard() {
     const { apiFetch } = useAuth();
     const queryClient = useQueryClient();
+    const [showNotificationBanner, setShowNotificationBanner] = useState(notificationService.getPermissionStatus() === 'default');
 
     // Queries com polling automático (atualiza a cada 30 segundos)
     const { data: stats, isLoading: isLoadingStats } = useDashboardStatsQuery();
     const { data: evolution, isLoading: isLoadingEvolution } = useDashboardEvolutionQuery();
     const { data: stockData, isLoading: isLoadingStock } = useStockQuery();
+
+    const handleEnableNotifications = async () => {
+        const granted = await notificationService.requestPermission();
+        if (granted) {
+            notificationService.connect();
+        }
+        setShowNotificationBanner(false);
+    };
 
     // Polling automático para atualizar dashboard
     useEffect(() => {
@@ -87,6 +97,38 @@ export default function Dashboard() {
 
     return (
         <div className="space-y-8">
+            {/* Banner de Notificações PWA */}
+            {showNotificationBanner && (
+                <div className="bg-navy-950 rounded-3xl p-6 relative overflow-hidden group border border-white/5 shadow-premium animate-in slide-in-from-top duration-700">
+                    <div className="absolute inset-0 bg-ruby-600/10 translate-x-full group-hover:translate-x-0 transition-transform duration-1000" />
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+                        <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 bg-ruby-600 rounded-xl flex items-center justify-center shadow-ruby">
+                                <Bell className="w-6 h-6 text-white" />
+                            </div>
+                            <div>
+                                <h4 className="text-white font-black uppercase tracking-tighter text-lg leading-none">Alertas em Tempo Real</h4>
+                                <p className="text-white/60 text-xs font-bold uppercase tracking-widest mt-2">Deseja ser notificado quando uma nova NF-e chegar?</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={() => setShowNotificationBanner(false)}
+                                className="text-white/40 hover:text-white px-4 py-2 text-[10px] font-black uppercase tracking-widest transition-colors"
+                            >
+                                Agora não
+                            </button>
+                            <Button
+                                onClick={handleEnableNotifications}
+                                className="bg-white hover:bg-ruby-50 text-ruby-600 border-none shadow-premium text-[10px] font-black uppercase tracking-widest py-3 px-8 h-auto"
+                            >
+                                Ativar Notificações
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Notificações Topo */}
             <div className="fixed top-24 right-8 z-50 flex flex-col gap-2 max-w-md">
                 {error && (

@@ -23,11 +23,9 @@ function MainApp() {
   // Inicializar Notificações PWA
   useEffect(() => {
     if (isAuthenticated) {
-      notificationService.requestPermission().then(granted => {
-        if (granted) {
-          notificationService.connect();
-        }
-      });
+      // Conectar ao SSE. A lógica de mostrar a notificação no serviço 
+      // já verifica se a permissão foi concedida.
+      notificationService.connect();
     }
     return () => notificationService.disconnect();
   }, [isAuthenticated]);
