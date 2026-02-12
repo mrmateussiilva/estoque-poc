@@ -2,43 +2,22 @@ package nfe_consumer
 
 import (
 	"context"
-	"estoque/internal/services"
+	"estoque/internal/services/worker_pools"
 	"log/slog"
-	"os"
-	"strconv"
 	"time"
 
 	"gorm.io/gorm"
 )
 
 type Consumer struct {
-	NfeService *services.NfeService
-	Config     Config
+	DB            *gorm.DB
+	NfeWorkerPool *worker_pools.NFeWorkerPool
 }
 
-type Config struct {
-	IMAPHost     string
-	IMAPPort     int
-	IMAPUser     string
-	IMAPPassword string
-	IMAPFolder   string
-}
-
-func NewConsumer(db *gorm.DB) *Consumer {
-	port, _ := strconv.Atoi(os.Getenv("IMAP_PORT"))
-	if port == 0 {
-		port = 993
-	}
-
+func NewConsumer(db *gorm.DB, nfePool *worker_pools.NFeWorkerPool) *Consumer {
 	return &Consumer{
-		NfeService: services.NewNfeService(db),
-		Config: Config{
-			IMAPHost:     os.Getenv("IMAP_HOST"),
-			IMAPPort:     port,
-			IMAPUser:     os.Getenv("IMAP_USER"),
-			IMAPPassword: os.Getenv("IMAP_PASSWORD"),
-			IMAPFolder:   os.Getenv("IMAP_FOLDER"),
-		},
+		DB:            db,
+		NfeWorkerPool: nfePool,
 	}
 }
 
