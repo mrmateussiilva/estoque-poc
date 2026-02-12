@@ -4,6 +4,7 @@ import (
 	"estoque/internal/models"
 	"fmt"
 	"log/slog"
+	"os"
 	"sort"
 	"time"
 
@@ -17,35 +18,54 @@ var DB *gorm.DB
 
 func InitDB(dsn string) (*gorm.DB, error) {
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Warn), // Alterado de Info para Warn (mostra apenas avisos e erros)
+		Logger:      logger.Default.LogMode(logger.Warn),
+		PrepareStmt: true, // Cache prepared statements for better performance
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	DB = db
-
-	// AutoMigrate irá criar as tabelas baseadas nas structs se elas não existirem
-	err = db.AutoMigrate(
-		&models.Category{},
-		&models.Supplier{},
-		&models.Product{},
-		&models.Stock{},
-		&models.User{},
-		&models.Movement{},
-		&models.ProcessedNFe{},
-		&models.AuditLog{},
-	)
-	if err != nil {
-		slog.Error("Failed to auto-migrate database", "error", err)
-		return nil, err
+	sqlDB, err := db.DB()
+	if err == nil {
+		// Configuração do Pool de Conexões para Estabilidade
+		sqlDB.SetMaxOpenConns(25)
+		sqlDB.SetMaxIdleConns(10)
+		sqlDB.SetConnMaxLifetime(5 * time.Minute)
+		sqlDB.SetConnMaxIdleTime(2 * time.Minute)
 	}
 
-	// Criar índices para melhorar performance
-	createIndexes(db)
+	DB = db
 
-	seedUser(db)
-	seedCategories(db)
+	// Só rodar migrations e seeds se RUN_MIGRATIONS for "true" ou se estivermos em ambiente de desenvolvimento
+	runMigrations := os.Getenv("RUN_MIGRATIONS") == "true"
+	env := os.Getenv("ENV")
+
+	if runMigrations || env != "production" {
+		slog.Info("Running database migrations and seeds...")
+		// AutoMigrate irá criar as tabelas baseadas nas structs se elas não existirem
+		err = db.AutoMigrate(
+			&models.Category{},
+			&models.Supplier{},
+			&models.Product{},
+			&models.Stock{},
+			&models.User{},
+			&models.Movement{},
+			&models.ProcessedNFe{},
+			&models.AuditLog{},
+		)
+		if err != nil {
+			slog.Error("Failed to auto-migrate database", "error", err)
+			return nil, err
+		}
+
+		// Criar índices para melhorar performance
+		createIndexes(db)
+
+		seedUser(db)
+		seedCategories(db)
+	} else {
+		slog.Info("Database migrations skipped (production mode without RUN_MIGRATIONS=true)")
+	}
 
 	return db, nil
 }
@@ -60,7 +80,7 @@ func seedUser(db *gorm.DB) {
 			slog.Error("Failed to hash default password", "error", err)
 			return
 		}
-		
+
 		admin := models.User{
 			Name:     stringPtr("Administrador"),
 			Email:    "admin@sge.com",
@@ -98,10 +118,10 @@ func stringPtr(s string) *string {
 // MySQL 5.6 não suporta "IF NOT EXISTS", então verificamos se o índice existe antes de criar
 func createIndexes(db *gorm.DB) {
 	indexes := []struct {
-		name      string
-		table     string
-		columns   string
-		unique    bool
+		name    string
+		table   string
+		columns string
+		unique  bool
 	}{
 		{"idx_movements_product_code", "movements", "product_code", false},
 		{"idx_movements_created_at", "movements", "created_at", false},
@@ -133,7 +153,7 @@ func createIndexes(db *gorm.DB) {
 		if idx.unique {
 			uniqueClause = "UNIQUE "
 		}
-		
+
 		sql := fmt.Sprintf("CREATE %sINDEX %s ON %s(%s)", uniqueClause, idx.name, idx.table, idx.columns)
 		if err := db.Exec(sql).Error; err != nil {
 			slog.Warn("Failed to create index", "index", idx.name, "error", err)
@@ -173,7 +193,7 @@ func GetMovementsReportData(db *gorm.DB, startDate, endDate time.Time) (models.F
 		}
 
 		productPrice := 0.0
-		if m.Product != nil { 
+		if m.Product != nil {
 			if m.Type == "ENTRADA" {
 				productPrice = m.Product.CostPrice
 			} else if m.Type == "SAIDA" {
@@ -193,7 +213,7 @@ func GetMovementsReportData(db *gorm.DB, startDate, endDate time.Time) (models.F
 			item.ExitsValue += m.Quantity * productPrice
 		}
 		summary.TotalMovements++
-		uniqueProducts[m.ProductCode] = struct{}{} 
+		uniqueProducts[m.ProductCode] = struct{}{}
 		timelineMap[dateStr] = item
 	}
 

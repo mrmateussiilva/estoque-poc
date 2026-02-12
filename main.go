@@ -39,7 +39,7 @@ func main() {
 
 	// 3. Inicialização do Banco de Dados (GORM)
 	dsn := getDSN()
-	
+
 	// Garantir que a pasta static existe (mesmo vazia) para evitar erros de stat
 	_ = os.MkdirAll("./static", 0755)
 
@@ -56,27 +56,27 @@ func main() {
 			nfeWorkers = n
 		}
 	}
-	
+
 	exportWorkers := 3 // Configurável via env
 	if exportWorkersStr := os.Getenv("EXPORT_WORKERS"); exportWorkersStr != "" {
 		if n, err := strconv.Atoi(exportWorkersStr); err == nil && n > 0 {
 			exportWorkers = n
 		}
 	}
-	
+
 	exportDir := os.Getenv("EXPORT_DIR")
 	if exportDir == "" {
 		exportDir = "./exports"
 	}
-	
+
 	// Criar worker pools
 	nfePool := worker_pools.NewNFeWorkerPool(nfeWorkers, db)
 	exportPool := worker_pools.NewExportWorkerPool(exportWorkers, db, exportDir)
-	
+
 	// Iniciar worker pools
 	nfePool.Start()
 	exportPool.Start()
-	
+
 	// 5. Inicialização dos Handlers e Serviços
 	h := api.NewHandler(db, nfePool, exportPool)
 
@@ -90,7 +90,7 @@ func main() {
 	// Middlewares Globais
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
+	r.Use(api.LoggerMiddleware)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(60 * time.Second))
 
@@ -125,14 +125,14 @@ func main() {
 			w.WriteHeader(http.StatusOK)
 			json.NewEncoder(w).Encode(map[string]string{"status": "ok", "version": "1.1.0"})
 		})
-		
+
 		// Handler explícito para OPTIONS dentro de /api também
 		r.Options("/*", func(w http.ResponseWriter, r *http.Request) {
 			// O middleware CORS já adiciona os headers necessários
 			// Este handler apenas garante que a requisição seja processada
 			w.WriteHeader(http.StatusNoContent)
 		})
-		
+
 		// Rate limiting no login: 5 tentativas por minuto por IP
 		r.With(httprate.LimitByIP(5, 1*time.Minute)).Post("/login", h.LoginHandler)
 
@@ -208,8 +208,8 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	slog.Info("S.G.E. Backend Modernized is running", 
-		"port", port, 
+	slog.Info("S.G.E. Backend Modernized is running",
+		"port", port,
 		"version", "1.1.3",
 		"nfe_workers", nfeWorkers,
 		"export_workers", exportWorkers,
@@ -269,11 +269,11 @@ func getDSN() string {
 		if dbPort == "" {
 			dbPort = "3306"
 		}
-		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true", dbUser, dbPass, dbHost, dbPort, dbName)
+		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?parseTime=true&loc=Local&interpolateParams=true&timeout=5s&readTimeout=10s&writeTimeout=10s", dbUser, dbPass, dbHost, dbPort, dbName)
 	}
 
 	if dsn == "" {
-		dsn = "root:root@tcp(localhost:3306)/estoque?parseTime=true"
+		dsn = "root:root@tcp(localhost:3306)/estoque?parseTime=true&loc=Local&timeout=5s"
 	}
 	return dsn
 }
