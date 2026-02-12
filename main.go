@@ -27,8 +27,28 @@ func main() {
 	// Carregar variáveis de ambiente (opcional em produção/docker)
 	_ = godotenv.Load()
 
-	// 1. Configuração do Logger Estruturado
-	handler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})
+	// 1. Configuração do Logger Estruturado e Amigável
+	var handler slog.Handler
+	logLevel := slog.LevelInfo
+	if os.Getenv("DEBUG") == "true" {
+		logLevel = slog.LevelDebug
+	}
+
+	if os.Getenv("LOG_FORMAT") == "json" {
+		handler = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel})
+	} else {
+		// Formato de texto amigável para o terminal
+		handler = slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{
+			Level: logLevel,
+			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+				// Simplificar o timestamp para HH:MM:SS
+				if a.Key == slog.TimeKey {
+					return slog.String(a.Key, a.Value.Time().Format("15:04:05"))
+				}
+				return a
+			},
+		})
+	}
 	slog.SetDefault(slog.New(handler))
 
 	// 2. Inicialização do JWT Secret
