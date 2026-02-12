@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     FolderTree,
     Mail,
-    Settings,
     Plus,
     Trash2,
     Save,
@@ -15,7 +14,14 @@ import {
 } from 'lucide-react';
 import { Card, TableContainer, THead, TBody, Tr, Th, Td, Button, Modal } from '../components/UI';
 import ConfirmModal from '../components/ConfirmModal';
-import { useCategoriesQuery, useUsersQuery, useCategoryMutations, useUserMutations } from '../hooks/useQueries';
+import {
+    useCategoriesQuery,
+    useUsersQuery,
+    useCategoryMutations,
+    useUserMutations,
+    useEmailConfigQuery,
+    useEmailConfigMutations
+} from '../hooks/useQueries';
 
 type AdminTab = 'categories' | 'users' | 'settings' | 'notifications';
 
@@ -33,10 +39,34 @@ export default function Admin() {
     // Queries
     const { data: categories = [] } = useCategoriesQuery();
     const { data: users = [] } = useUsersQuery();
-    
+
     // Mutations
     const { saveCategory, deleteCategory } = useCategoryMutations();
     const { saveUser, toggleUserStatus } = useUserMutations();
+
+    // Configuração de E-mail
+    const { data: remoteEmailConfig } = useEmailConfigQuery();
+    const { saveEmailConfig, testConnection } = useEmailConfigMutations();
+    const [emailConfigLocal, setEmailConfigLocal] = useState({
+        imap_host: '',
+        imap_port: 993,
+        imap_user: '',
+        imap_password: '',
+        imap_folder: 'INBOX',
+        imap_allowed_senders: '',
+        imap_subject_filter: '',
+        use_tls: true,
+        active: false
+    });
+
+    useEffect(() => {
+        if (remoteEmailConfig) {
+            setEmailConfigLocal({
+                ...remoteEmailConfig,
+                imap_password: '********'
+            });
+        }
+    }, [remoteEmailConfig]);
 
     // Categorias state
     const [isAddingCat, setIsAddingCat] = useState(false);
@@ -59,16 +89,8 @@ export default function Admin() {
         isOpen: false,
         title: '',
         message: '',
-        onConfirm: () => {},
+        onConfirm: () => { },
         variant: 'danger'
-    });
-
-    // Settings state
-    const [emailConfig, setEmailConfig] = useState({
-        inbound_email: 'financeiro@empresa.com.br',
-        auto_process: true,
-        notify_errors: true,
-        retention_days: 90
     });
 
     const [msg, setMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -129,7 +151,7 @@ export default function Admin() {
         setConfirmModal({
             isOpen: true,
             title: user.active ? 'Confirmar Inativação' : 'Confirmar Ativação',
-            message: user.active 
+            message: user.active
                 ? `Tem certeza que deseja inativar o usuário "${user.email}"? Ele não poderá mais acessar o sistema.`
                 : `Tem certeza que deseja ativar o usuário "${user.email}"?`,
             onConfirm: async () => {
@@ -362,55 +384,142 @@ export default function Admin() {
                 {activeTab === 'settings' && (
                     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500 max-w-2xl">
                         <div className="flex items-center gap-3">
-                            <Settings className="text-ruby-600 w-5 h-5" />
-                            <h3 className="text-lg font-black text-charcoal-900 uppercase tracking-tight">Preferências de Integração</h3>
+                            <Mail className="text-ruby-600 w-5 h-5" />
+                            <h3 className="text-lg font-black text-charcoal-900 uppercase tracking-tight">Configuração de E-mail (IMAP)</h3>
                         </div>
 
                         <Card className="p-8 space-y-8">
-                            <form className="space-y-6">
-                                <div className="space-y-3">
-                                    <label className="text-xs font-black text-charcoal-700 uppercase tracking-widest">E-mail de Entrada (NF-e)</label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-charcoal-300" />
+                            <form className="space-y-6" onSubmit={(e) => {
+                                e.preventDefault();
+                                saveEmailConfig.mutate(emailConfigLocal, {
+                                    onSuccess: () => showMsg('Configurações salvas com sucesso!')
+                                });
+                            }}>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-charcoal-700 uppercase tracking-widest">Servidor IMAP (Host)</label>
+                                        <input
+                                            type="text"
+                                            value={emailConfigLocal.imap_host}
+                                            onChange={(e) => setEmailConfigLocal({ ...emailConfigLocal, imap_host: e.target.value })}
+                                            className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-300 rounded-xl font-bold"
+                                            placeholder="imap.gmail.com"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-charcoal-700 uppercase tracking-widest">Porta</label>
+                                        <input
+                                            type="number"
+                                            value={emailConfigLocal.imap_port}
+                                            onChange={(e) => setEmailConfigLocal({ ...emailConfigLocal, imap_port: parseInt(e.target.value) })}
+                                            className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-300 rounded-xl font-bold"
+                                            placeholder="993"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-charcoal-700 uppercase tracking-widest">Usuário / E-mail</label>
                                         <input
                                             type="email"
-                                            value={emailConfig.inbound_email}
-                                            onChange={(e) => setEmailConfig({ ...emailConfig, inbound_email: e.target.value })}
-                                            className="w-full pl-12 pr-4 h-14 bg-charcoal-50 border border-charcoal-300 rounded-xl font-bold outline-none focus:border-ruby-600 transition-colors"
+                                            value={emailConfigLocal.imap_user}
+                                            onChange={(e) => setEmailConfigLocal({ ...emailConfigLocal, imap_user: e.target.value })}
+                                            className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-300 rounded-xl font-bold"
                                         />
                                     </div>
-                                    <p className="text-[10px] text-charcoal-400 font-medium italic">As notas enviadas para este e-mail serão processadas automaticamente.</p>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-charcoal-700 uppercase tracking-widest">Senha</label>
+                                        <input
+                                            type="password"
+                                            value={emailConfigLocal.imap_password}
+                                            onChange={(e) => setEmailConfigLocal({ ...emailConfigLocal, imap_password: e.target.value })}
+                                            className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-300 rounded-xl font-bold"
+                                            placeholder="********"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-charcoal-700 uppercase tracking-widest">Pasta (Folder)</label>
+                                        <input
+                                            type="text"
+                                            value={emailConfigLocal.imap_folder}
+                                            onChange={(e) => setEmailConfigLocal({ ...emailConfigLocal, imap_folder: e.target.value })}
+                                            className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-300 rounded-xl font-bold"
+                                            placeholder="INBOX"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-[10px] font-black text-charcoal-700 uppercase tracking-widest">Filtro de Assunto (Opcional)</label>
+                                        <input
+                                            type="text"
+                                            value={emailConfigLocal.imap_subject_filter}
+                                            onChange={(e) => setEmailConfigLocal({ ...emailConfigLocal, imap_subject_filter: e.target.value })}
+                                            className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-300 rounded-xl font-bold"
+                                            placeholder="Ex: Nota Fiscal"
+                                        />
+                                    </div>
+                                    <div className="space-y-2 md:col-span-2">
+                                        <label className="text-[10px] font-black text-charcoal-700 uppercase tracking-widest">Remetentes Permitidos (Opcional, separados por vírgula)</label>
+                                        <input
+                                            type="text"
+                                            value={emailConfigLocal.imap_allowed_senders}
+                                            onChange={(e) => setEmailConfigLocal({ ...emailConfigLocal, imap_allowed_senders: e.target.value })}
+                                            className="w-full h-12 px-4 bg-charcoal-50 border border-charcoal-300 rounded-xl font-bold"
+                                            placeholder="nfe@empresa.com, faturamento@fornecedor.com.br"
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-6">
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="checkbox"
+                                                id="use-tls"
+                                                checked={emailConfigLocal.use_tls}
+                                                onChange={(e) => setEmailConfigLocal({ ...emailConfigLocal, use_tls: e.target.checked })}
+                                                className="w-5 h-5 accent-ruby-600"
+                                            />
+                                            <label htmlFor="use-tls" className="text-[10px] font-black text-charcoal-700 uppercase tracking-widest">Usar TLS (SSL)</label>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="checkbox"
+                                                id="is-active"
+                                                checked={emailConfigLocal.active}
+                                                onChange={(e) => setEmailConfigLocal({ ...emailConfigLocal, active: e.target.checked })}
+                                                className="w-5 h-5 accent-ruby-600"
+                                            />
+                                            <label htmlFor="is-active" className="text-[10px] font-black text-charcoal-700 uppercase tracking-widest">Ativo</label>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                                    <div className="flex items-center justify-between p-4 bg-charcoal-50 rounded-2xl border border-charcoal-100">
-                                        <span className="text-xs font-bold text-charcoal-900 uppercase">Processo Automático</span>
-                                        <input
-                                            type="checkbox"
-                                            checked={emailConfig.auto_process}
-                                            onChange={(e) => setEmailConfig({ ...emailConfig, auto_process: e.target.checked })}
-                                            className="w-5 h-5 accent-ruby-600"
-                                        />
-                                    </div>
-                                    <div className="flex items-center justify-between p-4 bg-charcoal-50 rounded-2xl border border-charcoal-100">
-                                        <span className="text-xs font-bold text-charcoal-900 uppercase">Alerta de Falhas</span>
-                                        <input
-                                            type="checkbox"
-                                            checked={emailConfig.notify_errors}
-                                            onChange={(e) => setEmailConfig({ ...emailConfig, notify_errors: e.target.checked })}
-                                            className="w-5 h-5 accent-ruby-600"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="pt-6 border-t border-charcoal-50">
-                                    <Button onClick={() => showMsg('Configurações salvas!')} className="w-full bg-charcoal-900 h-14 rounded-2xl shadow-lg">
+                                <div className="flex flex-col md:flex-row gap-4 pt-6 border-t border-charcoal-50">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="flex-1 h-14 border-charcoal-300"
+                                        onClick={() => {
+                                            testConnection.mutate(emailConfigLocal, {
+                                                onSuccess: (data) => showMsg(data.message),
+                                                onError: (err: any) => showMsg(err.message, 'error')
+                                            });
+                                        }}
+                                        disabled={testConnection.isPending}
+                                    >
+                                        {testConnection.isPending ? 'Testando...' : 'Testar Conexão'}
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        className="flex-1 bg-charcoal-900 h-14 shadow-lg"
+                                        disabled={saveEmailConfig.isPending}
+                                    >
                                         <Save className="w-4 h-4" />
-                                        <span className="font-black uppercase tracking-widest">Salvar Configurações</span>
+                                        <span className="font-black uppercase tracking-widest">
+                                            {saveEmailConfig.isPending ? 'Salvando...' : 'Salvar Configuração'}
+                                        </span>
                                     </Button>
                                 </div>
                             </form>
                         </Card>
+                        <p className="text-[10px] text-charcoal-400 font-medium italic text-center">
+                            O sistema verificará novos e-mails a cada 5 minutos em busca de arquivos .xml ou .zip contendo notas fiscais.
+                        </p>
                     </div>
                 )}
 

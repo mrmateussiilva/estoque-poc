@@ -48,7 +48,7 @@ export function useStockQuery(search?: string) {
             if (search) query.append('search', search);
             const queryString = query.toString();
             const url = queryString ? `/api/stock?${queryString}` : '/api/stock';
-            
+
             const response = await apiFetch(url);
             if (!response.ok) throw new Error('Failed to fetch stock');
             const data = await response.json();
@@ -249,4 +249,52 @@ export function useUserMutations() {
     });
 
     return { saveUser, toggleUserStatus };
+}
+
+export function useEmailConfigQuery() {
+    const { apiFetch } = useAuth();
+    return useQuery({
+        queryKey: ['email-config'],
+        queryFn: async () => {
+            const response = await apiFetch('/api/config/email');
+            if (!response.ok) throw new Error('Failed to fetch email config');
+            return response.json();
+        }
+    });
+}
+
+export function useEmailConfigMutations() {
+    const { apiFetch } = useAuth();
+    const queryClient = useQueryClient();
+
+    const saveEmailConfig = useMutation({
+        mutationFn: async (data: any) => {
+            const response = await apiFetch('/api/config/email', {
+                method: 'PUT',
+                body: JSON.stringify(data)
+            });
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Erro ao salvar configuração');
+            }
+            return response.json();
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['email-config'] });
+        }
+    });
+
+    const testConnection = useMutation({
+        mutationFn: async (data: any) => {
+            const response = await apiFetch('/api/config/email/test', {
+                method: 'POST',
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.error || 'Erro ao testar conexão');
+            return result;
+        }
+    });
+
+    return { saveEmailConfig, testConnection };
 }
