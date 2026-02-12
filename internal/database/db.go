@@ -52,6 +52,7 @@ func InitDB(dsn string) (*gorm.DB, error) {
 			&models.Movement{},
 			&models.ProcessedNFe{},
 			&models.AuditLog{},
+			&models.EmailConfig{},
 		)
 		if err != nil {
 			slog.Error("Failed to auto-migrate database", "error", err)

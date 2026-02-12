@@ -220,6 +220,19 @@ type ReportTimelineItem struct {
 	ExitsValue   float64   `json:"exits_value"`
 }
 
+type EmailConfig struct {
+	gorm.Model
+	IMAPHost           string `json:"imap_host"`
+	IMAPPort           int    `json:"imap_port"`
+	IMAPUser           string `json:"imap_user"`
+	IMAPPassword       string `json:"imap_password"` // Nota: Em produção, usar criptografia
+	IMAPFolder         string `json:"imap_folder"`
+	IMAPAllowedSenders string `json:"imap_allowed_senders"` // Lista separada por vírgula
+	IMAPSubjectFilter  string `json:"imap_subject_filter"`  // Termo contido no assunto
+	UseTLS             bool   `json:"use_tls"`
+	Active             bool   `json:"active"`
+}
+
 type CreateUserRequest struct {
 	Name     *string `json:"name"`
 	Email    string  `json:"email"`
