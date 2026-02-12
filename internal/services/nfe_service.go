@@ -1,7 +1,10 @@
 package services
 
 import (
+	"encoding/xml"
 	"estoque/internal/models"
+	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -13,8 +16,9 @@ func NewNfeService(db *gorm.DB) *NfeService {
 	return &NfeService{DB: db}
 }
 
-func (s *NfeService) ProcessNfe(proc *models.NfeProc) (int, error) {
-	err := s.DB.Transaction(func(tx *gorm.DB) error {
+// RegisterNfe apenas salva os metadados e o XML com status PENDENTE
+func (s *NfeService) RegisterNfe(proc *models.NfeProc, xmlData []byte) error {
+	return s.DB.Transaction(func(tx *gorm.DB) error {
 		// Verificar duplicação
 		var count int64
 		tx.Model(&models.ProcessedNFe{}).Where("access_key = ?", proc.NFe.InfNFe.ID).Count(&count)
@@ -22,16 +26,39 @@ func (s *NfeService) ProcessNfe(proc *models.NfeProc) (int, error) {
 			return gorm.ErrDuplicatedKey
 		}
 
-		// Registrar NF-e processada
-		totalItems := len(proc.NFe.InfNFe.Det)
+		// Registrar NF-e pendente
 		nfe := models.ProcessedNFe{
-			AccessKey:  proc.NFe.InfNFe.ID,
-			TotalItems: int32(totalItems),
-		}
-		if err := tx.Create(&nfe).Error; err != nil {
-			return err
+			AccessKey:    proc.NFe.InfNFe.ID,
+			Number:       &proc.NFe.InfNFe.Ide.NNF,
+			SupplierName: &proc.NFe.InfNFe.Emit.XNome,
+			TotalItems:   int32(len(proc.NFe.InfNFe.Det)),
+			Status:       "PENDENTE",
+			XMLData:      xmlData,
+			ProcessedAt:  time.Now(),
 		}
 
+		return tx.Create(&nfe).Error
+	})
+}
+
+// ProcessNfe realiza a movimentação de estoque para uma nota pendente
+func (s *NfeService) ProcessNfe(accessKey string) (int, error) {
+	var nfe models.ProcessedNFe
+	if err := s.DB.First(&nfe, "access_key = ?", accessKey).Error; err != nil {
+		return 0, err
+	}
+
+	if nfe.Status == "PROCESSADA" {
+		return int(nfe.TotalItems), nil
+	}
+
+	// Decodificar XML armazenado
+	var proc models.NfeProc
+	if err := xml.Unmarshal(nfe.XMLData, &proc); err != nil {
+		return 0, err
+	}
+
+	err := s.DB.Transaction(func(tx *gorm.DB) error {
 		// Processar cada produto
 		for _, det := range proc.NFe.InfNFe.Det {
 			product := models.Product{
@@ -73,7 +100,9 @@ func (s *NfeService) ProcessNfe(proc *models.NfeProc) (int, error) {
 				}
 			}
 		}
-		return nil
+
+		// Atualizar status
+		return tx.Model(&nfe).Update("status", "PROCESSADA").Error
 	})
 
 	if err != nil {

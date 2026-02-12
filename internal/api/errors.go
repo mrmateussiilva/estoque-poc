@@ -9,15 +9,16 @@ import (
 
 // Erros customizados do sistema
 var (
-	ErrInvalidJwtSecret     = errors.New("JWT_SECRET inválido")
-	ErrUserNotFound         = errors.New("usuário não encontrado")
-	ErrInsufficientStock    = errors.New("estoque insuficiente")
-	ErrProductNotFound      = errors.New("produto não encontrado")
-	ErrDuplicateNFe         = errors.New("NF-e já processada")
-	ErrInvalidInput         = errors.New("dados de entrada inválidos")
-	ErrUnauthorized         = errors.New("não autorizado")
-	ErrForbidden            = errors.New("permissão insuficiente")
-	ErrInternalServer       = errors.New("erro interno do servidor")
+	ErrInvalidJwtSecret  = errors.New("JWT_SECRET inválido")
+	ErrUserNotFound      = errors.New("usuário não encontrado")
+	ErrInsufficientStock = errors.New("estoque insuficiente")
+	ErrProductNotFound   = errors.New("produto não encontrado")
+	ErrDuplicateNFe      = errors.New("NF-e já processada")
+	ErrInvalidInput      = errors.New("dados de entrada inválidos")
+	ErrUnauthorized      = errors.New("não autorizado")
+	ErrForbidden         = errors.New("permissão insuficiente")
+	ErrInternalServer    = errors.New("erro interno do servidor")
+	ErrNfeNotFound       = errors.New("nota fiscal não encontrada")
 )
 
 // AppError representa um erro da aplicação com código HTTP e mensagem amigável
@@ -37,13 +38,13 @@ func HandleError(w http.ResponseWriter, err error, defaultMessage string) {
 	// Se for um AppError, usar suas informações
 	if appErr, ok := err.(*AppError); ok {
 		if appErr.LogContext != nil {
-			slog.Error("Erro da aplicação", 
+			slog.Error("Erro da aplicação",
 				"message", appErr.Message,
 				"code", appErr.Code,
 				"internal", appErr.Internal,
 				"context", appErr.LogContext)
 		} else {
-			slog.Error("Erro da aplicação", 
+			slog.Error("Erro da aplicação",
 				"message", appErr.Message,
 				"code", appErr.Code,
 				"internal", appErr.Internal)
@@ -64,6 +65,8 @@ func HandleError(w http.ResponseWriter, err error, defaultMessage string) {
 		RespondWithError(w, http.StatusNotFound, "Produto não encontrado")
 	case ErrDuplicateNFe:
 		RespondWithError(w, http.StatusConflict, "Esta NF-e já foi processada anteriormente")
+	case ErrNfeNotFound:
+		RespondWithError(w, http.StatusNotFound, "Nota fiscal não encontrada")
 	case ErrInvalidInput:
 		RespondWithError(w, http.StatusBadRequest, "Dados de entrada inválidos")
 	case ErrUnauthorized:

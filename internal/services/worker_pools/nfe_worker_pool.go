@@ -15,9 +15,9 @@ import (
 
 // NFeJob representa um trabalho de processamento de NF-e
 type NFeJob struct {
-	XMLData  []byte
-	UserID   *int32
-	UserEmail string
+	XMLData    []byte
+	UserID     *int32
+	UserEmail  string
 	ResultChan chan NFeResult
 }
 
@@ -32,21 +32,21 @@ type NFeResult struct {
 
 // NFeWorkerPool gerencia workers para processar NF-es em paralelo
 type NFeWorkerPool struct {
-	workers    int
-	jobQueue   chan NFeJob
-	db         *gorm.DB
-	wg         sync.WaitGroup
-	ctx        context.Context
-	cancel     context.CancelFunc
-	metrics    *NFeMetrics
+	workers  int
+	jobQueue chan NFeJob
+	db       *gorm.DB
+	wg       sync.WaitGroup
+	ctx      context.Context
+	cancel   context.CancelFunc
+	metrics  *NFeMetrics
 }
 
 // NFeMetrics armazena métricas do worker pool
 type NFeMetrics struct {
-	ProcessedTotal int64
+	ProcessedTotal   int64
 	ProcessedSuccess int64
-	ProcessedErrors int64
-	mu sync.RWMutex
+	ProcessedErrors  int64
+	mu               sync.RWMutex
 }
 
 // NewNFeWorkerPool cria um novo worker pool para processamento de NF-e
@@ -54,9 +54,9 @@ func NewNFeWorkerPool(workers int, db *gorm.DB) *NFeWorkerPool {
 	if workers <= 0 {
 		workers = 5 // Default: 5 workers
 	}
-	
+
 	ctx, cancel := context.WithCancel(context.Background())
-	
+
 	return &NFeWorkerPool{
 		workers:  workers,
 		jobQueue: make(chan NFeJob, 100), // Buffer de 100 jobs
@@ -70,7 +70,7 @@ func NewNFeWorkerPool(workers int, db *gorm.DB) *NFeWorkerPool {
 // Start inicia os workers do pool
 func (p *NFeWorkerPool) Start() {
 	slog.Info("Starting NFe Worker Pool", "workers", p.workers)
-	
+
 	for i := 0; i < p.workers; i++ {
 		p.wg.Add(1)
 		go p.worker(i)
@@ -94,7 +94,7 @@ func (p *NFeWorkerPool) Submit(job NFeJob) error {
 		return p.ctx.Err()
 	default:
 	}
-	
+
 	select {
 	case <-p.ctx.Done():
 		return p.ctx.Err()
@@ -115,11 +115,11 @@ func (p *NFeWorkerPool) Submit(job NFeJob) error {
 func (p *NFeWorkerPool) SubmitSync(job NFeJob) (NFeResult, error) {
 	resultChan := make(chan NFeResult, 1)
 	job.ResultChan = resultChan
-	
+
 	if err := p.Submit(job); err != nil {
 		return NFeResult{Success: false, Error: err}, err
 	}
-	
+
 	select {
 	case <-p.ctx.Done():
 		return NFeResult{Success: false, Error: p.ctx.Err()}, p.ctx.Err()
@@ -133,11 +133,11 @@ func (p *NFeWorkerPool) SubmitSync(job NFeJob) (NFeResult, error) {
 // worker processa jobs do pool
 func (p *NFeWorkerPool) worker(id int) {
 	defer p.wg.Done()
-	
+
 	nfeService := services.NewNfeService(p.db)
-	
+
 	slog.Debug("NFe worker started", "worker_id", id)
-	
+
 	for {
 		select {
 		case <-p.ctx.Done():
@@ -148,14 +148,14 @@ func (p *NFeWorkerPool) worker(id int) {
 				slog.Debug("NFe worker queue closed", "worker_id", id)
 				return
 			}
-			
+
 			start := time.Now()
 			result := p.processNFe(nfeService, job, id)
 			result.Duration = time.Since(start)
-			
+
 			// Atualizar métricas
 			p.updateMetrics(result)
-			
+
 			// Enviar resultado se houver canal
 			if job.ResultChan != nil {
 				select {
@@ -170,16 +170,16 @@ func (p *NFeWorkerPool) worker(id int) {
 
 // processNFe processa uma NF-e
 func (p *NFeWorkerPool) processNFe(nfeService *services.NfeService, job NFeJob, workerID int) NFeResult {
-	slog.Info("Processing NFe", 
+	slog.Info("Processing NFe",
 		"worker_id", workerID,
 		"user_email", job.UserEmail,
 		"xml_size", len(job.XMLData),
 	)
-	
+
 	// Decodificar XML
 	var proc models.NfeProc
 	if err := xml.Unmarshal(job.XMLData, &proc); err != nil {
-		slog.Error("Error decoding XML", 
+		slog.Error("Error decoding XML",
 			"worker_id", workerID,
 			"error", err,
 		)
@@ -188,13 +188,13 @@ func (p *NFeWorkerPool) processNFe(nfeService *services.NfeService, job NFeJob, 
 			Error:   err,
 		}
 	}
-	
+
 	accessKey := proc.NFe.InfNFe.ID
-	
-	// Processar NF-e
-	totalItems, err := nfeService.ProcessNfe(&proc)
+
+	// Registrar NF-e (apenas salva metadados e XML com status PENDENTE)
+	err := nfeService.RegisterNfe(&proc, job.XMLData)
 	if err != nil {
-		slog.Error("Error processing NFe", 
+		slog.Error("Error registering NFe",
 			"worker_id", workerID,
 			"access_key", accessKey,
 			"error", err,
@@ -205,16 +205,16 @@ func (p *NFeWorkerPool) processNFe(nfeService *services.NfeService, job NFeJob, 
 			Error:     err,
 		}
 	}
-	
-	slog.Info("NFe processed successfully", 
+
+	slog.Info("NFe registered successfully (Pending)",
 		"worker_id", workerID,
 		"access_key", accessKey,
-		"items", totalItems,
+		"items", len(proc.NFe.InfNFe.Det),
 	)
-	
+
 	return NFeResult{
 		Success:   true,
-		Items:     totalItems,
+		Items:     len(proc.NFe.InfNFe.Det),
 		AccessKey: accessKey,
 	}
 }
@@ -223,7 +223,7 @@ func (p *NFeWorkerPool) processNFe(nfeService *services.NfeService, job NFeJob, 
 func (p *NFeWorkerPool) updateMetrics(result NFeResult) {
 	p.metrics.mu.Lock()
 	defer p.metrics.mu.Unlock()
-	
+
 	p.metrics.ProcessedTotal++
 	if result.Success {
 		p.metrics.ProcessedSuccess++
@@ -236,7 +236,7 @@ func (p *NFeWorkerPool) updateMetrics(result NFeResult) {
 func (p *NFeWorkerPool) GetMetrics() (total, success, errors int64) {
 	p.metrics.mu.RLock()
 	defer p.metrics.mu.RUnlock()
-	
+
 	return p.metrics.ProcessedTotal, p.metrics.ProcessedSuccess, p.metrics.ProcessedErrors
 }
 
@@ -247,12 +247,12 @@ func (p *NFeWorkerPool) ProcessXMLFromReader(ctx context.Context, reader io.Read
 	if err != nil {
 		return NFeResult{Success: false, Error: err}, err
 	}
-	
+
 	job := NFeJob{
 		XMLData:   xmlData,
 		UserID:    userID,
 		UserEmail: userEmail,
 	}
-	
+
 	return p.SubmitSync(job)
 }

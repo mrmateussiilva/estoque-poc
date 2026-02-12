@@ -19,8 +19,19 @@ type NFe struct {
 }
 
 type InfNFe struct {
-	ID  string `xml:"Id,attr"`
-	Det []Det  `xml:"det"`
+	ID   string `xml:"Id,attr"`
+	Ide  Ide    `xml:"ide"`
+	Emit Emit   `xml:"emit"`
+	Det  []Det  `xml:"det"`
+}
+
+type Ide struct {
+	NNF string `xml:"nNF"`
+}
+
+type Emit struct {
+	CNPJ  string `xml:"CNPJ"`
+	XNome string `xml:"xNome"`
 }
 
 type Det struct {
@@ -135,6 +146,8 @@ type ProcessedNFe struct {
 	Number       *string   `gorm:"size:50" json:"number,omitempty"`
 	SupplierName *string   `gorm:"size:191" json:"supplier_name,omitempty"`
 	TotalItems   int32     `gorm:"type:int" json:"total_items"`
+	Status       string    `gorm:"size:20;default:'PENDENTE'" json:"status"` // PENDENTE, PROCESSADA
+	XMLData      []byte    `gorm:"type:longblob" json:"-"`                   // Armazena o XML original
 	ProcessedAt  time.Time `json:"processed_at"`
 }
 

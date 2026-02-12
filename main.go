@@ -145,6 +145,7 @@ func main() {
 			// NF-e
 			r.Post("/nfe/upload", h.UploadHandler)
 			r.Get("/nfes", h.ListNFesHandler)
+			r.Post("/nfes/{accessKey}/process", h.ProcessNfeHandler)
 
 			// Products & Stock
 			r.Get("/products", h.ListProductsHandler)

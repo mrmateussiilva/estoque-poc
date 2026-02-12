@@ -413,6 +413,39 @@ func (h *Handler) ListNFesHandler(w http.ResponseWriter, r *http.Request) {
 	RespondWithJSON(w, http.StatusOK, response)
 }
 
+func (h *Handler) ProcessNfeHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")
+		return
+	}
+
+	// Extrair access_key da URL (ex: /api/nfes/{access_key}/process)
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) < 4 {
+		RespondWithError(w, http.StatusBadRequest, "Chave de acesso inválida")
+		return
+	}
+	accessKey := parts[3]
+
+	// Processar via Service
+	totalItems, err := h.NfeService.ProcessNfe(accessKey)
+	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			HandleError(w, ErrNfeNotFound, "Nota fiscal não encontrada")
+			return
+		}
+		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao processar nota", err), "Erro ao processar nota")
+		return
+	}
+
+	slog.Info("NF-e aprovada manualmente", "access_key", accessKey, "items", totalItems)
+
+	RespondWithJSON(w, http.StatusOK, map[string]interface{}{
+		"message": "Nota fiscal processada com sucesso e estoque atualizado",
+		"items":   totalItems,
+	})
+}
+
 func (h *Handler) UpdateProductHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPut {
 		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
