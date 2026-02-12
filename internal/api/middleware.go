@@ -58,12 +58,20 @@ func AuthMiddleware(db *gorm.DB) func(http.Handler) http.Handler {
 			}
 
 			authHeader := r.Header.Get("Authorization")
-			if authHeader == "" {
+			tokenString := ""
+
+			if authHeader != "" {
+				tokenString = strings.TrimPrefix(authHeader, "Bearer ")
+			} else {
+				// Suporte para EventSource (SSE) que não permite headers customizados
+				tokenString = r.URL.Query().Get("token")
+			}
+
+			if tokenString == "" {
 				RespondWithError(w, http.StatusUnauthorized, "Cabeçalho de autorização ausente")
 				return
 			}
 
-			tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 			claims := &models.Claims{}
 			token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 				return JwtSecret, nil

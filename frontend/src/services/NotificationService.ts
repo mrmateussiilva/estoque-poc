@@ -26,8 +26,8 @@ class NotificationService {
     connect() {
         if (this.eventSource) return;
 
-        // Construir URL com token para autenticação (se necessário) ou porta estática
-        const url = `/api/notifications/stream`;
+        const token = localStorage.getItem('auth_token');
+        const url = `/api/notifications/stream${token ? `?token=${token}` : ''}`;
 
         this.eventSource = new EventSource(url);
 

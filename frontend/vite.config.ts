@@ -93,8 +93,10 @@ export default defineConfig({
   ],
   server: {
     proxy: {
-      '/stock': 'http://localhost:8080',
-      '/nfe': 'http://localhost:8080',
+      '/api': {
+        target: 'http://localhost:8003',
+        changeOrigin: true,
+      },
     }
   }
 })
