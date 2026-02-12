@@ -12,8 +12,11 @@ interface NFe {
     processed_at: string;
 }
 
+import { useQueryClient } from '@tanstack/react-query';
+
 export default function NFe() {
     const { apiFetch } = useAuth();
+    const queryClient = useQueryClient();
     const [nfes, setNfes] = useState<NFe[]>([]);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState<string | null>(null);
@@ -48,6 +51,11 @@ export default function NFe() {
                 setNfes(prev => prev.map(n =>
                     n.access_key === accessKey ? { ...n, status: 'PROCESSADA' } : n
                 ));
+
+                // Invalidar queries para atualizar Dashboard e Estoque
+                queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
+                queryClient.invalidateQueries({ queryKey: ['dashboard-evolution'] });
+                queryClient.invalidateQueries({ queryKey: ['stock'] });
             } else {
                 alert('Erro ao processar nota fiscal');
             }
