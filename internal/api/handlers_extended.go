@@ -440,6 +440,9 @@ func (h *Handler) ProcessNfeHandler(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("NF-e aprovada manualmente", "access_key", accessKey, "items", totalItems)
 
+	// Invalidar cache do dashboard e estoque para refletir as mudanças imediatamente
+	InvalidateCacheByTags(TagDashboard, TagStock, TagEvolution)
+
 	RespondWithJSON(w, http.StatusOK, map[string]interface{}{
 		"message": "Nota fiscal processada com sucesso e estoque atualizado",
 		"items":   totalItems,
