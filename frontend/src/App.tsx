@@ -52,35 +52,31 @@ function MainApp() {
   }
 
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-screen bg-background overflow-hidden text-navy-900">
       <OfflineIndicator />
       <InstallPrompt />
-      
-      {/* Sidebar apenas em desktop */}
-      <div className="hidden md:block">
-        <Sidebar
-          currentPage={currentPage}
-          onNavigate={handleNavigate}
-          onCollapse={setSidebarCollapsed}
-          isOpen={false}
-          onMobileClose={() => {}}
-        />
-      </div>
+
+      <Sidebar
+        currentPage={currentPage}
+        onNavigate={handleNavigate}
+        onCollapse={setSidebarCollapsed}
+        onLogout={logout}
+        isOpen={false}
+        onMobileClose={() => { }}
+      />
 
       <div className={`
         flex-1 flex flex-col transition-all duration-300 min-w-0
-        ${sidebarCollapsed ? 'md:ml-20' : 'md:ml-60'}
+        ${sidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}
       `}>
         <Header
           title={config.title}
           onSync={config.showSync ? () => window.location.reload() : undefined}
-          onLogout={logout}
-          onMenuClick={undefined} // Sem menu hambúrguer em mobile
         />
         <main className="flex-1 overflow-auto p-4 md:p-8 pb-20 md:pb-8">
           <PageComponent />
         </main>
-        
+
         {/* Bottom Navigation para Mobile */}
         <MobileBottomNav
           currentPage={currentPage}

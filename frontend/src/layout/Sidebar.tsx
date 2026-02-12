@@ -1,17 +1,20 @@
-import { LayoutDashboard, Package, FileText, BarChart3, ChevronLeft, ChevronRight, ArrowDownToLine, User, Gem, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Package, FileText, BarChart3, ChevronLeft, ChevronRight, ArrowDownToLine, User, Gem, ShieldCheck, LogOut } from 'lucide-react';
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import ConfirmModal from '../components/ConfirmModal';
 
 interface SidebarProps {
     currentPage: string;
     onNavigate: (page: string) => void;
     onCollapse?: (collapsed: boolean) => void;
+    onLogout?: () => void;
     isOpen?: boolean;
     onMobileClose?: () => void;
 }
 
-export default function Sidebar({ currentPage, onNavigate, onCollapse, isOpen, onMobileClose }: SidebarProps) {
+const Sidebar = ({ currentPage, onNavigate, onCollapse, onLogout, isOpen, onMobileClose }: SidebarProps) => {
     const [collapsed, setCollapsed] = useState(false);
+    const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const { user } = useAuth();
 
     const toggleCollapse = () => {
@@ -167,31 +170,51 @@ export default function Sidebar({ currentPage, onNavigate, onCollapse, isOpen, o
                 {/* Footer / Profile Card */}
                 <div className="p-4 border-t border-charcoal-800/30">
                     {!collapsed && user && (
-                        <div className="mb-6 p-4 bg-white/5 rounded-2xl border border-white/5 group hover:bg-white/10 transition-all duration-500 cursor-pointer overflow-hidden relative">
-                            <div className="absolute inset-0 bg-gradient-to-br from-ruby-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                            <div className="flex items-center gap-4 relative z-10">
-                                <div className="relative">
-                                    <div className="w-10 h-10 bg-gradient-to-tr from-charcoal-800 to-navy-900 rounded-xl flex items-center justify-center border border-white/10 group-hover:border-ruby-500/30 transition-all">
-                                        <User className="w-5 h-5 text-charcoal-300" />
+                        <div className="mb-6">
+                            <div className="p-4 bg-white/5 rounded-2xl border border-white/5 group hover:bg-white/10 transition-all duration-500 cursor-pointer overflow-hidden relative">
+                                <div className="absolute inset-0 bg-gradient-to-br from-ruby-600/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                <div className="flex items-center gap-4 relative z-10">
+                                    <div className="relative">
+                                        <div className="w-10 h-10 bg-gradient-to-tr from-charcoal-800 to-navy-900 rounded-xl flex items-center justify-center border border-white/10 group-hover:border-ruby-500/30 transition-all">
+                                            <User className="w-5 h-5 text-charcoal-300" />
+                                        </div>
+                                        <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-[3px] border-navy-950 shadow-lg" />
                                     </div>
-                                    <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 rounded-full border-[3px] border-navy-950 shadow-lg" />
-                                </div>
-                                <div className="overflow-hidden">
-                                    <p className="text-white text-[13px] font-black tracking-tight truncate uppercase leading-none">
-                                        {user.email.split('@')[0]}
-                                    </p>
-                                    <div className="flex items-center gap-1.5 mt-2">
-                                        <div className="w-1.5 h-1.5 bg-ruby-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(225,29,72,0.8)]" />
-                                        <p className="text-charcoal-500 text-[9px] font-black truncate tracking-[0.2em] uppercase">
-                                            Admin Pro
+                                    <div className="overflow-hidden">
+                                        <p className="text-white text-[13px] font-black tracking-tight truncate uppercase leading-none">
+                                            {user.email.split('@')[0]}
                                         </p>
+                                        <div className="flex items-center gap-1.5 mt-2">
+                                            <div className="w-1.5 h-1.5 bg-ruby-500 rounded-full animate-pulse shadow-[0_0_8px_rgba(225,29,72,0.8)]" />
+                                            <p className="text-charcoal-500 text-[9px] font-black truncate tracking-[0.2em] uppercase">
+                                                Admin Pro
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Logout Action */}
+                            <button
+                                onClick={() => setShowLogoutConfirm(true)}
+                                className="w-full mt-3 flex items-center gap-3 px-4 py-3 rounded-xl text-charcoal-400 hover:text-white hover:bg-ruby-500/10 transition-all group border border-transparent hover:border-ruby-500/20"
+                            >
+                                <LogOut className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+                                <span className="text-xs font-bold tracking-tight">Sair do Sistema</span>
+                            </button>
                         </div>
                     )}
 
                     <div className="flex flex-col gap-3">
+                        {collapsed && (
+                            <button
+                                onClick={() => setShowLogoutConfirm(true)}
+                                className="w-full h-11 flex items-center justify-center text-charcoal-400 hover:text-white hover:bg-ruby-500/10 transition-all rounded-xl border border-transparent hover:border-ruby-500/20"
+                                title="Sair do Sistema"
+                            >
+                                <LogOut className="w-4 h-4" />
+                            </button>
+                        )}
                         <button
                             onClick={toggleCollapse}
                             className={`
@@ -217,6 +240,22 @@ export default function Sidebar({ currentPage, onNavigate, onCollapse, isOpen, o
                     </div>
                 </div>
             </aside>
+
+            <ConfirmModal
+                isOpen={showLogoutConfirm}
+                onClose={() => setShowLogoutConfirm(false)}
+                onConfirm={() => {
+                    setShowLogoutConfirm(false);
+                    onLogout?.();
+                }}
+                title="Sair do Sistema"
+                message="Deseja realmente sair do sistema? Sua sessão será encerrada."
+                confirmText="Sair"
+                cancelText="Cancelar"
+                variant="danger"
+            />
         </>
     );
-}
+};
+
+export default Sidebar;
