@@ -96,12 +96,12 @@ func (c *InMemoryCache) cleanup() {
 
 // Cache keys
 const (
-	CacheKeyCategories    = "categories"
+	CacheKeyCategories     = "categories"
 	CacheKeyDashboardStats = "dashboard:stats"
-	CacheKeyStock         = "stock"
-	CacheKeyStockList     = "stock:list"
-	CacheKeyProduct       = "product" // product:{code}
-	CacheKeyEvolution     = "dashboard:evolution"
+	CacheKeyStock          = "stock"
+	CacheKeyStockList      = "stock:list"
+	CacheKeyProduct        = "product" // product:{code}
+	CacheKeyEvolution      = "dashboard:evolution"
 )
 
 // Cache tags para invalidação inteligente
@@ -165,9 +165,23 @@ func InvalidateCache(key string) {
 	GetCache().Delete(key) // Compatibilidade
 }
 
-// InvalidateCacheByTag invalida todos os caches com uma tag específica
+// InvalidateCacheByTag invalida todas as entradas com uma tag específica em ambos os caches
 func InvalidateCacheByTag(tag string) {
 	GetAdvancedCache().InvalidateByTag(tag)
+
+	// Sincronizar com cache antigo (compatibilidade)
+	// Como o cache antigo não tem tags, mapeamos as tags conhecidas para suas chaves
+	switch tag {
+	case TagDashboard:
+		GetCache().Delete(CacheKeyDashboardStats)
+	case TagStock:
+		GetCache().Delete(CacheKeyStock)
+		GetCache().Delete(CacheKeyStockList)
+	case TagCategories:
+		GetCache().Delete(CacheKeyCategories)
+	case TagEvolution:
+		GetCache().Delete(CacheKeyEvolution)
+	}
 }
 
 // InvalidateCacheByTags invalida todos os caches com qualquer uma das tags fornecidas

@@ -27,7 +27,8 @@ class NotificationService {
         if (this.eventSource) return;
 
         const token = localStorage.getItem('auth_token');
-        const url = `/api/notifications/stream${token ? `?token=${token}` : ''}`;
+        const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8003';
+        const url = `${baseUrl}/api/notifications/stream${token ? `?token=${token}` : ''}`;
 
         this.eventSource = new EventSource(url);
 
