@@ -54,7 +54,7 @@ function MainApp() {
     stock: { title: 'Estoque', component: Stock, showSync: true },
     nfe: { title: 'NF-e', component: NFe, showSync: false },
     reports: { title: 'Relatórios', component: Reports, showSync: false },
-    admin: { title: 'Administração', component: Admin, showSync: false },
+    admin: { title: 'Configurações de Admin', component: Admin, showSync: false },
   };
 
   const config = pageConfig[currentPage as keyof typeof pageConfig];

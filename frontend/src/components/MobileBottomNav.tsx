@@ -21,8 +21,12 @@ export default function MobileBottomNav({ currentPage, onNavigate }: MobileBotto
         { id: 'admin', label: 'Admin', icon: ShieldCheck },
     ];
 
-    // Verificar se usuário é admin (pode ser role ou isAdmin)
-    const isAdmin = (user as any)?.role === 'ADMIN' || (user as any)?.isAdmin === true;
+    // Verificar se usuário é admin (pode ser role, isAdmin ou fallback por email)
+    const isAdmin =
+        (user as any)?.role === 'ADMIN' ||
+        (user as any)?.isAdmin === true ||
+        user?.email === 'mateus@finderbit.com.br'; // Fallback para o admin principal
+
     const allItems = isAdmin ? [...menuItems, ...adminItems] : menuItems;
 
     return (
@@ -31,7 +35,7 @@ export default function MobileBottomNav({ currentPage, onNavigate }: MobileBotto
                 {allItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = currentPage === item.id;
-                    
+
                     return (
                         <button
                             key={item.id}
@@ -40,8 +44,8 @@ export default function MobileBottomNav({ currentPage, onNavigate }: MobileBotto
                                 flex flex-col items-center justify-center gap-1 
                                 min-w-[60px] h-full px-2
                                 transition-all duration-200
-                                ${isActive 
-                                    ? 'text-ruby-600' 
+                                ${isActive
+                                    ? 'text-ruby-600'
                                     : 'text-charcoal-400 active:text-ruby-600'
                                 }
                             `}
@@ -49,8 +53,8 @@ export default function MobileBottomNav({ currentPage, onNavigate }: MobileBotto
                         >
                             <div className={`
                                 relative p-2 rounded-xl transition-all duration-200
-                                ${isActive 
-                                    ? 'bg-ruby-50' 
+                                ${isActive
+                                    ? 'bg-ruby-50'
                                     : 'hover:bg-charcoal-50'
                                 }
                             `}>
