@@ -1,12 +1,16 @@
 services:
   backend:
     build: .
-    container_name: sge-backend
     ports:
-      - "8003:8003"
+      - "${PORT:-8003}:8003"
     env_file:
       - .env
     environment:
       - PORT=8003
       - ALLOWED_ORIGIN=*
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10mb"
+        max-file: "3"

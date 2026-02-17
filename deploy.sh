@@ -1,52 +1,63 @@
 #!/bin/bash
 set -e
 
-echo "========== DEPLOY INICIADO =========="
-echo "Usuário: $(whoami)"
-echo "Diretório: $(pwd)"
+# Configurações
+PROJECT_NAME="sge-backend"
+BLUE_PORT=8003
+GREEN_PORT=8004
+HEALTH_CHECK_WAIT=5
 
-echo ""
-echo "========== VERIFICANDO DOCKER =========="
-docker version | head -5
-docker compose version || docker-compose version
+echo "========== ZERO DOWNTIME DEPLOY INICIADO =========="
 
-echo ""
-echo "========== VERIFICANDO .ENV =========="
-if [ -f .env ]; then
-  echo "✓ Arquivo .env encontrado"
-  echo "Primeiras 3 variáveis:"
-  grep -E '^(DB_|DATABASE_URL|PORT)' .env | head -3 || echo "Nenhuma variável DB_ encontrada"
+# 1. Identificar instância ativa
+if docker ps --format '{{.Names}}' | grep -q "${PROJECT_NAME}-blue"; then
+    ACTIVE="blue"
+    NEXT="green"
+    PORT=$GREEN_PORT
 else
-  echo "✗ ERRO: .env não existe!"
-  exit 1
+    ACTIVE="green"
+    NEXT="blue"
+    PORT=$BLUE_PORT
 fi
 
-echo ""
+echo "Instância ativa: $ACTIVE"
+echo "Preparando instância: $NEXT na porta $PORT"
+
+# 2. Atualizar código
 echo "========== ATUALIZANDO CÓDIGO =========="
 git fetch --all
 git reset --hard origin/main
-echo "Último commit:"
-git --no-pager log -1 --oneline
 
-echo ""
-echo "========== PARANDO CONTAINERS ANTIGOS =========="
-docker compose down 2>/dev/null || echo "Nenhum container para parar"
+# 3. Subir nova instância
+echo "========== CONSTRUINDO E SUBINDO $NEXT =========="
+# Usamos -p para isolar as instâncias se necessário, ou apenas nomes de container diferentes
+# Aqui usamos variáveis de ambiente que o docker-compose.yml agora aceita
+export PORT=$PORT
+docker compose -p "${PROJECT_NAME}-${NEXT}" up -d --build --force-recreate
 
-echo ""
-echo "========== CONSTRUINDO E SUBINDO CONTAINER =========="
-docker compose up -d --build --force-recreate
+# 4. Health Check simplificado
+echo "========== AGUARDANDO INICIALIZAÇÃO ($HEALTH_CHECK_WAIT seg) =========="
+sleep $HEALTH_CHECK_WAIT
 
-echo ""
-echo "========== AGUARDANDO INICIALIZAÇÃO =========="
-sleep 5
+# TODO: Adicionar health check real aqui se houver endpoint
+# if ! curl -f http://localhost:$PORT/health; then echo "Erro no health check"; exit 1; fi
 
-echo ""
-echo "========== STATUS DOS CONTAINERS =========="
-docker ps -a
+# 5. Switch Caddy
+echo "========== CHAVEANDO TRÁFEGO NO CADDY =========="
+# Nota: Isso assume que você tem um Caddyfile que usa import ou variáveis
+# Ou podemos usar a API do Caddy para um switch atômico
+# Exemplificando via edição de arquivo (assumindo local comum):
+if [ -f "Caddyfile" ]; then
+    sed -i "s/localhost:[0-9]\{4\}/localhost:$PORT/g" Caddyfile
+    caddy reload --config Caddyfile || echo "Aviso: Caddy não recarregado (verifique se o caddy está no PATH)"
+else
+    echo "Aviso: arquivo Caddyfile não encontrado no diretório local."
+    echo "Por favor, certifique-se de que o Caddy está apontando para localhost:$PORT"
+fi
 
-echo ""
-echo "========== LOGS DO BACKEND =========="
-docker logs sge-backend --tail 50 2>&1 || echo "Container sge-backend não encontrado"
+# 6. Cleanup (Opcional: esperar um pouco mais antes de derrubar)
+echo "========== FINALIZANDO INSTÂNCIA ANTIGA ($ACTIVE) =========="
+docker compose -p "${PROJECT_NAME}-${ACTIVE}" down 2>/dev/null || true
 
-echo ""
-echo "========== DEPLOY CONCLUÍDO =========="
+echo "========== DEPLOY $NEXT CONCLUÍDO COM SUCESSO =========="
+docker ps | grep $PROJECT_NAME

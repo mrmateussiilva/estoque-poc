@@ -1,0 +1,31 @@
+# Exemplo de Caddyfile para Zero Downtime Deployment
+# Este arquivo deve ser usado como base ou incluído no seu Caddyfile principal
+
+{
+    # Configurações globais (opcional)
+    email seu-email@exemplo.com
+}
+
+# Seu domínio (ajuste conforme necessário)
+seu-dominio.com.br {
+    # O script deploy.sh irá atualizar automaticamente a porta abaixo (8003 ou 8004)
+    reverse_proxy localhost:8003 {
+        # Health check passivo para garantir resiliência
+        health_uri /health
+        health_interval 5s
+        health_timeout 2s
+    }
+
+    # Compressão Gzip/Zstd
+    encode zstd gzip
+
+    # Cabeçalhos de Segurança
+    header {
+        # HSTS
+        Strict-Transport-Security "max-age=31536000;"
+        # Outros
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy no-referrer-when-downgrade
+    }
+}
