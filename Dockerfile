@@ -1,34 +1,43 @@
-FROM golang:1.25-alpine AS builder
+# Estágio de Compilação
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-# Instalar dependências necessárias
+# Instalar dependências básicas do builder
 RUN apk add --no-cache ca-certificates tzdata
 
-# Copiar arquivos de dependências do Go
+# Cache de dependências (go mod)
+# Usando cache mount para acelerar o download em builds sucessivos
 COPY go.mod go.sum ./
-RUN go mod download
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go mod download
 
-# Copiar código do backend
+# Copiar código-fonte
 COPY . .
 
-# Compilar o backend
-# CGO_ENABLED=0 para garantir portabilidade entre distribuições Linux
-RUN CGO_ENABLED=0 GOOS=linux go build -o estoque-poc main.go
+# Compilação otimizada
+# -ldflags="-s -w" remove tabelas de símbolos e debug, reduzindo ~20-30% do binário
+# --mount=type=cache permite reutilizar o cache de compilação do Go
+RUN --mount=type=cache,target=/root/.cache/go-build \
+    --mount=type=cache,target=/go/pkg/mod \
+    CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o estoque-poc main.go
 
-# Imagem Final Leve
-FROM alpine:latest
+# Imagem Final (Runtime)
+FROM alpine:3.21
 
+# Segurança: ca-certificates para HTTPS e tzdata para horários locais
 RUN apk --no-cache add ca-certificates tzdata
 
 WORKDIR /app
 
-# Copiar apenas o binário compilado
+# Copiar apenas o binário essencial
 COPY --from=builder /app/estoque-poc .
-RUN mkdir -p static
 
-# Nota: O frontend está na Vercel, o backend servirá apenas como API
+# Garantir estrutura mínima
+RUN mkdir -p static exports
 
+# Porta padrão do serviço
 EXPOSE 8003
 
+# Execução
 CMD ["./estoque-poc"]

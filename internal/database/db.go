@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"sort"
 	"time"
 
 	"golang.org/x/crypto/bcrypt"
@@ -168,69 +167,74 @@ func createIndexes(db *gorm.DB) {
 
 func GetMovementsReportData(db *gorm.DB, startDate, endDate time.Time) (models.FullReportResponse, error) {
 	var report models.FullReportResponse
-	var movements []models.Movement
 
-	// 1. Fetch Detailed Movements
-	// Preload Product to get cost_price and sale_price for calculations
+	// 1. Fetch Detailed Movements (for the list)
 	if err := db.Where("movements.created_at BETWEEN ? AND ?", startDate, endDate).
-		Preload("Product"). // Ensure Product is loaded for price access
+		Preload("Product").
+		Preload("User").
 		Order("movements.created_at ASC").
-		Find(&movements).Error; err != nil {
+		Find(&report.DetailedMovements).Error; err != nil {
 		return report, err
 	}
-	report.DetailedMovements = movements
 
-	// 2. Calculate Report Summary and Timeline
-	summary := models.ReportSummary{}
-	timelineMap := make(map[string]models.ReportTimelineItem) // Key: YYYY-MM-DD
-
-	uniqueProducts := make(map[string]struct{})
-	for _, m := range movements {
-		dateStr := m.CreatedAt.Format("2006-01-02")
-		item, exists := timelineMap[dateStr]
-		if !exists {
-			// Ensure date is UTC and without time components for consistent grouping
-			item.Date = time.Date(m.CreatedAt.Year(), m.CreatedAt.Month(), m.CreatedAt.Day(), 0, 0, 0, 0, time.UTC)
-		}
-
-		productPrice := 0.0
-		if m.Product != nil {
-			if m.Type == "ENTRADA" {
-				productPrice = m.Product.CostPrice
-			} else if m.Type == "SAIDA" {
-				productPrice = m.Product.SalePrice
-			}
-		}
-
-		if m.Type == "ENTRADA" {
-			summary.TotalEntriesQuantity += m.Quantity
-			summary.TotalEntriesValue += m.Quantity * productPrice
-			item.Entries += m.Quantity
-			item.EntriesValue += m.Quantity * productPrice
-		} else if m.Type == "SAIDA" {
-			summary.TotalExitsQuantity += m.Quantity
-			summary.TotalExitsValue += m.Quantity * productPrice
-			item.Exits += m.Quantity
-			item.ExitsValue += m.Quantity * productPrice
-		}
-		summary.TotalMovements++
-		uniqueProducts[m.ProductCode] = struct{}{}
-		timelineMap[dateStr] = item
+	// 2. Calculate Summary using SQL Aggregation
+	// This is much faster than iterating over a large slice in Go
+	err := db.Raw(`
+		SELECT 
+			COALESCE(SUM(CASE WHEN m.type = 'ENTRADA' THEN m.quantity ELSE 0 END), 0) as total_entries_quantity,
+			COALESCE(SUM(CASE WHEN m.type = 'ENTRADA' THEN m.quantity * p.cost_price ELSE 0 END), 0) as total_entries_value,
+			COALESCE(SUM(CASE WHEN m.type = 'SAIDA' THEN m.quantity ELSE 0 END), 0) as total_exits_quantity,
+			COALESCE(SUM(CASE WHEN m.type = 'SAIDA' THEN m.quantity * p.sale_price ELSE 0 END), 0) as total_exits_value,
+			COUNT(*) as total_movements,
+			COUNT(DISTINCT m.product_code) as unique_products
+		FROM movements m
+		JOIN products p ON m.product_code = p.code
+		WHERE m.created_at BETWEEN ? AND ?
+	`, startDate, endDate).Scan(&report.Summary).Error
+	if err != nil {
+		return report, err
 	}
 
-	summary.NetQuantity = summary.TotalEntriesQuantity - summary.TotalExitsQuantity
-	summary.NetValue = summary.TotalEntriesValue - summary.TotalExitsValue
-	summary.UniqueProducts = int64(len(uniqueProducts))
+	report.Summary.NetQuantity = report.Summary.TotalEntriesQuantity - report.Summary.TotalExitsQuantity
+	report.Summary.NetValue = report.Summary.TotalEntriesValue - report.Summary.TotalExitsValue
 
-	report.Summary = summary
-
-	// Convert timeline map to sorted slice
-	for _, item := range timelineMap {
-		report.Timeline = append(report.Timeline, item)
+	// 3. Calculate Timeline using SQL Group By
+	// Note: GORM/SQL scanning into struct with custom names requires manual field mapping or raw scanning
+	type timelineRow struct {
+		Date         time.Time
+		Entries      float64
+		Exits        float64
+		EntriesValue float64
+		ExitsValue   float64
 	}
-	sort.Slice(report.Timeline, func(i, j int) bool {
-		return report.Timeline[i].Date.Before(report.Timeline[j].Date)
-	})
+	var rows []timelineRow
+	err = db.Raw(`
+		SELECT 
+			DATE(m.created_at) as date,
+			COALESCE(SUM(CASE WHEN m.type = 'ENTRADA' THEN m.quantity ELSE 0 END), 0) as entries,
+			COALESCE(SUM(CASE WHEN m.type = 'SAIDA' THEN m.quantity ELSE 0 END), 0) as exits,
+			COALESCE(SUM(CASE WHEN m.type = 'ENTRADA' THEN m.quantity * p.cost_price ELSE 0 END), 0) as entries_value,
+			COALESCE(SUM(CASE WHEN m.type = 'SAIDA' THEN m.quantity * p.sale_price ELSE 0 END), 0) as exits_value
+		FROM movements m
+		JOIN products p ON m.product_code = p.code
+		WHERE m.created_at BETWEEN ? AND ?
+		GROUP BY DATE(m.created_at)
+		ORDER BY date ASC
+	`, startDate, endDate).Scan(&rows).Error
+	if err != nil {
+		return report, err
+	}
+
+	// Convert raw rows to Timeline items
+	for _, r := range rows {
+		report.Timeline = append(report.Timeline, models.ReportTimelineItem{
+			Date:         r.Date,
+			Entries:      r.Entries,
+			Exits:        r.Exits,
+			EntriesValue: r.EntriesValue,
+			ExitsValue:   r.ExitsValue,
+		})
+	}
 
 	return report, nil
 }

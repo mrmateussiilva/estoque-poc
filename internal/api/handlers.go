@@ -191,6 +191,15 @@ func (h *Handler) StockHandler(w http.ResponseWriter, r *http.Request) {
 	categoryID := r.URL.Query().Get("category_id")
 	params := ParsePaginationParams(r)
 
+	// Tentar buscar do cache apenas se não houver busca ativa (para simplificar)
+	cacheKey := fmt.Sprintf("%s:%s:%s:%d:%d", CacheKeyStockList, search, categoryID, params.Page, params.Limit)
+	if search == "" && categoryID == "" {
+		if cachedData, ok := GetAdvancedCache().Get(cacheKey); ok {
+			RespondWithJSON(w, http.StatusOK, cachedData)
+			return
+		}
+	}
+
 	list, total, err := h.ProductService.GetStockList(search, categoryID, params.Page, params.Limit)
 	if err != nil {
 		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar estoque", err), "Erro ao buscar estoque")
@@ -198,6 +207,12 @@ func (h *Handler) StockHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := NewPaginatedResponse(list, total, params)
+
+	// Armazenar no cache se for a listagem padrão
+	if search == "" && categoryID == "" {
+		GetAdvancedCache().Set(cacheKey, response, 5*time.Minute, TagStock)
+	}
+
 	RespondWithJSON(w, http.StatusOK, response)
 }
 
@@ -230,6 +245,13 @@ func (h *Handler) GetMovementsReport(w http.ResponseWriter, r *http.Request) {
 	// Adjust endDate to include the entire day
 	endDate = endDate.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
 
+	// Tentar buscar do cache
+	cacheKey := fmt.Sprintf("report:movements:%s:%s", startDateStr, endDateStr)
+	if cachedReport, ok := GetAdvancedCache().Get(cacheKey); ok {
+		RespondWithJSON(w, http.StatusOK, cachedReport)
+		return
+	}
+
 	reportData, err := database.GetMovementsReportData(h.DB, startDate, endDate)
 	if err != nil {
 		HandleError(w, NewAppErrorWithContext(
@@ -243,6 +265,9 @@ func (h *Handler) GetMovementsReport(w http.ResponseWriter, r *http.Request) {
 		), "Erro ao gerar relatório")
 		return
 	}
+
+	// Cache por 10 minutos (relatórios mudam menos que o estoque em tempo real)
+	GetAdvancedCache().Set(cacheKey, reportData, 10*time.Minute, TagDashboard)
 
 	RespondWithJSON(w, http.StatusOK, reportData)
 }

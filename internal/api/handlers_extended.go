@@ -200,15 +200,26 @@ func (h *Handler) ListProductsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := ParsePaginationParams(r)
+	search := r.URL.Query().Get("search")
+	categoryID := r.URL.Query().Get("category_id")
 	offset := (params.Page - 1) * params.Limit
+
+	// Caching apenas para listagem padrão
+	cacheKey := fmt.Sprintf("products:list:%s:%s:%d:%d", search, categoryID, params.Page, params.Limit)
+	if search == "" && categoryID == "" {
+		if cachedData, ok := GetAdvancedCache().Get(cacheKey); ok {
+			RespondWithJSON(w, http.StatusOK, cachedData)
+			return
+		}
+	}
 
 	db := h.DB.Model(&models.Product{}).Where("active = ?", true)
 
-	if search := r.URL.Query().Get("search"); search != "" {
+	if search != "" {
 		db = db.Where("code LIKE ? OR name LIKE ?", "%"+search+"%", "%"+search+"%")
 	}
 
-	if categoryID := r.URL.Query().Get("category_id"); categoryID != "" {
+	if categoryID != "" {
 		db = db.Where("category_id = ?", categoryID)
 	}
 
@@ -227,6 +238,11 @@ func (h *Handler) ListProductsHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := NewPaginatedResponse(products, total, params)
+
+	if search == "" && categoryID == "" {
+		GetAdvancedCache().Set(cacheKey, response, 10*time.Minute, TagStock)
+	}
+
 	RespondWithJSON(w, http.StatusOK, response)
 }
 

@@ -110,6 +110,7 @@ func main() {
 	// Middlewares Globais
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
+	r.Use(middleware.Compress(5)) // Compressão Gzip (nível 5 balanceia CPU/Tamanho)
 	r.Use(api.LoggerMiddleware)
 	r.Use(middleware.Recoverer)
 	// r.Use(middleware.Timeout(60 * time.Second)) // Removido globalmente para não derrubar SSE
