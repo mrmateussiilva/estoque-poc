@@ -49,12 +49,12 @@ function MainApp() {
   };
 
   const pageConfig = {
-    dashboard: { title: 'Dashboard', component: Dashboard, showSync: true },
-    entries: { title: 'Entradas', component: Entries, showSync: false },
-    stock: { title: 'Estoque', component: Stock, showSync: true },
-    nfe: { title: 'NF-e', component: NFe, showSync: false },
-    reports: { title: 'Relatórios', component: Reports, showSync: false },
-    admin: { title: 'Configurações de Admin', component: Admin, showSync: false },
+    dashboard: { title: 'Dashboard', component: Dashboard },
+    entries: { title: 'Entradas', component: Entries },
+    stock: { title: 'Estoque', component: Stock },
+    nfe: { title: 'NF-e', component: NFe },
+    reports: { title: 'Relatórios', component: Reports },
+    admin: { title: 'Configurações de Admin', component: Admin },
   };
 
   const config = pageConfig[currentPage as keyof typeof pageConfig];
@@ -84,7 +84,6 @@ function MainApp() {
       `}>
         <Header
           title={config.title}
-          onSync={config.showSync ? () => window.location.reload() : undefined}
         />
         <main className="flex-1 overflow-auto p-4 md:p-8 pb-20 md:pb-8">
           <AnimatePresence mode="wait">

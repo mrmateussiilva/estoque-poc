@@ -1,12 +1,8 @@
-import { RefreshCw } from 'lucide-react';
-
 interface HeaderProps {
     title: string;
-    onSync?: () => void;
-    loading?: boolean;
 }
 
-export default function Header({ title, onSync, loading }: HeaderProps) {
+export default function Header({ title }: HeaderProps) {
     return (
         <header className="h-24 bg-white border-b border-charcoal-100/50 flex items-center justify-between px-6 md:px-10 sticky top-0 z-40 transition-all duration-300">
             <div className="flex items-center gap-6">
@@ -19,16 +15,7 @@ export default function Header({ title, onSync, loading }: HeaderProps) {
                 </div>
             </div>
             <div className="flex items-center gap-4">
-                {onSync && (
-                    <button
-                        onClick={onSync}
-                        disabled={loading}
-                        className="h-11 px-5 bg-white border border-charcoal-200 text-charcoal-700 rounded-xl hover:border-ruby-200 hover:text-ruby-600 transition-all flex items-center gap-2.5 disabled:opacity-50 active:scale-[0.98] shadow-sm font-bold text-xs"
-                    >
-                        <RefreshCw className={`w-3.5 h-3.5 text-emerald-500 ${loading ? 'animate-spin' : ''}`} />
-                        <span className="uppercase tracking-widest text-[10px]">Sincronizar</span>
-                    </button>
-                )}
+                {/* Botão de sincronizar removido a pedido do usuário (redundante devido ao Pull-to-Refresh e React Query) */}
             </div>
         </header>
     );
