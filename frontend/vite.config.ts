@@ -59,6 +59,20 @@ export default defineConfig({
             description: 'Ver estoque',
             url: '/?page=stock',
             icons: [{ src: '/icon-192.png', sizes: '192x192' }]
+          },
+          {
+            name: 'Movimentações',
+            short_name: 'Histórico',
+            description: 'Ver histórico de movimentações',
+            url: '/?page=movements',
+            icons: [{ src: '/icon-192.png', sizes: '192x192' }]
+          },
+          {
+            name: 'Digitalizar NF-e',
+            short_name: 'NF-e',
+            description: 'Importar nota fiscal',
+            url: '/?page=nfe',
+            icons: [{ src: '/icon-192.png', sizes: '192x192' }]
           }
         ]
       },

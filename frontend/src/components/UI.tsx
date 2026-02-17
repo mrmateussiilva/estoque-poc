@@ -2,8 +2,11 @@ import { ChevronDown, X } from 'lucide-react';
 import ReactDOM from 'react-dom';
 import { useEffect } from 'react';
 
-export const Card = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-    <div className={`bg-white rounded-2xl border border-charcoal-200/60 shadow-ruby-sm hover:shadow-ruby transition-all duration-300 overflow-hidden ${className}`}>
+export const Card = ({ children, className = "", onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) => (
+    <div
+        onClick={onClick}
+        className={`bg-white rounded-2xl border border-charcoal-200/60 shadow-ruby-sm hover:shadow-ruby transition-all duration-300 overflow-hidden ${className} ${onClick ? 'cursor-pointer' : ''}`}
+    >
         {children}
     </div>
 );

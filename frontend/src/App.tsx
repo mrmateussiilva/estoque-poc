@@ -14,6 +14,7 @@ import Login from './pages/Login';
 import Admin from './pages/Admin';
 
 import { notificationService } from './services/NotificationService';
+import { AnimatePresence, motion } from 'framer-motion';
 
 function MainApp() {
   const [currentPage, setCurrentPage] = useState('dashboard');
@@ -86,7 +87,17 @@ function MainApp() {
           onSync={config.showSync ? () => window.location.reload() : undefined}
         />
         <main className="flex-1 overflow-auto p-4 md:p-8 pb-20 md:pb-8">
-          <PageComponent />
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentPage}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+            >
+              <PageComponent />
+            </motion.div>
+          </AnimatePresence>
         </main>
 
         {/* Bottom Navigation para Mobile */}
