@@ -1,5 +1,4 @@
 import { LayoutDashboard, Package, FileText, BarChart3, ArrowDownToLine, ShieldCheck } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
 
 interface MobileBottomNavProps {
     currentPage: string;
@@ -7,7 +6,7 @@ interface MobileBottomNavProps {
 }
 
 export default function MobileBottomNav({ currentPage, onNavigate }: MobileBottomNavProps) {
-    const { user } = useAuth();
+    // Sem verificação de isAdmin para manter consistência com Sidebar
 
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -21,13 +20,7 @@ export default function MobileBottomNav({ currentPage, onNavigate }: MobileBotto
         { id: 'admin', label: 'Admin', icon: ShieldCheck },
     ];
 
-    // Verificar se usuário é admin (pode ser role, isAdmin ou fallback por email)
-    const isAdmin =
-        (user as any)?.role === 'ADMIN' ||
-        (user as any)?.isAdmin === true ||
-        user?.email === 'mateus@finderbit.com.br'; // Fallback para o admin principal
-
-    const allItems = isAdmin ? [...menuItems, ...adminItems] : menuItems;
+    const allItems = [...menuItems, ...adminItems];
 
     return (
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-charcoal-200 z-50 safe-area-inset-bottom shadow-lg">
