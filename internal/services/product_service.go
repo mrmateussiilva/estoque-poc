@@ -2,6 +2,7 @@ package services
 
 import (
 	"estoque/internal/models"
+
 	"gorm.io/gorm"
 )
 
@@ -105,6 +106,12 @@ func (s *ProductService) GetStockList(search string, categoryID string, page int
 // CreateMovement registra uma nova movimentação de estoque
 func (s *ProductService) CreateMovement(req models.CreateMovementRequest, userID int32) error {
 	return s.DB.Transaction(func(tx *gorm.DB) error {
+		// Verificar se o produto existe
+		var product models.Product
+		if err := tx.First(&product, "code = ? AND active = ?", req.ProductCode, true).Error; err != nil {
+			return err // Se não encontrar, retorna gorm.ErrRecordNotFound
+		}
+
 		// Se for saída, verificar estoque disponível
 		if req.Type == "SAIDA" {
 			var stock models.Stock

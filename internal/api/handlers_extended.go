@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"estoque/internal/events"
 	"estoque/internal/models"
 	"estoque/internal/services"
@@ -136,24 +137,26 @@ func (h *Handler) CreateMovementHandler(w http.ResponseWriter, r *http.Request) 
 
 	// Executar via Service
 	if err := h.ProductService.CreateMovement(req, user.ID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			HandleError(w, ErrProductNotFound, "Produto não encontrado ou inativo")
+			return
+		}
 		if err == gorm.ErrInvalidData {
-			HandleError(w, ErrInsufficientStock, "Erro ao processar movimentação")
+			HandleError(w, ErrInsufficientStock, "Estoque insuficiente para a operação")
 			return
 		}
-		if err == gorm.ErrRecordNotFound {
-			HandleError(w, ErrProductNotFound, "Erro ao processar movimentação")
-			return
-		}
+
 		HandleError(w, NewAppErrorWithContext(
 			http.StatusInternalServerError,
-			"Erro ao processar movimentação",
+			"Erro ao processar movimentação de estoque",
 			err,
 			map[string]interface{}{
 				"product_code": req.ProductCode,
 				"type":         req.Type,
+				"quantity":     req.Quantity,
 				"user_id":      user.ID,
 			},
-		), "Erro ao processar movimentação")
+		), "Erro interno ao salvar movimentação")
 		return
 	}
 
