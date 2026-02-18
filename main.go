@@ -163,62 +163,64 @@ func main() {
 		// Protected Routes
 		r.Group(func(r chi.Router) {
 			r.Use(api.AuthMiddleware(db))
-			// Aplicar timeout apenas para rotas que NÃO são de streaming
-			r.Use(middleware.Timeout(60 * time.Second))
 			// Rate limiting geral: 100 requisições por minuto por IP
 			r.Use(httprate.LimitByIP(100, 1*time.Minute))
 
-			// NF-e
-			r.Post("/nfe/upload", h.UploadHandler)
-			r.Get("/nfes", h.ListNFesHandler)
-			r.Get("/nfes/{accessKey}", h.GetNfeDetailHandler)
-			r.Post("/nfes/{accessKey}/process", h.ProcessNfeHandler)
-
-			// Rotas de Streaming (Sem o middleware de timeout acima)
+			// 1. Rotas de Streaming (SEM timeout para não derrubar conexões longas)
 			r.Group(func(r chi.Router) {
-				r.Use(api.AuthMiddleware(db))
 				r.Get("/notifications/stream", h.StreamNotificationsHandler)
 			})
 
-			// Products & Stock
-			r.Get("/products", h.ListProductsHandler)
-			r.Put("/products/{code}", h.UpdateProductHandler)
-			r.Get("/stock", h.StockHandler)
-
-			// Movements
-			r.Post("/movements", h.CreateMovementHandler)
-			r.Get("/movements/list", h.ListMovementsHandler)
-			r.Get("/reports/movements", h.GetMovementsReport)
-			r.Get("/export/movements", h.ExportMovementsHandler)
-
-			// Export
-			r.Get("/export/stock", h.ExportStockHandler)
-
-			// Dashboard
-			r.Get("/dashboard/stats", h.DashboardStatsHandler)
-			r.Get("/dashboard/evolution", h.StockEvolutionHandler)
-
-			// Categories
-			r.Get("/categories", h.CategoriesHandler)
-			r.Post("/categories", h.CategoriesHandler)
-			r.Put("/categories/{id}", h.CategoriesHandler)
-			r.Delete("/categories/{id}", h.CategoriesHandler)
-
-			// Users (Admin Only)
+			// 2. Rotas comuns (COM timeout de 60s para segurança)
 			r.Group(func(r chi.Router) {
-				r.Use(api.RoleMiddleware("ADMIN"))
-				r.Get("/users", h.ListUsersHandler)
-				r.Post("/users", h.CreateUserHandler)
-				r.Put("/users/{id}", h.UpdateUserHandler)
-				r.Delete("/users/{id}", h.DeleteUserHandler)
+				r.Use(middleware.Timeout(60 * time.Second))
 
-				// Configurações de Sistema
-				r.Get("/config/email", h.GetEmailConfigHandler)
-				r.Put("/config/email", h.UpdateEmailConfigHandler)
-				r.Post("/config/email/test", h.TestEmailConnectionHandler)
+				// NF-e
+				r.Post("/nfe/upload", h.UploadHandler)
+				r.Get("/nfes", h.ListNFesHandler)
+				r.Get("/nfes/{accessKey}", h.GetNfeDetailHandler)
+				r.Post("/nfes/{accessKey}/process", h.ProcessNfeHandler)
 
-				// Logs de Auditoria
-				r.Get("/audit/logs", h.ListAuditLogsHandler)
+				// Products & Stock
+				r.Get("/products", h.ListProductsHandler)
+				r.Put("/products/{code}", h.UpdateProductHandler)
+				r.Get("/stock", h.StockHandler)
+
+				// Movements
+				r.Post("/movements", h.CreateMovementHandler)
+				r.Get("/movements/list", h.ListMovementsHandler)
+				r.Get("/reports/movements", h.GetMovementsReport)
+				r.Get("/export/movements", h.ExportMovementsHandler)
+
+				// Export
+				r.Get("/export/stock", h.ExportStockHandler)
+
+				// Dashboard
+				r.Get("/dashboard/stats", h.DashboardStatsHandler)
+				r.Get("/dashboard/evolution", h.StockEvolutionHandler)
+
+				// Categories
+				r.Get("/categories", h.CategoriesHandler)
+				r.Post("/categories", h.CategoriesHandler)
+				r.Put("/categories/{id}", h.CategoriesHandler)
+				r.Delete("/categories/{id}", h.CategoriesHandler)
+
+				// Users (Admin Only)
+				r.Group(func(r chi.Router) {
+					r.Use(api.RoleMiddleware("ADMIN"))
+					r.Get("/users", h.ListUsersHandler)
+					r.Post("/users", h.CreateUserHandler)
+					r.Put("/users/{id}", h.UpdateUserHandler)
+					r.Delete("/users/{id}", h.DeleteUserHandler)
+
+					// Configurações de Sistema
+					r.Get("/config/email", h.GetEmailConfigHandler)
+					r.Put("/config/email", h.UpdateEmailConfigHandler)
+					r.Post("/config/email/test", h.TestEmailConnectionHandler)
+
+					// Logs de Auditoria
+					r.Get("/audit/logs", h.ListAuditLogsHandler)
+				})
 			})
 		})
 	})
