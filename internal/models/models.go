@@ -135,17 +135,20 @@ func (User) TableName() string {
 }
 
 type Movement struct {
-	ID          int32     `gorm:"primaryKey;type:int" json:"id"`
-	ProductCode string    `gorm:"size:191;not null;type:varchar(191)" json:"product_code"`
-	Product     *Product  `gorm:"foreignKey:ProductCode;references:Code" json:"product,omitempty"` // Added for preloading product details
-	Type        string    `gorm:"size:20;not null" json:"type"`                                    // ENTRADA ou SAIDA
-	Quantity    float64   `gorm:"type:decimal(19,4);not null" json:"quantity"`
-	Origin      *string   `gorm:"size:191" json:"origin,omitempty"`
-	Reference   *string   `gorm:"size:191" json:"reference,omitempty"`
-	UserID      *int32    `gorm:"type:int" json:"user_id,omitempty"`
-	User        *User     `gorm:"foreignKey:UserID" json:"user,omitempty"`
-	Notes       *string   `gorm:"type:text" json:"notes,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID             int32      `gorm:"primaryKey;type:int" json:"id"`
+	ProductCode    string     `gorm:"size:191;not null;type:varchar(191)" json:"product_code"`
+	Product        *Product   `gorm:"foreignKey:ProductCode;references:Code" json:"product,omitempty"`
+	Type           string     `gorm:"size:20;not null" json:"type"` // ENTRADA ou SAIDA
+	Quantity       float64    `gorm:"type:decimal(19,4);not null" json:"quantity"`
+	UnitCost       float64    `gorm:"type:decimal(19,4)" json:"unit_cost,omitempty"` // Custo unitário no momento da entrada
+	BatchNumber    *string    `gorm:"size:100" json:"batch_number,omitempty"`        // Número do Lote
+	ExpirationDate *time.Time `gorm:"type:date" json:"expiration_date,omitempty"`    // Data de Validade
+	Origin         *string    `gorm:"size:191" json:"origin,omitempty"`
+	Reference      *string    `gorm:"size:191" json:"reference,omitempty"`
+	UserID         *int32     `gorm:"type:int" json:"user_id,omitempty"`
+	User           *User      `gorm:"foreignKey:UserID" json:"user,omitempty"`
+	Notes          *string    `gorm:"type:text" json:"notes,omitempty"`
+	CreatedAt      time.Time  `json:"created_at"`
 }
 
 func (Movement) TableName() string {
@@ -195,12 +198,19 @@ type StockItem struct {
 }
 
 type CreateMovementRequest struct {
-	ProductCode string  `json:"product_code"`
-	Type        string  `json:"type"`
-	Quantity    float64 `json:"quantity"`
-	Origin      string  `json:"origin,omitempty"`
-	Reference   string  `json:"reference,omitempty"`
-	Notes       string  `json:"notes,omitempty"`
+	ProductCode    string  `json:"product_code"`
+	Type           string  `json:"type"`
+	Quantity       float64 `json:"quantity"`
+	UnitCost       float64 `json:"unit_cost,omitempty"`
+	BatchNumber    string  `json:"batch_number,omitempty"`
+	ExpirationDate string  `json:"expiration_date,omitempty"` // Formato YYYY-MM-DD
+	Origin         string  `json:"origin,omitempty"`
+	Reference      string  `json:"reference,omitempty"`
+	Notes          string  `json:"notes,omitempty"`
+}
+
+type BatchMovementRequest struct {
+	Items []CreateMovementRequest `json:"items"`
 }
 
 type LoginRequest struct {

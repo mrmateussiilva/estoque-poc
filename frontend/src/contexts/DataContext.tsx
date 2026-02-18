@@ -26,7 +26,11 @@ export interface EntryItem {
     sku: string;
     description: string;
     quantity: number;
+    type: 'ENTRADA' | 'SAIDA';
     origin: 'Manual' | 'XML';
+    unit_cost?: number;
+    batch_number?: string;
+    expiration_date?: string;
 }
 
 export interface Movement {

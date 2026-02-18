@@ -14,7 +14,7 @@ export default function Entries() {
     const movementMutation = useMovementMutation();
     const isConfirming = movementMutation.isPending;
 
-    const handleAddManual = (item: { sku: string; description: string; quantity: number }) => {
+    const handleAddManual = (item: any) => {
         setItems([...items, { ...item, id: crypto.randomUUID(), origin: 'Manual' }]);
     };
 

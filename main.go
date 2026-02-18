@@ -188,6 +188,7 @@ func main() {
 
 				// Movements
 				r.Post("/movements", h.CreateMovementHandler)
+				r.Post("/movements/batch", h.BatchCreateMovementHandler)
 				r.Get("/movements/list", h.ListMovementsHandler)
 				r.Get("/reports/movements", h.GetMovementsReport)
 				r.Get("/export/movements", h.ExportMovementsHandler)

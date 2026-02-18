@@ -2,6 +2,7 @@ package services
 
 import (
 	"estoque/internal/models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -106,58 +107,98 @@ func (s *ProductService) GetStockList(search string, categoryID string, page int
 // CreateMovement registra uma nova movimentação de estoque
 func (s *ProductService) CreateMovement(req models.CreateMovementRequest, userID int32) error {
 	return s.DB.Transaction(func(tx *gorm.DB) error {
-		// Verificar se o produto existe
-		var product models.Product
-		if err := tx.First(&product, "code = ? AND active = ?", req.ProductCode, true).Error; err != nil {
-			return err // Se não encontrar, retorna gorm.ErrRecordNotFound
-		}
+		return s.createMovementInternal(tx, req, userID)
+	})
+}
 
-		// Se for saída, verificar estoque disponível
-		if req.Type == "SAIDA" {
-			var stock models.Stock
-			if err := tx.First(&stock, "product_code = ?", req.ProductCode).Error; err != nil {
-				if err == gorm.ErrRecordNotFound {
-					return gorm.ErrInvalidData
-				}
+// CreateBatchMovements registra múltiplas movimentações em uma única transação
+func (s *ProductService) CreateBatchMovements(items []models.CreateMovementRequest, userID int32) error {
+	return s.DB.Transaction(func(tx *gorm.DB) error {
+		for _, item := range items {
+			if err := s.createMovementInternal(tx, item, userID); err != nil {
 				return err
 			}
-			if stock.Quantity < req.Quantity {
-				return gorm.ErrInvalidData
-			}
 		}
+		return nil
+	})
+}
 
-		// Criar movimentação
-		movement := models.Movement{
-			ProductCode: req.ProductCode,
-			Type:        req.Type,
-			Quantity:    req.Quantity,
-			Origin:      &req.Origin,
-			Reference:   &req.Reference,
-			Notes:       &req.Notes,
-			UserID:      &userID,
-		}
-		if err := tx.Create(&movement).Error; err != nil {
-			return err
-		}
+func (s *ProductService) createMovementInternal(tx *gorm.DB, req models.CreateMovementRequest, userID int32) error {
+	// Verificar se o produto existe
+	var product models.Product
+	if err := tx.First(&product, "code = ? AND active = ?", req.ProductCode, true).Error; err != nil {
+		return err
+	}
 
-		// Atualizar estoque
+	// Se for saída, verificar estoque disponível
+	if req.Type == "SAIDA" {
 		var stock models.Stock
-		err := tx.First(&stock, "product_code = ?", req.ProductCode).Error
-		if err == gorm.ErrRecordNotFound {
-			if req.Type == "SAIDA" {
+		if err := tx.First(&stock, "product_code = ?", req.ProductCode).Error; err != nil {
+			if err == gorm.ErrRecordNotFound {
 				return gorm.ErrInvalidData
 			}
-			stock = models.Stock{ProductCode: req.ProductCode, Quantity: req.Quantity}
-			return tx.Create(&stock).Error
-		} else if err != nil {
 			return err
 		}
+		if stock.Quantity < req.Quantity {
+			return gorm.ErrInvalidData
+		}
+	}
 
+	// Tratar data de validade se fornecida
+	var expirationDate *time.Time
+	if req.ExpirationDate != "" {
+		if t, err := time.Parse("2006-01-02", req.ExpirationDate); err == nil {
+			expirationDate = &t
+		}
+	}
+
+	// Criar movimentação
+	movement := models.Movement{
+		ProductCode:    req.ProductCode,
+		Type:           req.Type,
+		Quantity:       req.Quantity,
+		UnitCost:       req.UnitCost,
+		BatchNumber:    &req.BatchNumber,
+		ExpirationDate: expirationDate,
+		Origin:         &req.Origin,
+		Reference:      &req.Reference,
+		Notes:          &req.Notes,
+		UserID:         &userID,
+	}
+	if err := tx.Create(&movement).Error; err != nil {
+		return err
+	}
+
+	// Atualizar estoque
+	var stock models.Stock
+	err := tx.First(&stock, "product_code = ?", req.ProductCode).Error
+	if err == gorm.ErrRecordNotFound {
+		if req.Type == "SAIDA" {
+			return gorm.ErrInvalidData
+		}
+		stock = models.Stock{ProductCode: req.ProductCode, Quantity: req.Quantity}
+		if err := tx.Create(&stock).Error; err != nil {
+			return err
+		}
+	} else if err != nil {
+		return err
+	} else {
 		if req.Type == "ENTRADA" {
 			stock.Quantity += req.Quantity
 		} else {
 			stock.Quantity -= req.Quantity
 		}
-		return tx.Save(&stock).Error
-	})
+		if err := tx.Save(&stock).Error; err != nil {
+			return err
+		}
+	}
+
+	// Se for entrada e tiver custo, atualizar o preço de custo do produto
+	if req.Type == "ENTRADA" && req.UnitCost > 0 {
+		if err := tx.Model(&product).Update("cost_price", req.UnitCost).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

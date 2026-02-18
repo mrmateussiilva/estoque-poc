@@ -189,6 +189,73 @@ func (h *Handler) CreateMovementHandler(w http.ResponseWriter, r *http.Request) 
 	})
 }
 
+func (h *Handler) BatchCreateMovementHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	var req models.BatchMovementRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Corpo da requisição inválido")
+		return
+	}
+
+	if len(req.Items) == 0 {
+		RespondWithError(w, http.StatusBadRequest, "O lote deve conter pelo menos um item")
+		return
+	}
+
+	// Obter usuário do contexto
+	user, ok := GetUserFromContext(r, h.DB)
+	if !ok {
+		HandleError(w, ErrUnauthorized, "Usuário não autenticado")
+		return
+	}
+
+	// Validar todos os itens antes de processar
+	for _, item := range req.Items {
+		if err := services.ValidateMovementRequest(item.ProductCode, item.Type, item.Quantity); err != nil {
+			HandleError(w, NewAppErrorWithContext(
+				http.StatusBadRequest,
+				fmt.Sprintf("Erro de validação no item %s: %s", item.ProductCode, err.Error()),
+				err,
+				map[string]interface{}{"product_code": item.ProductCode},
+			), "Erro de validação no lote")
+			return
+		}
+	}
+
+	// Executar via Service (Transacional)
+	if err := h.ProductService.CreateBatchMovements(req.Items, user.ID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			HandleError(w, ErrProductNotFound, "Um ou mais produtos não encontrados no lote")
+			return
+		}
+		if err == gorm.ErrInvalidData {
+			HandleError(w, ErrInsufficientStock, "Estoque insuficiente para um ou mais itens no lote")
+			return
+		}
+
+		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao processar lote de movimentações", err), "Erro interno ao processar lote")
+		return
+	}
+
+	// Log de sucesso
+	slog.Info("Lote de movimentações processado",
+		"items_count", len(req.Items),
+		"user_id", user.ID,
+	)
+
+	// Invalidação de cache
+	InvalidateCacheByTags(TagDashboard, TagStock, TagEvolution)
+
+	RespondWithJSON(w, http.StatusCreated, map[string]interface{}{
+		"message":     "Lote processado com sucesso",
+		"items_count": len(req.Items),
+	})
+}
+
 func (h *Handler) ListMovementsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		RespondWithError(w, http.StatusMethodNotAllowed, "Método não permitido")

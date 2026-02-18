@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts/AuthContext';
-import { type StockItem, type Category, type EntryItem, type FullReportResponse } from '../contexts/DataContext';
+import { type StockItem, type Category, type FullReportResponse } from '../contexts/DataContext';
+
+export type Product = StockItem;
 
 // Tipos adicionais necessários
 interface DashboardStats {
@@ -165,27 +167,28 @@ export function useMovementMutation() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: async (items: EntryItem[]) => {
-            const promises = items.map(async (item) => {
-                const response = await apiFetch('/api/movements', {
-                    method: 'POST',
-                    body: JSON.stringify({
+        mutationFn: async (items: any[]) => {
+            const response = await apiFetch('/api/movements/batch', {
+                method: 'POST',
+                body: JSON.stringify({
+                    items: items.map(item => ({
                         product_code: item.sku,
-                        type: 'ENTRADA',
+                        type: item.type || 'ENTRADA',
                         quantity: item.quantity,
-                        origin: 'MANUAL',
-                        notes: `Entrada manual: ${item.description}`
-                    })
-                });
-
-                if (!response.ok) {
-                    const data = await response.json().catch(() => ({}));
-                    throw new Error(data.error || `Erro ao processar item ${item.sku}`);
-                }
-                return response.json();
+                        unit_cost: item.unit_cost,
+                        batch_number: item.batch_number,
+                        expiration_date: item.expiration_date,
+                        origin: item.origin || 'MANUAL',
+                        notes: item.notes || `Movimentação manual: ${item.description}`
+                    }))
+                })
             });
 
-            return Promise.all(promises);
+            if (!response.ok) {
+                const data = await response.json().catch(() => ({}));
+                throw new Error(data.error || 'Erro ao processar lote de movimentações');
+            }
+            return response.json();
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['stock'] });
