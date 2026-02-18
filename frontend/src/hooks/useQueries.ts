@@ -8,11 +8,17 @@ interface DashboardStats {
     total_skus: number;
     entries_this_month: number;
     low_stock_count: number;
+    stock_wealth: number;
+    stock_wealth_sale: number;
+    idle_stock_count: number;
+    average_cost: number;
+    last_movement_at?: string;
 }
 
 interface StockEvolution {
-    month: string;
-    items: number;
+    date: string;
+    entries: number;
+    exits: number;
 }
 
 interface User {
@@ -21,6 +27,30 @@ interface User {
     email: string;
     role: string;
     active: boolean;
+}
+
+export interface NFe {
+    access_key: string;
+    number?: string;
+    supplier_name?: string;
+    total_items: number;
+    total_value: number;
+    status: 'PENDENTE' | 'PROCESSADA';
+    processed_at: string;
+}
+
+export interface NFeDetail {
+    access_key: string;
+    number: string;
+    supplier_name: string;
+    total_value: number;
+    items: {
+        code: string;
+        name: string;
+        quantity: number;
+        unit_price: number;
+        total_price: number;
+    }[];
 }
 
 // Queries

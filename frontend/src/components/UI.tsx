@@ -2,7 +2,7 @@ import { ChevronDown, X } from 'lucide-react';
 import ReactDOM from 'react-dom';
 import { useEffect } from 'react';
 
-export const Card = ({ children, className = "", onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) => (
+export const Card = ({ children, className = "", onClick }: { children: React.ReactNode; className?: string; onClick?: (e: React.MouseEvent) => void }) => (
     <div
         onClick={onClick}
         className={`bg-white rounded-2xl border border-charcoal-200/60 shadow-ruby-sm hover:shadow-ruby transition-all duration-300 overflow-hidden ${className} ${onClick ? 'cursor-pointer' : ''}`}
@@ -12,7 +12,7 @@ export const Card = ({ children, className = "", onClick }: { children: React.Re
 );
 
 export const KPICard = ({ title, value, subtitle, icon }: { title: string; value: string | number; subtitle?: string; icon?: React.ReactNode }) => (
-    <Card className="p-6 relative group">
+    <Card className="p-4 relative group">
         <div className="absolute top-0 left-0 w-1 h-0 group-hover:h-full bg-ruby-500 transition-all duration-300" />
         <div className="flex items-center justify-between mb-3">
             <p className="text-charcoal-400 text-[11px] font-bold uppercase tracking-wider">{title}</p>
@@ -37,7 +37,7 @@ export const Button = ({
     className = ""
 }: {
     children: React.ReactNode;
-    onClick?: () => void;
+    onClick?: (e: React.MouseEvent) => void;
     disabled?: boolean;
     variant?: 'primary' | 'outline' | 'secondary';
     loading?: boolean;
@@ -122,18 +122,18 @@ export const TBody = ({ children, className = "" }: { children: React.ReactNode;
 );
 
 export const Th = ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-    <th className={`px-8 py-5 text-[10px] font-black tracking-[0.15em] ${className}`}>
+    <th className={`px-4 py-3 text-[10px] font-black tracking-[0.15em] ${className}`}>
         {children}
     </th>
 );
 
 export const Td = ({ children, className = "", colSpan }: { children: React.ReactNode; className?: string; colSpan?: number }) => (
-    <td colSpan={colSpan} className={`px-8 py-6 text-sm font-bold text-navy-900 ${className}`}>
+    <td colSpan={colSpan} className={`px-4 py-3 text-sm font-bold text-navy-900 ${className}`}>
         {children}
     </td>
 );
 
-export const Tr = ({ children, className = "", onClick }: { children: React.ReactNode; className?: string; onClick?: () => void }) => (
+export const Tr = ({ children, className = "", onClick }: { children: React.ReactNode; className?: string; onClick?: (e: React.MouseEvent) => void }) => (
     <tr
         onClick={onClick}
         className={`transition-all group ${onClick ? 'cursor-pointer' : ''} ${className}`}
@@ -142,17 +142,28 @@ export const Tr = ({ children, className = "", onClick }: { children: React.Reac
     </tr>
 );
 
-export const Badge = ({ children, variant = 'default', className = "" }: { children: React.ReactNode; variant?: 'default' | 'success' | 'warning' | 'error'; className?: string }) => {
+export const Badge = ({ children, variant = 'default', className = "" }: { children: React.ReactNode; variant?: 'default' | 'success' | 'warning' | 'error' | 'info' | 'purple'; className?: string }) => {
     const variants = {
         default: "bg-charcoal-50 text-charcoal-700 border-charcoal-200",
         success: "bg-emerald-50 text-emerald-700 border-emerald-100",
         warning: "bg-amber-50 text-amber-700 border-amber-100",
-        error: "bg-ruby-50 text-ruby-700 border-ruby-200"
+        error: "bg-ruby-50 text-ruby-700 border-ruby-200",
+        info: "bg-blue-50 text-blue-700 border-blue-100",
+        purple: "bg-purple-50 text-purple-700 border-purple-100"
+    };
+
+    const dotColors = {
+        default: "bg-charcoal-400",
+        success: "bg-emerald-500",
+        warning: "bg-amber-500",
+        error: "bg-ruby-600",
+        info: "bg-blue-500",
+        purple: "bg-purple-500"
     };
 
     return (
-        <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-wider border ${variants[variant]} ${className}`}>
-            <div className={`w-1.5 h-1.5 rounded-full ${variant === 'success' ? 'bg-emerald-500' : variant === 'warning' ? 'bg-amber-500' : variant === 'error' ? 'bg-ruby-600' : 'bg-charcoal-400'}`} />
+        <span className={`inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${variants[variant as keyof typeof variants] || variants.default} ${className}`}>
+            <div className={`w-1 h-1 rounded-full ${dotColors[variant as keyof typeof dotColors] || dotColors.default}`} />
             {children}
         </span>
     );
