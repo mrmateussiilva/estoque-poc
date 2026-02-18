@@ -147,6 +147,9 @@ func main() {
 			json.NewEncoder(w).Encode(map[string]string{"status": "ok", "version": "1.1.0"})
 		})
 
+		// Health check detalhado para o deploy
+		r.Get("/health/full", h.FullHealthHandler)
+
 		// Handler explícito para OPTIONS dentro de /api também
 		r.Options("/*", func(w http.ResponseWriter, r *http.Request) {
 			// O middleware CORS já adiciona os headers necessários
@@ -212,6 +215,9 @@ func main() {
 				r.Get("/config/email", h.GetEmailConfigHandler)
 				r.Put("/config/email", h.UpdateEmailConfigHandler)
 				r.Post("/config/email/test", h.TestEmailConnectionHandler)
+
+				// Logs de Auditoria
+				r.Get("/audit/logs", h.ListAuditLogsHandler)
 			})
 		})
 	})

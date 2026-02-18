@@ -298,3 +298,16 @@ export function useEmailConfigMutations() {
 
     return { saveEmailConfig, testConnection };
 }
+
+export function useAuditLogsQuery(page = 1, limit = 50) {
+    const { apiFetch } = useAuth();
+    return useQuery({
+        queryKey: ['audit-logs', page, limit],
+        queryFn: async () => {
+            const query = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+            const response = await apiFetch(`/api/audit/logs?${query.toString()}`);
+            if (!response.ok) throw new Error('Failed to fetch audit logs');
+            return response.json();
+        }
+    });
+}

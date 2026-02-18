@@ -35,12 +35,28 @@ echo "========== CONSTRUINDO E SUBINDO $NEXT =========="
 export PORT=$PORT
 docker compose -p "${PROJECT_NAME}-${NEXT}" up -d --build --force-recreate
 
-# 4. Health Check simplificado
-echo "========== AGUARDANDO INICIALIZAÇÃO ($HEALTH_CHECK_WAIT seg) =========="
-sleep $HEALTH_CHECK_WAIT
+# 4. Health Check Real
+echo "========== AGUARDANDO INICIALIZAÇÃO ($PROJECT_NAME-$NEXT) =========="
+MAX_RETRIES=12
+RETRY_COUNT=0
+until [ $RETRY_COUNT -ge $MAX_RETRIES ]
+do
+   HEALTH=$(curl -s "http://localhost:$PORT/api/health/full" || echo '{"status":"down"}')
+   if echo "$HEALTH" | grep -q '"status":"ok"'; then
+      echo "Instância $NEXT está SAUDÁVEL!"
+      break
+   fi
+   
+   RETRY_COUNT=$((RETRY_COUNT+1))
+   echo "Aguardando inicialização... ($RETRY_COUNT/$MAX_RETRIES)"
+   sleep 5
+done
 
-# TODO: Adicionar health check real aqui se houver endpoint
-# if ! curl -f http://localhost:$PORT/health; then echo "Erro no health check"; exit 1; fi
+if [ $RETRY_COUNT -ge $MAX_RETRIES ]; then
+   echo "ERRO: Instância $NEXT falhou no Health Check!"
+   docker compose -p "${PROJECT_NAME}-${NEXT}" logs --tail 20
+   exit 1
+fi
 
 # 5. Switch Caddy
 echo "========== CHAVEANDO TRÁFEGO NO CADDY =========="

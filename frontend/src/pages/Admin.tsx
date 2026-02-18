@@ -20,7 +20,8 @@ import {
     useCategoryMutations,
     useUserMutations,
     useEmailConfigQuery,
-    useEmailConfigMutations
+    useEmailConfigMutations,
+    useAuditLogsQuery
 } from '../hooks/useQueries';
 
 type AdminTab = 'categories' | 'users' | 'settings' | 'notifications';
@@ -579,12 +580,7 @@ export default function Admin() {
                     </div>
                 )}
 
-                {activeTab === 'notifications' && (
-                    <div className="p-12 md:p-24 text-center opacity-30 space-y-4 animate-in fade-in duration-500">
-                        <Bell className="w-12 h-12 md:w-16 md:h-16 mx-auto text-charcoal-200" />
-                        <p className="text-[10px] md:text-sm font-bold uppercase tracking-[0.3em]">Logs do Sistema indisponíveis</p>
-                    </div>
-                )}
+                {activeTab === 'notifications' && <AuditLogsView />}
             </div>
 
             {/* Modal de Confirmação */}
@@ -598,6 +594,101 @@ export default function Admin() {
                 confirmText="Confirmar"
                 cancelText="Cancelar"
             />
+        </div>
+    );
+}
+
+function AuditLogsView() {
+    const [page, setPage] = useState(1);
+    const { data, isLoading } = useAuditLogsQuery(page, 50);
+    const logs = data?.data || [];
+
+    if (isLoading) {
+        return (
+            <div className="flex justify-center p-12">
+                <div className="w-8 h-8 border-4 border-ruby-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+        );
+    }
+
+    if (logs.length === 0) {
+        return (
+            <div className="p-12 text-center opacity-30 space-y-4">
+                <Bell className="w-12 h-12 mx-auto text-charcoal-200" />
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em]">Nenhum registro encontrado</p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500 px-4 md:px-0">
+            <div className="flex items-center gap-3">
+                <Bell className="text-ruby-600 w-5 h-5" />
+                <h3 className="text-base md:text-lg font-black text-charcoal-900 uppercase tracking-tight">Logs de Auditoria</h3>
+            </div>
+
+            <div className="bg-white rounded-3xl border border-charcoal-100 overflow-hidden shadow-premium">
+                <TableContainer className="border-none">
+                    <THead>
+                        <Tr className="bg-navy-950">
+                            <Th className="text-white">Data</Th>
+                            <Th className="text-white">Usuário</Th>
+                            <Th className="text-white">Ação</Th>
+                            <Th className="text-white">Entidade</Th>
+                            <Th className="text-white">Descrição</Th>
+                        </Tr>
+                    </THead>
+                    <TBody>
+                        {logs.map((log: any) => (
+                            <Tr key={log.id}>
+                                <Td className="text-[10px] font-bold text-charcoal-500">
+                                    {new Date(log.created_at).toLocaleString('pt-BR')}
+                                </Td>
+                                <Td>
+                                    <div className="flex flex-col">
+                                        <span className="font-bold text-navy-900 text-xs">{log.user?.email || 'Sistema'}</span>
+                                        <span className="text-[9px] text-charcoal-400">{log.ip_address}</span>
+                                    </div>
+                                </Td>
+                                <Td>
+                                    <span className={`text-[9px] font-black px-2 py-0.5 rounded-full border ${log.action === 'CREATE' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                                            log.action === 'DELETE' ? 'bg-ruby-50 text-ruby-700 border-ruby-100' :
+                                                'bg-charcoal-50 text-charcoal-700 border-charcoal-100'
+                                        }`}>
+                                        {log.action}
+                                    </span>
+                                </Td>
+                                <Td className="text-[10px] font-bold text-charcoal-600 uppercase">
+                                    {log.entity_type}
+                                </Td>
+                                <Td className="text-xs text-charcoal-700">
+                                    {log.description}
+                                </Td>
+                            </Tr>
+                        ))}
+                    </TBody>
+                </TableContainer>
+            </div>
+
+            <div className="flex justify-between items-center bg-white p-4 rounded-2xl border border-charcoal-100">
+                <Button
+                    variant="outline"
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    className="h-10 text-[10px]"
+                >
+                    Anterior
+                </Button>
+                <span className="text-[10px] font-black uppercase text-charcoal-400">Página {page}</span>
+                <Button
+                    variant="outline"
+                    onClick={() => setPage(p => p + 1)}
+                    disabled={logs.length < 50}
+                    className="h-10 text-[10px]"
+                >
+                    Próxima
+                </Button>
+            </div>
         </div>
     );
 }
