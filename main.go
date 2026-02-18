@@ -171,6 +171,7 @@ func main() {
 			// NF-e
 			r.Post("/nfe/upload", h.UploadHandler)
 			r.Get("/nfes", h.ListNFesHandler)
+			r.Get("/nfes/{accessKey}", h.GetNfeDetailHandler)
 			r.Post("/nfes/{accessKey}/process", h.ProcessNfeHandler)
 
 			// Rotas de Streaming (Sem o middleware de timeout acima)

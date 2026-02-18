@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"encoding/xml"
 	"estoque/internal/events"
 	"estoque/internal/models"
 	"estoque/internal/services"
@@ -31,24 +32,53 @@ func (h *Handler) DashboardStatsHandler(w http.ResponseWriter, r *http.Request) 
 
 	var stats models.DashboardStats
 
-	// Total de itens em estoque
+	// 1. Métricas básicas (Contagens)
 	h.DB.Model(&models.Stock{}).Select("COALESCE(SUM(quantity), 0)").Scan(&stats.TotalItems)
-
-	// Total de SKUs ativos
 	h.DB.Model(&models.Product{}).Where("active = ?", true).Count(&stats.TotalSKUs)
 
-	// Entradas no mês atual (Usando Raw por causa do DATE_FORMAT específico do MySQL)
 	h.DB.Raw(`
 		SELECT COUNT(*) FROM movements 
 		WHERE type = 'ENTRADA' 
 		AND DATE_FORMAT(created_at, '%Y-%m') = DATE_FORMAT(NOW(), '%Y-%m')
 	`).Scan(&stats.EntriesThisMonth)
 
-	// Produtos com estoque baixo
 	h.DB.Table("stock").
 		Joins("JOIN products ON stock.product_code = products.code").
 		Where("stock.quantity < products.min_stock AND products.active = ?", true).
 		Count(&stats.LowStockCount)
+
+	// 2. Riqueza do Estoque (Valor Total)
+	h.DB.Table("stock").
+		Joins("JOIN products ON stock.product_code = products.code").
+		Select("COALESCE(SUM(stock.quantity * products.cost_price), 0)").
+		Scan(&stats.StockWealth)
+
+	h.DB.Table("stock").
+		Joins("JOIN products ON stock.product_code = products.code").
+		Select("COALESCE(SUM(stock.quantity * products.sale_price), 0)").
+		Scan(&stats.StockWealthSale)
+
+	// 3. Custo Médio Global
+	h.DB.Table("products").
+		Where("active = ?", true).
+		Select("COALESCE(AVG(cost_price), 0)").
+		Scan(&stats.AverageCost)
+
+	// 4. Produtos Parados (> 30 dias sem movimento)
+	h.DB.Raw(`
+		SELECT COUNT(*) FROM products p
+		WHERE p.active = 1
+		AND p.code NOT IN (
+			SELECT DISTINCT product_code FROM movements 
+			WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+		)
+	`).Scan(&stats.IdleStockCount)
+
+	// 5. Última Movimentação
+	var lastMov models.Movement
+	if err := h.DB.Order("created_at DESC").First(&lastMov).Error; err == nil {
+		stats.LastMovementAt = &lastMov.CreatedAt
+	}
 
 	// Armazenar no cache
 	SetCachedDashboardStats(&stats)
@@ -65,12 +95,13 @@ func (h *Handler) StockEvolutionHandler(w http.ResponseWriter, r *http.Request) 
 	var evolution []models.StockEvolution
 	h.DB.Raw(`
 		SELECT 
-			DATE_FORMAT(created_at, '%Y-%m') as month,
-			SUM(CASE WHEN type = 'ENTRADA' THEN quantity ELSE -quantity END) as items
+			DATE_FORMAT(created_at, '%Y-%m-%d') as date,
+			SUM(CASE WHEN type = 'ENTRADA' THEN quantity ELSE 0 END) as entries,
+			SUM(CASE WHEN type = 'SAIDA' THEN quantity ELSE 0 END) as exits
 		FROM movements
-		WHERE created_at >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
-		GROUP BY month
-		ORDER BY month
+		WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+		GROUP BY date
+		ORDER BY date
 	`).Scan(&evolution)
 
 	RespondWithJSON(w, http.StatusOK, evolution)
@@ -429,6 +460,54 @@ func (h *Handler) ListNFesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response := NewPaginatedResponse(nfes, total, params)
+	RespondWithJSON(w, http.StatusOK, response)
+}
+
+func (h *Handler) GetNfeDetailHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// Extrair accessKey da URL (ex: /api/nfes/{accessKey})
+	parts := strings.Split(r.URL.Path, "/")
+	if len(parts) < 3 {
+		RespondWithError(w, http.StatusBadRequest, "Chave de acesso inválida")
+		return
+	}
+	accessKey := parts[len(parts)-1]
+
+	var nfe models.ProcessedNFe
+	if err := h.DB.First(&nfe, "access_key = ?", accessKey).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			HandleError(w, ErrNfeNotFound, "Nota fiscal não encontrada")
+			return
+		}
+		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao buscar nota", err), "Erro ao buscar nota")
+		return
+	}
+
+	// Decodificar XML armazenado
+	var proc models.NfeProc
+	if err := xml.Unmarshal(nfe.XMLData, &proc); err != nil {
+		HandleError(w, NewAppError(http.StatusInternalServerError, "Erro ao decodificar XML", err), "Erro ao processar detalhes da nota")
+		return
+	}
+
+	// Extrair itens
+	items := make([]models.Prod, 0, len(proc.NFe.InfNFe.Det))
+	for _, det := range proc.NFe.InfNFe.Det {
+		items = append(items, det.Prod)
+	}
+
+	response := models.NfeDetailResponse{
+		AccessKey:    nfe.AccessKey,
+		Number:       proc.NFe.InfNFe.Ide.NNF,
+		SupplierName: proc.NFe.InfNFe.Emit.XNome,
+		TotalValue:   proc.NFe.InfNFe.Total.ICMSTot.VNF,
+		Items:        items,
+	}
+
 	RespondWithJSON(w, http.StatusOK, response)
 }
 

@@ -19,10 +19,11 @@ type NFe struct {
 }
 
 type InfNFe struct {
-	ID   string `xml:"Id,attr"`
-	Ide  Ide    `xml:"ide"`
-	Emit Emit   `xml:"emit"`
-	Det  []Det  `xml:"det"`
+	ID    string `xml:"Id,attr"`
+	Ide   Ide    `xml:"ide"`
+	Emit  Emit   `xml:"emit"`
+	Det   []Det  `xml:"det"`
+	Total Total  `xml:"total"`
 }
 
 type Ide struct {
@@ -39,9 +40,19 @@ type Det struct {
 }
 
 type Prod struct {
-	CProd string  `xml:"cProd"`
-	XProd string  `xml:"xProd"`
-	QCom  float64 `xml:"qCom"`
+	CProd  string  `xml:"cProd" json:"code"`
+	XProd  string  `xml:"xProd" json:"name"`
+	QCom   float64 `xml:"qCom" json:"quantity"`
+	VUnCom float64 `xml:"vUnCom" json:"unit_price"`
+	VProd  float64 `xml:"vProd" json:"total_price"`
+}
+
+type Total struct {
+	ICMSTot ICMSTot `xml:"ICMSTot"`
+}
+
+type ICMSTot struct {
+	VNF float64 `xml:"vNF"`
 }
 
 // ===== GORM Models =====
@@ -146,6 +157,7 @@ type ProcessedNFe struct {
 	Number       *string   `gorm:"size:50" json:"number,omitempty"`
 	SupplierName *string   `gorm:"size:191" json:"supplier_name,omitempty"`
 	TotalItems   int32     `gorm:"type:int" json:"total_items"`
+	TotalValue   float64   `gorm:"type:decimal(10,2)" json:"total_value"`
 	Status       string    `gorm:"size:20;default:'PENDENTE'" json:"status"` // PENDENTE, PROCESSADA
 	XMLData      []byte    `gorm:"type:longblob" json:"-"`                   // Armazena o XML original
 	ProcessedAt  time.Time `json:"processed_at"`
@@ -153,6 +165,14 @@ type ProcessedNFe struct {
 
 func (ProcessedNFe) TableName() string {
 	return "processed_nfes"
+}
+
+type NfeDetailResponse struct {
+	AccessKey    string  `json:"access_key"`
+	Number       string  `json:"number"`
+	SupplierName string  `json:"supplier_name"`
+	TotalValue   float64 `json:"total_value"`
+	Items        []Prod  `json:"items"`
 }
 
 // ===== Auxiliar Types (Request/Response) =====
@@ -201,15 +221,21 @@ type Claims struct {
 }
 
 type DashboardStats struct {
-	TotalItems       float64 `json:"total_items"`
-	TotalSKUs        int64   `json:"total_skus"`
-	EntriesThisMonth int64   `json:"entries_this_month"`
-	LowStockCount    int64   `json:"low_stock_count"`
+	TotalItems       float64    `json:"total_items"`
+	TotalSKUs        int64      `json:"total_skus"`
+	EntriesThisMonth int64      `json:"entries_this_month"`
+	LowStockCount    int64      `json:"low_stock_count"`
+	StockWealth      float64    `json:"stock_wealth"`      // Total value in stock (cost price)
+	StockWealthSale  float64    `json:"stock_wealth_sale"` // Total value in stock (sale price)
+	IdleStockCount   int64      `json:"idle_stock_count"`  // Items without movement for > 30 days
+	AverageCost      float64    `json:"average_cost"`      // Global average cost
+	LastMovementAt   *time.Time `json:"last_movement_at"`  // Date of the last entry/exit
 }
 
 type StockEvolution struct {
-	Month string  `json:"month"`
-	Items float64 `json:"items"`
+	Date    string  `json:"date"`
+	Entries float64 `json:"entries"`
+	Exits   float64 `json:"exits"`
 }
 
 // ReportSummary holds aggregated data for a given period

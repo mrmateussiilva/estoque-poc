@@ -33,6 +33,7 @@ func (s *NfeService) RegisterNfe(proc *models.NfeProc, xmlData []byte) error {
 			Number:       &proc.NFe.InfNFe.Ide.NNF,
 			SupplierName: &proc.NFe.InfNFe.Emit.XNome,
 			TotalItems:   int32(len(proc.NFe.InfNFe.Det)),
+			TotalValue:   proc.NFe.InfNFe.Total.ICMSTot.VNF,
 			Status:       "PENDENTE",
 			XMLData:      xmlData,
 			ProcessedAt:  time.Now(),
@@ -70,12 +71,29 @@ func (s *NfeService) ProcessNfe(accessKey string) (int, error) {
 		// Processar cada produto
 		for _, det := range proc.NFe.InfNFe.Det {
 			product := models.Product{
-				Code: det.Prod.CProd,
-				Name: det.Prod.XProd,
-				Unit: "UN",
+				Code:      det.Prod.CProd,
+				Name:      det.Prod.XProd,
+				Unit:      "UN",
+				CostPrice: det.Prod.VUnCom,
 			}
-			if err := tx.FirstOrCreate(&product, models.Product{Code: product.Code}).Error; err != nil {
+			// Tentar encontrar ou criar o produto
+			var existingProduct models.Product
+			err := tx.First(&existingProduct, "code = ?", product.Code).Error
+			if err == gorm.ErrRecordNotFound {
+				if err := tx.Create(&product).Error; err != nil {
+					return err
+				}
+			} else if err != nil {
 				return err
+			} else {
+				// Atualizar nome e preco de custo do produto existente
+				if err := tx.Model(&existingProduct).Updates(map[string]interface{}{
+					"name":       product.Name,
+					"cost_price": product.CostPrice,
+					"updated_at": time.Now(),
+				}).Error; err != nil {
+					return err
+				}
 			}
 
 			movement := models.Movement{
@@ -90,7 +108,7 @@ func (s *NfeService) ProcessNfe(accessKey string) (int, error) {
 			}
 
 			var stock models.Stock
-			err := tx.First(&stock, "product_code = ?", det.Prod.CProd).Error
+			err = tx.First(&stock, "product_code = ?", det.Prod.CProd).Error
 			if err == gorm.ErrRecordNotFound {
 				stock = models.Stock{
 					ProductCode: det.Prod.CProd,
