@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Bell, Upload, ChevronRight, TrendingUp, Package, FileText, AlertTriangle } from 'lucide-react';
+import { Bell, ChevronRight, TrendingUp, Package, FileText, AlertTriangle } from 'lucide-react';
 import { Card, KPICard, Button } from '../components/UI';
-import { useAuth } from '../contexts/AuthContext';
 import { useDashboardStatsQuery, useDashboardEvolutionQuery, useStockQuery } from '../hooks/useQueries';
 import { useQueryClient } from '@tanstack/react-query';
 import { type StockItem } from '../contexts/DataContext';
@@ -10,7 +9,6 @@ import { notificationService } from '../services/NotificationService';
 import PullToRefresh from '../components/PullToRefresh';
 
 export default function Dashboard() {
-    const { apiFetch } = useAuth();
     const queryClient = useQueryClient();
     const [showNotificationBanner, setShowNotificationBanner] = useState(notificationService.getPermissionStatus() === 'default');
 
@@ -18,6 +16,13 @@ export default function Dashboard() {
     const { data: stats, isLoading: isLoadingStats } = useDashboardStatsQuery();
     const { data: evolution, isLoading: isLoadingEvolution } = useDashboardEvolutionQuery();
     const { data: stockData, isLoading: isLoadingStock } = useStockQuery();
+
+    // Calcular top products a partir do stockData
+    const topProducts = Array.isArray(stockData)
+        ? [...stockData].sort((a: StockItem, b: StockItem) => b.quantity - a.quantity).slice(0, 5)
+        : [];
+
+    const isLoading = isLoadingStats || isLoadingEvolution || isLoadingStock;
 
     const handleRefresh = async () => {
         await Promise.all([
@@ -44,65 +49,6 @@ export default function Dashboard() {
 
         return () => clearInterval(interval);
     }, [queryClient]);
-
-    const [uploading, setUploading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
-    const [file, setFile] = useState<File | null>(null);
-
-    // Calcular top products a partir do stockData
-    const topProducts = Array.isArray(stockData)
-        ? [...stockData].sort((a: StockItem, b: StockItem) => b.quantity - a.quantity).slice(0, 5)
-        : [];
-
-    const isLoading = isLoadingStats || isLoadingEvolution || isLoadingStock;
-
-    const handleUpload = async () => {
-        if (!file) return;
-        setUploading(true);
-        setError(null);
-        setSuccess(null);
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        try {
-            const response = await apiFetch('/api/nfe/upload', {
-                method: 'POST',
-                body: formData,
-            });
-
-            if (response.status === 409) throw new Error('NF-e já processada');
-            if (!response.ok) throw new Error('Erro ao processar XML');
-
-            setSuccess('NF-e processada com sucesso');
-            setFile(null);
-
-            // Invalidar queries para atualizar dados
-            queryClient.invalidateQueries({ queryKey: ['stock'] });
-            queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
-            queryClient.invalidateQueries({ queryKey: ['dashboard-evolution'] });
-
-        } catch (err: any) {
-            setError(err.message);
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    useEffect(() => {
-        if (error) {
-            const timer = setTimeout(() => setError(null), 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [error]);
-
-    useEffect(() => {
-        if (success) {
-            const timer = setTimeout(() => setSuccess(null), 5000);
-            return () => clearTimeout(timer);
-        }
-    }, [success]);
 
     return (
         <PullToRefresh onRefresh={handleRefresh}>
@@ -139,21 +85,6 @@ export default function Dashboard() {
                     </div>
                 )}
 
-                {/* Notificações Topo */}
-                <div className="fixed top-24 right-8 z-50 flex flex-col gap-2 max-w-md">
-                    {error && (
-                        <div className="bg-white border border-ruby-200 shadow-sm p-4 flex items-center gap-3 rounded-xl animate-in fade-in duration-300">
-                            <AlertTriangle className="w-4 h-4 text-ruby-600 flex-shrink-0" />
-                            <span className="text-sm font-semibold text-charcoal-900">{error}</span>
-                        </div>
-                    )}
-                    {success && (
-                        <div className="bg-white border border-emerald-200 shadow-sm p-4 flex items-center gap-3 rounded-xl animate-in fade-in duration-300">
-                            <TrendingUp className="w-4 h-4 text-emerald-600 flex-shrink-0" />
-                            <span className="text-sm font-semibold text-charcoal-900">{success}</span>
-                        </div>
-                    )}
-                </div>
 
                 {/* Cabeçalho Resumo */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -289,50 +220,6 @@ export default function Dashboard() {
                     </Card>
                 </div>
 
-                {/* Importação NF-e */}
-                <Card className="p-10 relative overflow-hidden group">
-                    <div className="absolute inset-0 bg-navy-950 opacity-0 group-hover:opacity-[0.02] transition-opacity duration-700" />
-                    <div className="flex flex-col md:flex-row items-center gap-12 relative z-10">
-                        <div className="flex-1 space-y-4 text-center md:text-left">
-                            <div className="w-16 h-16 bg-navy-950 rounded-2xl flex items-center justify-center shadow-premium mb-6 mx-auto md:mx-0 relative overflow-hidden group/icon">
-                                <div className="absolute inset-0 bg-ruby-600 translate-y-full group-hover/icon:translate-y-0 transition-transform duration-500" />
-                                <Upload className="w-6 h-6 text-white relative z-10" />
-                            </div>
-                            <h3 className="text-2xl font-black text-navy-900 tracking-tighter uppercase">Digitalização de NF-e</h3>
-                            <p className="text-charcoal-500 text-sm font-medium max-w-md leading-relaxed">Importe seus documentos fiscais XML para processamento inteligente e atualização automatizada do inventário.</p>
-                        </div>
-
-                        <div className="w-full md:w-[400px] space-y-5">
-                            <div
-                                className={`
-                                    relative h-40 border-2 border-dashed rounded-3xl transition-all duration-500 flex flex-col items-center justify-center gap-3 cursor-pointer overflow-hidden
-                                    ${file ? 'border-ruby-500 bg-ruby-50/20' : 'border-charcoal-300 bg-charcoal-50/50 hover:border-ruby-500/30 hover:bg-ruby-50/5'}
-                                `}
-                            >
-                                <input
-                                    type="file"
-                                    accept=".xml"
-                                    onChange={(e) => setFile(e.target.files?.[0] || null)}
-                                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                                />
-                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-500 ${file ? 'bg-ruby-600 text-white shadow-ruby' : 'bg-white text-charcoal-400 border border-charcoal-100'}`}>
-                                    <FileText className="w-5 h-5" />
-                                </div>
-                                <div className="text-center px-4">
-                                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-navy-900">
-                                        {file ? file.name : "Arraste ou selecione o XML"}
-                                    </p>
-                                    {!file && <p className="text-[9px] font-bold text-charcoal-400 uppercase tracking-widest mt-1.5 opacity-60">Suporta apenas arquivos .xml</p>}
-                                </div>
-                            </div>
-
-                            <Button onClick={handleUpload} loading={uploading} disabled={!file} className="w-full h-14 bg-ruby-600 hover:bg-ruby-700 text-white border-none shadow-ruby text-sm font-black uppercase tracking-[0.15em]">
-                                Processar Documento
-                                <ChevronRight className="w-5 h-5 ml-1" />
-                            </Button>
-                        </div>
-                    </div>
-                </Card>
             </div>
         </PullToRefresh>
     );

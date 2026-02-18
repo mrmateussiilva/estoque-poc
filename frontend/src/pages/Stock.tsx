@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Search, Package, ChevronRight, Download, ScanLine } from 'lucide-react';
+import { Search, Package, ChevronRight, Download } from 'lucide-react';
 import { Card, TableContainer, THead, TBody, Tr, Th, Td, Badge, Button } from '../components/UI';
 import StockCard from '../components/StockCard';
-import BarcodeScanner from '../components/BarcodeScanner';
 import EditProductModal from '../components/EditProductModal';
 import { type StockItem } from '../contexts/DataContext';
 import { useStockQuery, useProductMutation, useCategoriesQuery } from '../hooks/useQueries';
@@ -18,7 +17,6 @@ export default function Stock() {
     const [editingProduct, setEditingProduct] = useState<StockItem | null>(null);
     const [activeTab, setActiveTab] = useState<string>('');
     const [exporting, setExporting] = useState(false);
-    const [showScanner, setShowScanner] = useState(false);
 
     const handleRefresh = async () => {
         await queryClient.invalidateQueries({ queryKey: ['stock'] });
@@ -65,11 +63,6 @@ export default function Stock() {
         return <Badge variant="success">Em Estoque</Badge>;
     };
 
-    const handleBarcodeScan = (code: string) => {
-        // Buscar produto pelo código escaneado
-        setSearch(code);
-        setDebouncedSearch(code);
-    };
 
     const handleExport = async () => {
         setExporting(true);
@@ -122,14 +115,6 @@ export default function Stock() {
                                     {stock.length} <span className="text-charcoal-500">Produtos</span>
                                 </span>
                             </div>
-                            <Button
-                                onClick={() => setShowScanner(true)}
-                                variant="primary"
-                                className="whitespace-nowrap min-h-[48px]"
-                            >
-                                <ScanLine className="w-4 h-4" />
-                                <span className="hidden sm:inline text-xs font-bold uppercase tracking-widest">Escanear</span>
-                            </Button>
                             <Button
                                 onClick={handleExport}
                                 loading={exporting}
@@ -273,14 +258,6 @@ export default function Stock() {
                     </div>
                 </div>
 
-                {/* Scanner de Código de Barras */}
-                {showScanner && (
-                    <BarcodeScanner
-                        onScan={handleBarcodeScan}
-                        onClose={() => setShowScanner(false)}
-                        title="Escanear Código de Barras"
-                    />
-                )}
 
                 {/* Modal de Edição */}
                 {editingProduct && (
