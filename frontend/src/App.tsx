@@ -85,7 +85,7 @@ function MainApp() {
         <Header
           title={config.title}
         />
-        <main className="flex-1 overflow-auto p-4 md:p-8 pb-20 md:pb-8">
+        <main className="flex-1 overflow-auto p-4 md:p-6 pb-24 md:pb-6">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentPage}

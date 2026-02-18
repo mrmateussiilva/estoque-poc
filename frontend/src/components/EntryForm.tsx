@@ -1,13 +1,12 @@
 import { useState } from 'react';
-import { X, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Button, Card, Input, Label } from './UI';
 
 interface EntryFormProps {
     onAdd: (item: { sku: string; description: string; quantity: number }) => void;
-    onClose: () => void;
 }
 
-export default function EntryForm({ onAdd, onClose }: EntryFormProps) {
+export default function EntryForm({ onAdd }: EntryFormProps) {
     const [sku, setSku] = useState('');
     const [description, setDescription] = useState('');
     const [quantity, setQuantity] = useState('');
@@ -23,47 +22,37 @@ export default function EntryForm({ onAdd, onClose }: EntryFormProps) {
     };
 
     return (
-        <Card className="p-8 border border-charcoal-200 bg-white relative">
-            <button
-                onClick={onClose}
-                className="absolute top-6 right-6 p-2 text-charcoal-400 hover:text-ruby-700 hover:bg-ruby-50 rounded-lg transition-all z-10"
-            >
-                <X className="w-5 h-5" />
-            </button>
+        <Card className="p-4 border-2 border-dashed border-ruby-200 bg-ruby-50/10 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-ruby-500/5 blur-3xl -mr-16 -mt-16 group-hover:bg-ruby-500/10 transition-all" />
 
-            <div className="mb-6">
-                <h3 className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest flex items-center gap-2">
-                    <div className="w-1.5 h-1.5 bg-ruby-600 rounded-full" />
-                    Novo Lançamento Individual
-                </h3>
-            </div>
-
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
-                <div className="md:col-span-3 space-y-1.5">
-                    <Label>Código SKU</Label>
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end relative z-10">
+                <div className="md:col-span-3 space-y-1">
+                    <Label className="text-[9px] font-black uppercase text-ruby-600">Código / Barcode</Label>
                     <Input
                         type="text"
                         value={sku}
                         onChange={(e) => setSku(e.target.value)}
-                        placeholder="Ex: SKU-001"
+                        placeholder="LER SKU..."
                         required
                         autoFocus
+                        className="h-12 border-ruby-200 focus:ring-4 focus:ring-ruby-600/5 focus:border-ruby-600/50 bg-white font-black text-base placeholder:text-ruby-200"
                     />
                 </div>
 
-                <div className="md:col-span-6 space-y-1.5">
-                    <Label>Descrição do Produto</Label>
+                <div className="md:col-span-6 space-y-1">
+                    <Label className="text-[9px] font-black uppercase text-navy-900 opacity-60">Identificação do Produto</Label>
                     <Input
                         type="text"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Nome completo ou detalhes"
+                        placeholder="DESCRIÇÃO AUTOMÁTICA OU MANUAL..."
                         required
+                        className="h-12 border-charcoal-200 focus:bg-white bg-white/50 text-sm font-bold uppercase"
                     />
                 </div>
 
-                <div className="md:col-span-2 space-y-1.5">
-                    <Label>Quantidade</Label>
+                <div className="md:col-span-2 space-y-1">
+                    <Label className="text-[9px] font-black uppercase text-navy-900 opacity-60">Qtd</Label>
                     <Input
                         type="number"
                         value={quantity}
@@ -71,12 +60,13 @@ export default function EntryForm({ onAdd, onClose }: EntryFormProps) {
                         placeholder="0"
                         min="1"
                         required
+                        className="h-12 text-center text-lg font-black bg-white"
                     />
                 </div>
 
                 <div className="md:col-span-1">
-                    <Button type="submit" className="w-full h-12 bg-charcoal-900 hover:bg-black">
-                        <Check className="w-5 h-5 text-ruby-500" />
+                    <Button type="submit" className="w-full h-12 bg-ruby-600 hover:bg-ruby-700 shadow-ruby">
+                        <Check className="w-6 h-6 text-white" />
                     </Button>
                 </div>
             </form>

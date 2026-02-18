@@ -37,39 +37,46 @@ export default function EntryTable({ items, onUpdateQuantity, onRemove }: EntryT
     return (
         <TableContainer className="border-none">
             <THead>
-                <Tr>
-                    <Th>Cód. Identificador</Th>
-                    <Th>Descrição do Item</Th>
-                    <Th className="text-center">Unidades</Th>
-                    <Th className="text-center">Procedência</Th>
-                    <Th className="text-right">Controles</Th>
+                <Tr className="bg-charcoal-100 border-none">
+                    <Th className="text-navy-950 opacity-60">ID Identificador</Th>
+                    <Th className="text-navy-950 opacity-60">Descrição do Produto / SKU</Th>
+                    <Th className="text-center text-navy-950 opacity-60">Qtd.</Th>
+                    <Th className="text-center text-navy-950 opacity-60">Origem</Th>
+                    <Th className="text-right text-navy-950 opacity-60">{null}</Th>
                 </Tr>
             </THead>
             <TBody>
                 {items.map((item) => (
-                    <Tr key={item.id}>
-                        <Td className="text-[10px] font-black text-ruby-600/70 tracking-widest">{item.sku}</Td>
-                        <Td className="text-sm font-black text-charcoal-950 uppercase tracking-tight">{item.description}</Td>
-                        <Td className="text-center">
-                            <input
-                                type="number"
-                                min="1"
-                                value={item.quantity}
-                                onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value) || 0)}
-                                className="w-20 px-3 py-2 text-center text-sm font-black border-2 border-charcoal-200 hover:border-charcoal-100 focus:border-ruby-600/50 bg-charcoal-50/50 rounded-xl transition-all outline-none"
-                            />
+                    <Tr key={item.id} className="hover:bg-charcoal-50/50 transition-colors">
+                        <Td className="text-[9px] font-black text-ruby-600 tracking-[0.15em] font-mono">{item.sku}</Td>
+                        <Td>
+                            <div className="flex flex-col">
+                                <span className="text-xs font-black text-navy-900 uppercase tracking-tight leading-none">{item.description}</span>
+                                <span className="text-[9px] font-bold text-charcoal-400 mt-1 uppercase tracking-widest">Procedência Verificada</span>
+                            </div>
                         </Td>
                         <Td className="text-center">
-                            <Badge variant={item.origin === 'Manual' ? 'warning' : 'default'}>
-                                {item.origin === 'Manual' ? 'Lançamento Local' : 'Importação XML'}
+                            <div className="flex items-center justify-center">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={item.quantity}
+                                    onChange={(e) => onUpdateQuantity(item.id, parseInt(e.target.value) || 0)}
+                                    className="w-16 h-10 px-0 text-center text-sm font-black border-2 border-charcoal-200 focus:border-ruby-600/50 bg-white rounded-xl transition-all outline-none"
+                                />
+                            </div>
+                        </Td>
+                        <Td className="text-center">
+                            <Badge variant={item.origin === 'Manual' ? 'warning' : 'info'} className="bg-opacity-10!">
+                                {item.origin === 'Manual' ? 'Manual' : 'NF-e XML'}
                             </Badge>
                         </Td>
                         <Td className="text-right">
                             <button
                                 onClick={() => onRemove(item.id)}
-                                className="w-10 h-10 flex items-center justify-center text-charcoal-300 hover:text-ruby-700 hover:bg-ruby-50 rounded-xl transition-all ml-auto"
+                                className="w-10 h-10 flex items-center justify-center text-charcoal-300 hover:text-ruby-700 hover:bg-ruby-50 rounded-lg transition-all ml-auto"
                             >
-                                <Trash2 className="w-5 h-5" />
+                                <Trash2 className="w-4 h-4" />
                             </button>
                         </Td>
                     </Tr>

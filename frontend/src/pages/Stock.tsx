@@ -57,11 +57,6 @@ export default function Stock() {
 
     const itemsInActiveTab = activeTab ? groupedStock[activeTab] || [] : [];
 
-    const getStatusBadge = (item: StockItem) => {
-        if (item.quantity <= 0) return <Badge variant="error">Esgotado</Badge>;
-        if (item.quantity < item.min_stock) return <Badge variant="warning">Baixo Estoque</Badge>;
-        return <Badge variant="success">Em Estoque</Badge>;
-    };
 
 
     const handleExport = async () => {
@@ -190,8 +185,9 @@ export default function Stock() {
                                 <Tr className="bg-navy-950 border-none">
                                     <Th className="text-white py-6">Produto & Identificação</Th>
                                     <Th className="text-center text-white">Saldo Atual</Th>
-                                    <Th className="text-right text-white">Valor Venda</Th>
-                                    <Th className="text-white">Disponibilidade</Th>
+                                    <Th className="text-right text-white">Margem (%)</Th>
+                                    <Th className="text-right text-white">Venda (R$)</Th>
+                                    <Th className="text-white">Situação</Th>
                                     <Th className="w-10 text-white">{null}</Th>
                                 </Tr>
                             </THead>
@@ -201,43 +197,65 @@ export default function Stock() {
                                         <Tr key={i} className="animate-pulse">
                                             <Td><div className="h-5 bg-charcoal-50 rounded w-56" /></Td>
                                             <Td><div className="h-5 bg-charcoal-50 rounded w-16 mx-auto" /></Td>
+                                            <Td><div className="h-5 bg-charcoal-50 rounded w-16 ml-auto" /></Td>
                                             <Td><div className="h-5 bg-charcoal-50 rounded w-24 ml-auto" /></Td>
                                             <Td><div className="h-7 bg-charcoal-50 rounded-full w-32" /></Td>
                                             <Td>{null}</Td>
                                         </Tr>
                                     ))
                                 ) : itemsInActiveTab.length > 0 ? (
-                                    itemsInActiveTab.map((item) => (
-                                        <Tr key={item.code} onClick={() => setEditingProduct(item)}>
-                                            <Td>
-                                                <div className="flex flex-col">
-                                                    <span className="text-sm font-semibold text-charcoal-950 group-hover:text-ruby-600 transition-colors uppercase tracking-tight">{item.name}</span>
-                                                    <span className="text-[10px] font-bold text-charcoal-400 mt-1 uppercase tracking-widest">SKU: {item.code}</span>
-                                                </div>
-                                            </Td>
-                                            <Td className="text-center">
-                                                <div className="flex flex-col items-center">
-                                                    <span className={`text-base font-bold tracking-tight ${item.quantity < item.min_stock ? 'text-ruby-600' : 'text-charcoal-900'}`}>
-                                                        {item.quantity}
+                                    itemsInActiveTab.map((item) => {
+                                        const costPrice = item.cost_price || 0;
+                                        const margin = item.sale_price > 0
+                                            ? ((item.sale_price - costPrice) / item.sale_price) * 100
+                                            : 0;
+
+                                        return (
+                                            <Tr key={item.code} onClick={() => setEditingProduct(item)}>
+                                                <Td>
+                                                    <div className="flex flex-col">
+                                                        <span className="text-sm font-black text-navy-900 group-hover:text-ruby-600 transition-colors uppercase tracking-tight">{item.name}</span>
+                                                        <span className="text-[10px] font-bold text-charcoal-400 mt-1 uppercase tracking-widest">SKU: {item.code}</span>
+                                                    </div>
+                                                </Td>
+                                                <Td className="text-center">
+                                                    <div className="flex flex-col items-center">
+                                                        <span className={`text-base font-black tracking-tight ${item.quantity < item.min_stock ? 'text-ruby-600' : 'text-navy-900'}`}>
+                                                            {item.quantity}
+                                                        </span>
+                                                        <span className="text-[10px] font-bold text-charcoal-400 uppercase tracking-widest leading-none">{item.unit}</span>
+                                                    </div>
+                                                </Td>
+                                                <Td className="text-right">
+                                                    <div className="flex flex-col items-end">
+                                                        <span className={`text-sm font-black tracking-tighter ${margin < 20 ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                                            {margin.toFixed(1)}%
+                                                        </span>
+                                                        <span className="text-[9px] font-bold text-charcoal-400 uppercase tracking-widest">Profit</span>
+                                                    </div>
+                                                </Td>
+                                                <Td className="text-right">
+                                                    <span className="text-sm font-black text-navy-900 tracking-tight">
+                                                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.sale_price)}
                                                     </span>
-                                                    <span className="text-[10px] font-bold text-charcoal-300 uppercase tracking-widest leading-none">{item.unit}</span>
-                                                </div>
-                                            </Td>
-                                            <Td className="text-right">
-                                                <span className="text-sm font-semibold text-charcoal-950 tracking-tight">
-                                                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.sale_price)}
-                                                </span>
-                                            </Td>
-                                            <Td>
-                                                {getStatusBadge(item)}
-                                            </Td>
-                                            <Td className="text-right">
-                                                <div className="w-8 h-8 rounded-full bg-charcoal-50 flex items-center justify-center text-charcoal-300 group-hover:bg-charcoal-100 group-hover:text-charcoal-600 transition-all">
-                                                    <ChevronRight className="w-4 h-4" />
-                                                </div>
-                                            </Td>
-                                        </Tr>
-                                    ))
+                                                </Td>
+                                                <Td>
+                                                    {item.quantity <= 0 ? (
+                                                        <Badge variant="error" className="bg-ruby-50!">Esgotado</Badge>
+                                                    ) : item.quantity < item.min_stock ? (
+                                                        <Badge variant="warning" className="bg-amber-50!">Reposição</Badge>
+                                                    ) : (
+                                                        <Badge variant="success" className="bg-emerald-50!">Saudável</Badge>
+                                                    )}
+                                                </Td>
+                                                <Td className="text-right">
+                                                    <div className="w-8 h-8 rounded-lg bg-charcoal-50 flex items-center justify-center text-charcoal-300 group-hover:bg-navy-950 group-hover:text-white transition-all">
+                                                        <ChevronRight className="w-4 h-4" />
+                                                    </div>
+                                                </Td>
+                                            </Tr>
+                                        );
+                                    })
                                 ) : (
                                     <Tr>
                                         <Td colSpan={5} className="px-8 py-24 text-center">
